@@ -3,5 +3,6 @@ export * from './types';
 export * from './tiles';
 export * from './constants';
 export { simulate } from './simulate';
+export { parseBoard, parseToken } from './parse';
 export { buildCircuit, type Circuit, type Element } from './circuit';
 export { solveNetlist } from './mna';

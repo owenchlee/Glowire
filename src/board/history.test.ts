@@ -3,7 +3,10 @@ import { describe, expect, it } from 'vitest';
 import { wire } from '../engine';
 import { placeTile, removeAt, rotateAt } from './board';
 import { historyReducer } from './history';
-import { createTutorialBoard } from './tutorial';
+import { createLevelBoard } from '../levels/evaluate';
+import { getLevel } from '../levels/levels';
+
+const createTutorialBoard = () => createLevelBoard(getLevel(1)!);
 
 describe('undo history', () => {
   const start = { board: createTutorialBoard(), past: [] };

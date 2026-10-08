@@ -34,6 +34,17 @@ export function simulate(board: Board): SimulationResult {
   let batteryCurrent = 0;
   const tiles = board.cells.map((tile, cell): TileResult | null => {
     if (!tile) return null;
+    if (tile.kind === 'block') {
+      return {
+        cell,
+        kind: tile.kind,
+        voltage: 0,
+        current: 0,
+        portCurrents: {},
+        brightness: 0,
+        status: 'OFF',
+      };
+    }
     const portCurrents = inflow.get(cell) ?? {};
     const flows = Object.values(portCurrents);
 
@@ -77,6 +88,9 @@ export function simulate(board: Board): SimulationResult {
           : Math.abs(current) > CURRENT_EPSILON
             ? 'OK'
             : 'OFF';
+    } else if (tile.kind === 'switch') {
+      current = intoPlus;
+      status = tile.closed && Math.abs(current) > CURRENT_EPSILON ? 'OK' : 'OFF';
     } else if (tile.kind === 'resistor') {
       current = intoPlus;
       status = bypassed ? 'BYPASSED' : Math.abs(current) > CURRENT_EPSILON ? 'OK' : 'OFF';

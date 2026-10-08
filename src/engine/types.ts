@@ -21,9 +21,19 @@ interface TileBase {
   locked?: boolean;
 }
 
+/**
+ * A wire is any set of arms (bit per direction: N=1, E=2, S=4, W=8), all joined in the
+ * middle. Straights, corners, tees and crosses are just particular arm sets, so the
+ * player can draw paths and junctions form on their own.
+ */
 export interface WireTile extends TileBase {
   kind: 'wire';
-  shape: WireShape;
+  arms: number;
+}
+
+/** A blocked cell: no ports, nothing can be placed or drawn through it. */
+export interface BlockTile extends TileBase {
+  kind: 'block';
 }
 
 /**
@@ -45,7 +55,15 @@ export interface BatteryTile extends TileBase {
   volts: number;
 }
 
-export type Tile = WireTile | ResistorTile | LedTile | BatteryTile;
+/** On/off switch. Closed it behaves like a wire; open it is (practically) an open circuit. */
+export interface SwitchTile extends TileBase {
+  kind: 'switch';
+  closed: boolean;
+}
+
+export type Tile = WireTile | BlockTile | ResistorTile | LedTile | BatteryTile | SwitchTile;
+/** Parts with a + and a − terminal on opposite sides. */
+export type TwoTerminalTile = ResistorTile | LedTile | BatteryTile | SwitchTile;
 export type TileKind = Tile['kind'];
 
 /** A rectangular grid. Cell (x, y) lives at index y * width + x; y grows towards S. */

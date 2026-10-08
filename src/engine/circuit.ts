@@ -9,10 +9,13 @@
 //   resistor        + ──R── −
 //   LED             anode ──Rs── x ──▷|── cathode   (Shockley diode + series resistance)
 //   battery         + ──R_int── x ──(+V−)── −      (ideal source + internal resistance)
+//   switch          + ──R── −   (wire resistance when closed, 1 GΩ when open)
+//   block           nothing
 
 import {
   BATTERY_INTERNAL_RESISTANCE,
   LED_MODELS,
+  OPEN_SWITCH_RESISTANCE,
   THERMAL_VOLTAGE,
   WIRE_RESISTANCE,
 } from './constants';
@@ -96,7 +99,7 @@ export function buildCircuit(board: Board): Circuit {
     ports.push({ cell, dir, node: portNode(cell, dir), element, terminal });
 
   board.cells.forEach((tile, cell) => {
-    if (!tile) return;
+    if (!tile || tile.kind === 'block') return;
     if (tile.kind === 'wire') {
       const dirs = getPorts(tile);
       if (dirs.length === 2) {
@@ -129,8 +132,14 @@ export function buildCircuit(board: Board): Circuit {
     const [plus, minus] = getTerminals(tile);
     const p = portNode(cell, plus);
     const m = portNode(cell, minus);
-    if (tile.kind === 'resistor') {
-      const e = add({ type: 'R', a: p, b: m, ohms: tile.ohms, cell });
+    if (tile.kind === 'resistor' || tile.kind === 'switch') {
+      const ohms =
+        tile.kind === 'resistor'
+          ? tile.ohms
+          : tile.closed
+            ? WIRE_RESISTANCE
+            : OPEN_SWITCH_RESISTANCE;
+      const e = add({ type: 'R', a: p, b: m, ohms, cell });
       port(cell, plus, e, 'a');
       port(cell, minus, e, 'b');
     } else if (tile.kind === 'led') {

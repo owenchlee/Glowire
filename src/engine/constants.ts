@@ -6,6 +6,12 @@ export const WIRE_RESISTANCE = 0.01;
 /** Internal resistance of 2 × AA alkaline cells in series (≈ 0.15 Ω each). */
 export const BATTERY_INTERNAL_RESISTANCE = 0.3;
 
+/**
+ * An open switch is modelled as a very large resistance rather than removed, so its
+ * terminals still exist as circuit nodes. 1 GΩ leaks 3 nA at 3 V: physically nothing.
+ */
+export const OPEN_SWITCH_RESISTANCE = 1e9;
+
 /** Battery current above this is a short circuit. */
 export const SHORT_CIRCUIT_CURRENT = 2;
 

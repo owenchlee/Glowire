@@ -1,12 +1,15 @@
 import {
   type BatteryTile,
+  type BlockTile,
   type Board,
   type Direction,
   type LedColor,
   type LedTile,
   type ResistorTile,
   type Rotation,
+  type SwitchTile,
   type Tile,
+  type TwoTerminalTile,
   type WireShape,
   type WireTile,
   E,
@@ -15,13 +18,21 @@ import {
   W,
 } from './types';
 
-/** Ports of each wire shape at rotation 0. */
-const WIRE_PORTS: Record<WireShape, readonly Direction[]> = {
-  straight: [N, S],
-  corner: [N, E],
-  tee: [E, S, W],
-  cross: [N, E, S, W],
+/** Arm bit for each direction. */
+export const armBit = (d: Direction) => 1 << d;
+
+/** Arms of the classic wire shapes at rotation 0. */
+const SHAPE_ARMS: Record<WireShape, number> = {
+  straight: armBit(N) | armBit(S),
+  corner: armBit(N) | armBit(E),
+  tee: armBit(E) | armBit(S) | armBit(W),
+  cross: 15,
 };
+
+/** Directions whose bit is set in an arm mask, in N, E, S, W order. */
+export function armDirections(arms: number): Direction[] {
+  return ([N, E, S, W] as const).filter((d) => arms & armBit(d));
+}
 
 /** Two-terminal parts at rotation 0: [+ terminal, − terminal]. */
 const TWO_TERMINAL_PORTS: readonly [Direction, Direction] = [W, E];
@@ -41,12 +52,19 @@ export function rotateTile<T extends Tile>(tile: T): T {
 
 /** Ports the tile exposes, after rotation. Two-terminal parts list [+, −]. */
 export function getPorts(tile: Tile): Direction[] {
-  const base = tile.kind === 'wire' ? WIRE_PORTS[tile.shape] : TWO_TERMINAL_PORTS;
-  return base.map((d) => rotateDirection(d, tile.rotation));
+  if (tile.kind === 'block') return [];
+  if (tile.kind === 'wire') {
+    const rotated = armDirections(tile.arms).reduce<number>(
+      (mask, d) => mask | armBit(rotateDirection(d, tile.rotation)),
+      0,
+    );
+    return armDirections(rotated);
+  }
+  return TWO_TERMINAL_PORTS.map((d) => rotateDirection(d, tile.rotation));
 }
 
 /** For two-terminal parts: [+ terminal port, − terminal port] after rotation. */
-export function getTerminals(tile: Exclude<Tile, WireTile>): [Direction, Direction] {
+export function getTerminals(tile: TwoTerminalTile): [Direction, Direction] {
   return [
     rotateDirection(TWO_TERMINAL_PORTS[0], tile.rotation),
     rotateDirection(TWO_TERMINAL_PORTS[1], tile.rotation),
@@ -57,7 +75,11 @@ const DX = [0, 1, 0, -1] as const;
 const DY = [-1, 0, 1, 0] as const;
 
 /** Index of the neighbouring cell in `dir`, or -1 at the board edge. */
-export function neighbourIndex(board: Board, cell: number, dir: Direction): number {
+export function neighbourIndex(
+  board: Pick<Board, 'width' | 'height'>,
+  cell: number,
+  dir: Direction,
+): number {
   const x = (cell % board.width) + DX[dir];
   const y = Math.floor(cell / board.width) + DY[dir];
   if (x < 0 || y < 0 || x >= board.width || y >= board.height) return -1;
@@ -74,11 +96,28 @@ export function isConnected(board: Board, cell: number, dir: Direction): boolean
   return !!neighbour && getPorts(neighbour).includes(opposite(dir));
 }
 
-export const wire = (shape: WireShape, rotation: Rotation = 0): WireTile => ({
-  kind: 'wire',
-  shape,
+/** A wire with the given arm mask. */
+export const wireArms = (arms: number): WireTile => ({ kind: 'wire', arms, rotation: 0 });
+
+/** A classic wire shape, turned `rotation` quarter turns clockwise. */
+export const wire = (shape: WireShape, rotation: Rotation = 0): WireTile =>
+  wireArms(
+    armDirections(SHAPE_ARMS[shape]).reduce<number>(
+      (m, d) => m | armBit(rotateDirection(d, rotation)),
+      0,
+    ),
+  );
+
+export const block = (): BlockTile => ({ kind: 'block', rotation: 0, locked: true });
+
+export const switchTile = (closed = false, rotation: Rotation = 0): SwitchTile => ({
+  kind: 'switch',
+  closed,
   rotation,
 });
+
+export const isTwoTerminal = (tile: Tile): tile is TwoTerminalTile =>
+  tile.kind !== 'wire' && tile.kind !== 'block';
 export const resistor = (ohms: number, rotation: Rotation = 0): ResistorTile => ({
   kind: 'resistor',
   ohms,

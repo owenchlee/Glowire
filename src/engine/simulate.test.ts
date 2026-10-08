@@ -128,3 +128,21 @@ describe('simulate', () => {
     expect(r.shortCircuit).toBe(true);
   });
 });
+
+describe('switches and blocks', () => {
+  it('a closed switch acts like a wire, an open one breaks the loop', () => {
+    const closed = simulate(parseBoard(['┌ B< R100 ┐', '└ L>  S1  ┘']));
+    const open = simulate(parseBoard(['┌ B< R100 ┐', '└ L>  S0  ┘']));
+    expect(only(closed, 'led').current).toBeCloseTo(11.148e-3, 4);
+    expect(only(closed, 'switch').status).toBe('OK');
+    expect(only(open, 'led').status).toBe('OFF');
+    expect(Math.abs(only(open, 'led').current)).toBeLessThan(1e-8);
+    expect(only(open, 'switch').status).toBe('OFF');
+  });
+
+  it('blocks have no ports and never conduct', () => {
+    const r = simulate(parseBoard(['┌ B< R100 ┐', '└ L>  #   ┘']));
+    expect(only(r, 'led').status).toBe('OFF');
+    expect(only(r, 'block').current).toBe(0);
+  });
+});
