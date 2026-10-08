@@ -1,3 +1,7 @@
 // Glowire circuit engine: pure TypeScript, no React / React Native imports.
-// Tile model, board -> circuit conversion and the MNA solver land here in step 2.
-export const ENGINE_VERSION = '0.0.0';
+export * from './types';
+export * from './tiles';
+export * from './constants';
+export { simulate } from './simulate';
+export { buildCircuit, type Circuit, type Element } from './circuit';
+export { solveNetlist } from './mna';
