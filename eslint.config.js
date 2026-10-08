@@ -15,6 +15,14 @@ module.exports = defineConfig([
     rules: { 'react/no-unknown-property': 'off' },
   },
   {
+    // R3F mutates three.js objects inside useFrame/effects, and gesture-handler builds
+    // gestures from callbacks that read refs. Both are the libraries' documented
+    // patterns; these React Compiler rules assume pure render-time code. The compiler
+    // itself is not enabled in this project.
+    files: ['src/render/**/*.tsx', 'src/ui/**/*.tsx'],
+    rules: { 'react-hooks/refs': 'off', 'react-hooks/immutability': 'off' },
+  },
+  {
     // The engine must stay pure TypeScript: no React or React Native.
     files: ['src/engine/**/*.ts'],
     rules: {
