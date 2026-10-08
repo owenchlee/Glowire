@@ -1,6 +1,6 @@
 // The whole 3D diorama: camera, lights, floating board, tiles, current flow and effects.
 
-import { Canvas, useFrame, useThree } from '@react-three/fiber/native';
+import { Canvas, useFrame, useThree } from './r3f';
 import { type RefObject, useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 import { StyleSheet } from 'react-native';
 import {

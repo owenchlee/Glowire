@@ -1,7 +1,7 @@
 // Positions a tile on the board and animates it: springy 90° turns, a drop-in bounce
 // when placed, a slide when moved, and a little shake for locked tiles.
 
-import { useFrame } from '@react-three/fiber/native';
+import { useFrame } from './r3f';
 import { useRef } from 'react';
 import type { Group } from 'three';
 

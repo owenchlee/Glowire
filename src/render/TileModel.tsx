@@ -1,6 +1,6 @@
 // One tile in its own local frame (rotation 0). AnimatedTile positions and turns it.
 
-import { useFrame } from '@react-three/fiber/native';
+import { useFrame } from './r3f';
 import { useEffect, useMemo, useRef } from 'react';
 import { Color, type Group, type Material, MeshBasicMaterial, type Sprite } from 'three';
 

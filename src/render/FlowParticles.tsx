@@ -1,7 +1,7 @@
 // Little lights that travel along wires in the direction of conventional current.
 // One InstancedMesh for every particle on the board: a single draw call.
 
-import { useFrame } from '@react-three/fiber/native';
+import { useFrame } from './r3f';
 import { useMemo, useRef } from 'react';
 import { Color, type InstancedMesh, Object3D } from 'three';
 
