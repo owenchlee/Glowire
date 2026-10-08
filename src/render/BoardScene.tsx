@@ -48,9 +48,11 @@ interface Props {
   draggingId: number | null;
   shake: { id: number; key: number };
   celebrateKey: number;
+  /** Where the celebration burst goes (a lit LED, or the board centre). */
+  celebrateCell: number;
   pickerRef: RefObject<ScenePicker | null>;
   onReady: () => void;
-  view: CameraView;
+  view?: CameraView;
 }
 
 export function BoardCanvas(props: Props) {
@@ -73,11 +75,11 @@ function Scene({
   draggingId,
   shake,
   celebrateKey,
+  celebrateCell,
   pickerRef,
   onReady,
-  view,
+  view = 'top',
 }: Props) {
-  const ledCell = result.tiles.findIndex((t) => t?.kind === 'led' && t.status === 'OK');
   return (
     <>
       <CameraRig board={board} pickerRef={pickerRef} onReady={onReady} view={view} />
@@ -103,10 +105,10 @@ function Scene({
       {ghost && <Ghost board={board} ghost={ghost} />}
       <FlowParticles board={board} result={result} />
       <ShortCircuitPulse />
-      {celebrateKey > 0 && ledCell >= 0 && (
+      {celebrateKey > 0 && (
         <Celebration
           key={celebrateKey}
-          position={cellToWorld(ledCell, board.width, board.height)}
+          position={cellToWorld(celebrateCell, board.width, board.height)}
         />
       )}
     </>

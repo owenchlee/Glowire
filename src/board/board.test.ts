@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { E, N, S, W, getPorts, isConnected, led, resistor, wire } from '../engine';
+import { E, N, S, W, getPorts, isConnected, led, resistor } from '../engine';
 import { createLevelBoard } from '../levels/evaluate';
 import { getLevel } from '../levels/levels';
 import {

@@ -162,7 +162,8 @@ function directionBetween(state: BoardState, a: number, b: number): Direction | 
 
 /** The wire in `cell` with an extra arm towards `dir` (or a new one-armed wire). */
 function withArm(tile: Tile | undefined, dir: Direction): Tile {
-  const arms = tile?.kind === 'wire' ? getPorts(tile).reduce((m, d) => m | armBit(d), 0) : 0;
+  const arms =
+    tile?.kind === 'wire' ? getPorts(tile).reduce<number>((m, d) => m | armBit(d), 0) : 0;
   return { ...wireArms(arms | armBit(dir)), locked: tile?.locked };
 }
 
@@ -235,7 +236,7 @@ export function eraseWire(state: BoardState, cell: number): BoardState {
       if (neighbour?.tile.kind !== 'wire' || neighbour.tile.locked) continue;
       const arms = getPorts(neighbour.tile)
         .filter((nd) => nd !== opposite(d))
-        .reduce((m, nd) => m | armBit(nd), 0);
+        .reduce<number>((m, nd) => m | armBit(nd), 0);
       c[n] = arms ? { ...neighbour, tile: wireArms(arms) } : null;
     }
   });

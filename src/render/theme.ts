@@ -11,6 +11,11 @@ export const COLORS = {
   resistorBase: '#fbe0b5',
   ledBase: '#f9d0d8',
   batteryBase: '#d3def8',
+  switchBase: '#e5d9f5',
+  blockStone: '#cfc6dc',
+  bush: '#9fd4a8',
+  switchOn: '#5bbf8f',
+  switchOff: '#b8b0c4',
   lockedRivet: '#8f84a6',
 
   wire: '#e8a93a',

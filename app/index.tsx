@@ -1,3 +1,3 @@
-import { TutorialScreen } from '../src/ui/TutorialScreen';
+import { LevelSelect } from '../src/ui/LevelSelect';
 
-export default TutorialScreen;
+export default LevelSelect;

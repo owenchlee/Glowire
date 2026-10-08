@@ -21,10 +21,12 @@ export function TileModel({ tile, result, ghost = false }: Props) {
   const pick = (mat: Material) => (ghost ? m.ghost : mat);
   const wireMat = pick(wireMaterial(result));
 
+  if (tile.kind === 'block') return <BlockModel />;
+
   return (
     <group>
       <mesh geometry={g.base} material={pick(m.base[tile.kind])} position-y={BASE_HEIGHT / 2} />
-      {tile.locked && !ghost && <Rivets />}
+      {tile.locked && !ghost && tile.kind !== 'switch' && <Rivets />}
       {tile.kind === 'wire' && (
         <>
           {getPorts({ ...tile, rotation: 0 }).map((d) => (
@@ -68,7 +70,65 @@ export function TileModel({ tile, result, ghost = false }: Props) {
         </>
       )}
       {tile.kind === 'led' && <LedModel result={result} ghost={ghost} wireMat={wireMat} />}
+      {tile.kind === 'switch' && (
+        <SwitchModel closed={tile.closed} ghost={ghost} wireMat={wireMat} />
+      )}
     </group>
+  );
+}
+
+/** A cosy stone with a little bush on top: nothing gets through here. */
+function BlockModel() {
+  const { geometry: g, material: m } = getAssets();
+  return (
+    <group>
+      <mesh geometry={g.blockBody} material={m.base.block} position-y={0.21} />
+      <mesh geometry={g.bush} material={m.bush} position={[-0.1, 0.48, 0.05]} />
+      <mesh geometry={g.bush} material={m.bush} position={[0.12, 0.45, -0.08]} scale={0.7} />
+    </group>
+  );
+}
+
+const LEVER_OPEN_ANGLE = 0.65;
+
+/** Two posts and a lever hinged on the left one. Closed: the lever lies across both posts. */
+function SwitchModel({
+  closed,
+  ghost,
+  wireMat,
+}: {
+  closed: boolean;
+  ghost: boolean;
+  wireMat: Material;
+}) {
+  const { geometry: g, material: m } = getAssets();
+  const lever = useRef<Group>(null);
+  useFrame((_, delta) => {
+    if (!lever.current) return;
+    const target = closed ? 0 : LEVER_OPEN_ANGLE;
+    const z = lever.current.rotation.z;
+    lever.current.rotation.z = z + (target - z) * (1 - Math.exp(-delta * 16));
+  });
+  const pick = (mat: Material) => (ghost ? m.ghost : mat);
+  return (
+    <>
+      <Arm dir={W} length={0.24} material={wireMat} />
+      <Arm dir={E} length={0.24} material={wireMat} />
+      <mesh geometry={g.switchPost} material={pick(m.marking)} position={[-0.25, TOP + 0.06, 0]} />
+      <mesh geometry={g.switchPost} material={pick(m.marking)} position={[0.25, TOP + 0.06, 0]} />
+      <group
+        ref={lever}
+        position={[-0.25, TOP + 0.13, 0]}
+        rotation-z={closed ? 0 : LEVER_OPEN_ANGLE}
+      >
+        <mesh geometry={g.lever} material={pick(closed ? wireMat : m.switchOff)} />
+        <mesh
+          geometry={g.knob}
+          material={pick(closed ? m.switchOn : m.switchOff)}
+          position={[0.5, 0.02, 0]}
+        />
+      </group>
+    </>
   );
 }
 

@@ -27,9 +27,6 @@
       "favicon": "./assets/favicon.png"
     },
     "scheme": "glowire",
-    "plugins": ["expo-router", "expo-asset"],
-    "experiments": {
-      "typedRoutes": true
-    }
+    "plugins": ["expo-router", "expo-asset"]
   }
 }

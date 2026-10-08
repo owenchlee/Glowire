@@ -2,7 +2,7 @@
 
 import { StyleSheet, Text, View } from 'react-native';
 
-import { type Direction, type Tile, getPorts, getTerminals } from '../engine';
+import { type Direction, type Tile, type TwoTerminalTile, getPorts, getTerminals } from '../engine';
 import { COLORS, resistorBands } from '../render/theme';
 
 const BASE_COLOR: Record<Tile['kind'], string> = {
@@ -10,6 +10,8 @@ const BASE_COLOR: Record<Tile['kind'], string> = {
   resistor: COLORS.resistorBase,
   led: COLORS.ledBase,
   battery: COLORS.batteryBase,
+  switch: COLORS.switchBase,
+  block: COLORS.blockStone,
 };
 
 export function TileIcon({ tile, size = 52 }: { tile: Tile; size?: number }) {
@@ -91,7 +93,7 @@ export function TileIcon({ tile, size = 52 }: { tile: Tile; size?: number }) {
   );
 }
 
-function Polarity({ tile, size }: { tile: Exclude<Tile, { kind: 'wire' }>; size: number }) {
+function Polarity({ tile, size }: { tile: TwoTerminalTile; size: number }) {
   const [plus, minus] = getTerminals(tile);
   return (
     <>

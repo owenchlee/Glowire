@@ -64,6 +64,11 @@ function create() {
     batteryNub: new CylinderGeometry(0.07, 0.07, 0.06, 16).rotateZ(Math.PI / 2),
     particle: new SphereGeometry(0.045, 8, 6),
     puff: new SphereGeometry(0.09, 10, 8),
+    switchPost: new CylinderGeometry(0.06, 0.07, 0.12, 12),
+    lever: new BoxGeometry(0.5, 0.05, 0.09).translate(0.25, 0, 0),
+    knob: new SphereGeometry(0.075, 12, 10),
+    blockBody: new RoundedBoxGeometry(0.84, 0.42, 0.84, 3, 0.1),
+    bush: new SphereGeometry(0.17, 14, 10),
   };
 
   const wireLevels = [0, 0.3, 0.55, 0.8, 1.1].map((intensity) =>
@@ -76,7 +81,12 @@ function create() {
       resistor: soft(COLORS.resistorBase),
       led: soft(COLORS.ledBase),
       battery: soft(COLORS.batteryBase),
+      switch: soft(COLORS.switchBase),
+      block: soft(COLORS.blockStone),
     },
+    bush: soft(COLORS.bush),
+    switchOn: soft(COLORS.switchOn),
+    switchOff: soft(COLORS.switchOff),
     cellA: soft(COLORS.cellA),
     cellB: soft(COLORS.cellB),
     cellHighlight: soft(COLORS.cellHighlight, { emissive: new Color(COLORS.cellHighlight) }),
