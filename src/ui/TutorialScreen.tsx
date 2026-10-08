@@ -1,5 +1,5 @@
-import { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { Animated, StyleSheet, Text, View } from 'react-native';
+import { useCallback, useLayoutEffect, useMemo, useReducer, useRef, useState } from 'react';
+import { Animated, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -14,9 +14,15 @@ import {
   rotateAt,
   toEngineBoard,
 } from '../board/board';
+import { historyReducer } from '../board/history';
 import { TUTORIAL_TRAY, type TrayItem, createTutorialBoard } from '../board/tutorial';
 import { type Tile, simulate } from '../engine';
-import { BoardCanvas, type GhostPreview, type ScenePicker } from '../render/BoardScene';
+import {
+  BoardCanvas,
+  type CameraView,
+  type GhostPreview,
+  type ScenePicker,
+} from '../render/BoardScene';
 import { COLORS, formatCurrent, formatOhms } from '../render/theme';
 import { pickHint } from './hints';
 import { TileIcon } from './TileIcon';
@@ -31,7 +37,16 @@ const LIFT = 56;
 const ICON = 52;
 
 export function TutorialScreen() {
-  const [board, setBoard] = useState<BoardState>(createTutorialBoard);
+  const [history, dispatch] = useReducer(historyReducer, undefined, () => ({
+    board: createTutorialBoard(),
+    past: [],
+  }));
+  const board = history.board;
+  const edit = useCallback(
+    (fn: (b: BoardState) => BoardState) => dispatch({ type: 'edit', edit: fn }),
+    [],
+  );
+  const [view, setView] = useState<CameraView>('iso');
   // Re-solve the circuit after every change. A 5×5 board solves in well under 1 ms.
   const result = useMemo(() => simulate(toEngineBoard(board)), [board]);
 
@@ -109,7 +124,7 @@ export function TutorialScreen() {
       const { drag: d } = live.current;
       const h = hoverAt(absX, absY);
       if (d) {
-        setBoard((b) => {
+        edit((b) => {
           if (d.source === 'tray') {
             return h?.kind === 'cell' ? placeTile(b, h.cell, d.tile) : b;
           }
@@ -120,7 +135,7 @@ export function TutorialScreen() {
       setDrag(null);
       setHover(null);
     },
-    [hoverAt],
+    [edit, hoverAt],
   );
 
   const cancelDrag = useCallback(() => {
@@ -143,7 +158,7 @@ export function TutorialScreen() {
         const cell = picker.current?.cellAt(e.x, e.y);
         if (cell == null || !live.current.board.cells[cell]) return;
         if (isLocked(live.current.board, cell)) shakeTile(cell);
-        else setBoard((b) => rotateAt(b, cell));
+        else edit((b) => rotateAt(b, cell));
       });
     let start = { x: 0, y: 0 };
     let active = false;
@@ -172,17 +187,34 @@ export function TutorialScreen() {
         active = false;
       });
     return Gesture.Exclusive(pan, tap);
-  }, [cancelDrag, endDrag, moveDrag, shakeTile, startDrag]);
+  }, [cancelDrag, edit, endDrag, moveDrag, shakeTile, startDrag]);
 
   const ghost: GhostPreview | null =
     drag && hover?.kind === 'cell' && isEmpty(board, hover.cell)
       ? { cell: hover.cell, tile: drag.tile }
       : null;
   const draggingId = drag?.source === 'board' ? drag.id : null;
-  const showFloating = drag && !ghost && !(drag.source === 'board' && hover?.kind === 'cell');
+  // Keep the dragged tile visible everywhere except where its ghost already shows.
+  const showFloating = drag && !ghost;
 
   return (
     <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
+      <View style={styles.toolbar}>
+        <ToolButton
+          label="Undo"
+          disabled={history.past.length === 0}
+          onPress={() => dispatch({ type: 'undo' })}
+        />
+        <ToolButton
+          label="Reset"
+          onPress={() => dispatch({ type: 'reset', board: createTutorialBoard() })}
+        />
+        <View style={{ flex: 1 }} />
+        <ToolButton
+          label={view === 'iso' ? 'View: 3D' : 'View: Top'}
+          onPress={() => setView((v) => (v === 'iso' ? 'top' : 'iso'))}
+        />
+      </View>
       <View style={[styles.hint, hint.tone !== 'info' && styles[hint.tone]]}>
         <Text style={styles.hintText}>{hint.text}</Text>
       </View>
@@ -197,6 +229,7 @@ export function TutorialScreen() {
           celebrateKey={celebrateKey}
           pickerRef={picker}
           onReady={onSceneReady}
+          view={view}
         />
         <Labels
           board={board}
@@ -229,6 +262,7 @@ export function TutorialScreen() {
             ))}
           </View>
         )}
+        <Text style={styles.howTo}>Tap a tile to turn it · Drag it off the board to remove it</Text>
       </View>
 
       {showFloating && (
@@ -240,6 +274,30 @@ export function TutorialScreen() {
         </Animated.View>
       )}
     </SafeAreaView>
+  );
+}
+
+function ToolButton({
+  label,
+  onPress,
+  disabled = false,
+}: {
+  label: string;
+  onPress: () => void;
+  disabled?: boolean;
+}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      disabled={disabled}
+      style={({ pressed }) => [
+        styles.toolButton,
+        pressed && styles.toolPressed,
+        disabled && styles.toolDisabled,
+      ]}
+    >
+      <Text style={styles.toolText}>{label}</Text>
+    </Pressable>
   );
 }
 
@@ -337,6 +395,27 @@ function Labels({
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: COLORS.background },
+  toolbar: { flexDirection: 'row', gap: 8, marginHorizontal: 16, marginTop: 4 },
+  toolButton: {
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    borderRadius: 999,
+    backgroundColor: COLORS.card,
+    shadowColor: '#6e5f8a',
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 2 },
+  },
+  toolPressed: { transform: [{ scale: 0.95 }] },
+  toolDisabled: { opacity: 0.4 },
+  toolText: { fontSize: 14, fontWeight: '800', color: COLORS.text },
+  howTo: {
+    textAlign: 'center',
+    fontSize: 12,
+    fontWeight: '600',
+    color: COLORS.textSoft,
+    marginTop: 6,
+  },
   hint: {
     marginHorizontal: 16,
     marginTop: 8,

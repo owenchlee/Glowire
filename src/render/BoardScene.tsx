@@ -32,6 +32,9 @@ export interface ScenePicker {
   project(cell: number, height?: number): { x: number; y: number };
 }
 
+/** 'iso': isometric diorama. 'top': near top-down with a slight tilt (flatter, easier taps). */
+export type CameraView = 'iso' | 'top';
+
 export interface GhostPreview {
   cell: number;
   tile: Tile;
@@ -47,6 +50,7 @@ interface Props {
   celebrateKey: number;
   pickerRef: RefObject<ScenePicker | null>;
   onReady: () => void;
+  view: CameraView;
 }
 
 export function BoardCanvas(props: Props) {
@@ -71,11 +75,12 @@ function Scene({
   celebrateKey,
   pickerRef,
   onReady,
+  view,
 }: Props) {
   const ledCell = result.tiles.findIndex((t) => t?.kind === 'led' && t.status === 'OK');
   return (
     <>
-      <CameraRig board={board} pickerRef={pickerRef} onReady={onReady} />
+      <CameraRig board={board} pickerRef={pickerRef} onReady={onReady} view={view} />
       <hemisphereLight args={['#fff7ee', '#cbbbe6', 1.1]} />
       <directionalLight position={[4, 9, 3]} intensity={1.7} />
       <ambientLight intensity={0.25} />
@@ -108,26 +113,39 @@ function Scene({
   );
 }
 
-/** Isometric orthographic camera that fits the board to the screen, plus picking. */
+/** Orthographic camera that fits the board to the screen, plus picking. */
 function CameraRig({
   board,
   pickerRef,
   onReady,
+  view,
 }: {
   board: BoardState;
   pickerRef: RefObject<ScenePicker | null>;
   onReady: () => void;
+  view: CameraView;
 }) {
   const camera = useThree((s) => s.camera) as OrthographicCamera;
   const size = useThree((s) => s.size);
 
   useLayoutEffect(() => {
-    // True isometric: equal angles to all three axes, looking at the board centre.
-    camera.position.set(10, 10, 10);
-    camera.lookAt(0, 0, 0);
-    const diagonal = Math.hypot(board.width, board.height);
-    // Fit the board's diamond (width) and its projected height, leaving some margin.
-    camera.zoom = Math.min(size.width / (diagonal + 1.4), size.height / (diagonal * 0.6 + 2.2));
+    if (view === 'iso') {
+      // True isometric: equal angles to all three axes, looking at the board centre.
+      camera.position.set(10, 10, 10);
+      camera.lookAt(0, 0, 0);
+      const diagonal = Math.hypot(board.width, board.height);
+      // Fit the board's diamond (width) and its projected height, leaving some margin.
+      camera.zoom = Math.min(size.width / (diagonal + 1.4), size.height / (diagonal * 0.6 + 2.2));
+    } else {
+      // Looking down from 25° off vertical: square cells, but tiles still show their height.
+      const tilt = (25 * Math.PI) / 180;
+      camera.position.set(0, 10 * Math.cos(tilt), 10 * Math.sin(tilt));
+      camera.lookAt(0, 0, 0);
+      camera.zoom = Math.min(
+        size.width / (board.width + 0.9),
+        size.height / (board.height * Math.cos(tilt) + 1.6),
+      );
+    }
     camera.updateProjectionMatrix();
 
     const raycaster = new Raycaster();
@@ -147,7 +165,7 @@ function CameraRig({
       },
     };
     onReady();
-  }, [camera, size.width, size.height, board.width, board.height, pickerRef, onReady]);
+  }, [camera, size.width, size.height, board.width, board.height, pickerRef, onReady, view]);
 
   return null;
 }
