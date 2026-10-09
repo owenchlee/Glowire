@@ -13,12 +13,14 @@ export const DIRECTION_NAMES = ['N', 'E', 'S', 'W'] as const;
 export type Rotation = 0 | 1 | 2 | 3;
 
 export type WireShape = 'straight' | 'corner' | 'tee' | 'cross';
-export type LedColor = 'red';
+export type LedColor = 'red' | 'green' | 'blue';
 
 interface TileBase {
   rotation: Rotation;
   /** Pre-placed by the level: cannot be moved, rotated or removed. */
   locked?: boolean;
+  /** Twist levels: a locked tile the player may still turn. */
+  spin?: boolean;
 }
 
 /**

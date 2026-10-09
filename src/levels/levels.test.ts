@@ -1,15 +1,17 @@
 import { describe, expect, it } from 'vitest';
 
 import { type BoardState, eraseWire, fromEngineBoard, rotateAt, wireCount } from '../board/board';
-import { type Tile, parseBoard } from '../engine';
+import { type Tile, getPorts, parseBoard, simulate } from '../engine';
 import {
   createLevelBoard,
   describeGoal,
   evaluateLevel,
+  ledNamesFor,
   levelLabels,
   remainingParts,
 } from './evaluate';
-import { LEVELS, getLevel } from './levels';
+import { CHAPTERS, LEVELS, getLevel, levelNumber, nextLevel } from './levels';
+import type { LevelDef } from './types';
 
 /** A tile's identity, ignoring lock flags and switch positions. */
 const shape = (tile: Tile) => {
@@ -22,13 +24,15 @@ function solved(id: number, picture: string[]): BoardState {
   const level = getLevel(id)!;
   const start = createLevelBoard(level);
   const board = fromEngineBoard(parseBoard(picture));
+  expect(board.width, `level ${id} width`).toBe(start.width);
+  expect(board.height, `level ${id} height`).toBe(start.height);
   return {
     ...board,
     cells: board.cells.map((p, i) => {
       const fixed = start.cells[i];
       if (fixed?.tile.locked) {
         // The solution must leave every locked part exactly where it was.
-        expect(p && shape(p.tile)).toEqual(shape(fixed.tile));
+        expect(p && shape(p.tile), `level ${id} cell ${i}`).toEqual(shape(fixed.tile));
         return { ...p!, tile: fixed.tile };
       }
       return p;
@@ -36,7 +40,11 @@ function solved(id: number, picture: string[]): BoardState {
   };
 }
 
+/** Evaluate a picture of a board for a level. */
+const check = (id: number, picture: string[]) => evaluateLevel(getLevel(id)!, solved(id, picture));
+
 const SOLUTIONS: Record<number, string[]> = {
+  // ---- Chapter 1 ----
   1: ['. .  .    .  .', '. ┌  R220 ┐  .', '. B^ .    Lv .', '. └  ─    ┘  .', '. .  .    .  .'],
   2: ['┌  ─ R220 ─ ┐', '│  . #    . │', 'B^ . #    . Lv', '│  . #    . │', '└  ─ ─    ─ ┘'],
   4: [
@@ -64,17 +72,109 @@ const SOLUTIONS: Record<number, string[]> = {
     '│  .    #  .    │',
     '└  R100 S0 R100 ┘',
   ],
+
+  // ---- Chapter 2 ----
+  11: [
+    '. .  .    .   .',
+    '. ┌  R220 ┐   .',
+    '. B^ .    Lgv .',
+    '. └  ─    ┘   .',
+    '. .  .    .   .',
+  ],
+  12: ['. .  . .   .', '. ┌  ─ ┐   .', '. B^ . Lbv .', '. └  ─ ┘   .', '. .  . .   .'],
+  13: ['.  . .     . .', '┌  ─ ┬     ─ ┐', 'B^ . Lv    . Lbv', '│  . R100v . │', '└  ─ ┴     ─ ┘'],
+  14: [
+    '.  . .     . .     .',
+    '┌  ─ ┬     ─ ┬     ┐',
+    'B^ . Lv    . Lgv   Lbv',
+    '│  . R100v . R220v │',
+    '└  ─ ┴     ─ ┴     ┘',
+  ],
+  15: [
+    '.  . .     .     .',
+    '┌  ─ ┬     ┬     ┐',
+    'B^ . Lv    Lgv   Lbv',
+    '│  . R100v R220v │',
+    '└  ─ ┴     ┴     ┘',
+  ],
+  16: [
+    '.  .    .   . .',
+    '┌  R220 ┬   ─ ┐',
+    'B^ .    Lv  . Lgv',
+    '│  .    S0v . │',
+    '└  ─    ┴   ─ ┘',
+  ],
+  17: [
+    '.  . .     ┌ S0   ┐',
+    '┌  ─ ┬     ┴ R220 ┤',
+    'B^ . Lv    . .    Lbv',
+    '│  . R100v . .    │',
+    '└  ─ ┴     ─ ─    ┘',
+  ],
+  18: [
+    '.  .    .   .   . .',
+    '┌  R220 ┬   ┬   ─ ┐',
+    'B^ .    Lv  Lgv . Lbv',
+    '│  .    S0v S0v . │',
+    '└  ─    ┴   ┴   ─ ┘',
+  ],
+
+  // ---- Chapter 3 ----
+  19: ['. .  .    .  .', '. ┌  R220 ┐  .', '. B^ .    Lv .', '. B^ .    Lv .', '. └  ─    ┘  .'],
+  20: ['.  . .  .  .', '┌  ─ ─  L> ┐', 'B^ . .  .  Lv', 'B^ . .  .  │', '└  ─ L< ─  ┘'],
+  21: [
+    '.   .    .    .    .',
+    '┌   R100 R100 R100 ┐',
+    'B9^ .    .    .    Lv',
+    '└   ─    ─    ─    ┘',
+    '.   .    .    .    .',
+  ],
+  22: ['. .  .    .  .', '. ┌  R220 ┐  .', '. B^ .    Lv .', '. B^ .    Lv .', '. └  ─    ┘  .'],
+  23: [
+    '.   .    .  .  .  .',
+    '┌   R100 L> L> ┬  ┐',
+    'B6^ .    .  .  Lv S0v',
+    '└   ─    ─  ─  ┴  ┘',
+    '.   .    .  .  .  .',
+  ],
+  24: [
+    '.  . .   . . .',
+    '┌  ─ ┬   ─ ─ ┐',
+    'B^ . Lv  . . Lbv',
+    'B^ . Lv  . . R220v',
+    '│  . Lgv . . │',
+    '└  ─ ┴   ─ ─ ┘',
+  ],
+  25: [
+    '. ┌  R220 ─   ─ ┐',
+    '. B^ .    .   . Lv',
+    '. ├  ─    ┐   . Lv',
+    '. B^ .    Lbv . │',
+    '. └  ─    ┴   ─ ┘',
+  ],
 };
 
 describe('levels', () => {
-  it('has ten levels with unique ids and valid pictures', () => {
-    expect(LEVELS.map((l) => l.id)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
+  it('has unique, ordered ids and valid pictures', () => {
+    const ids = LEVELS.map((l) => l.id);
+    expect(ids).toEqual([...ids].sort((a, b) => a - b));
+    expect(new Set(ids).size).toBe(ids.length);
     for (const level of LEVELS) {
       const labels = levelLabels(level);
-      for (const g of level.goals) expect(labels[g.led]).toBeDefined();
-      for (const g of level.goals)
+      for (const g of level.goals) {
+        if (g.kind === 'lit' || g.kind === 'dark') expect(labels[g.led]).toBeDefined();
+        if (g.kind === 'only') for (const l of g.leds) expect(labels[l]).toBeDefined();
         for (const s of Object.keys(g.when ?? {})) expect(labels[s]).toBeDefined();
+      }
     }
+  });
+
+  it('numbers levels within their chapter and links them in order', () => {
+    expect(CHAPTERS.map((c) => c.id)).toEqual([1, 2, 3, 4]);
+    expect(levelNumber(1)).toBe('1-1');
+    expect(levelNumber(11)).toBe('2-1');
+    expect(nextLevel(10)?.id).toBe(11);
+    expect(nextLevel(LEVELS.at(-1)!.id)).toBeUndefined();
   });
 
   it('no level starts out solved', () => {
@@ -83,6 +183,13 @@ describe('levels', () => {
         false,
       );
     }
+  });
+
+  it('every level has a worked solution', () => {
+    const missing = LEVELS.filter((l) => !SOLUTIONS[l.id] && l.id !== 3 && !l.twist).map(
+      (l) => l.id,
+    );
+    expect(missing).toEqual([]);
   });
 
   for (const [id, picture] of Object.entries(SOLUTIONS)) {
@@ -109,7 +216,7 @@ describe('levels', () => {
     expect(evaluateLevel(level, board).complete).toBe(true);
   });
 
-  it('the obvious wrong answers fail', () => {
+  it('chapter 1: the obvious wrong answers fail', () => {
     // Level 4: the 220 Ω resistor is too bright for "dim".
     const tooBright = solved(
       4,
@@ -117,37 +224,305 @@ describe('levels', () => {
     );
     expect(evaluateLevel(getLevel(4)!, tooBright).complete).toBe(false);
     // Level 6: one 220 Ω resistor isn't bright enough.
-    const single = solved(6, [
-      '.  . .    . .',
-      '┌  ─ R220 ─ ┐',
-      'B^ . .    . Lv',
-      '└  ─ ─    ─ ┘',
-      '.  . .    . .',
-    ]);
-    expect(evaluateLevel(getLevel(6)!, single).complete).toBe(false);
+    expect(
+      check(6, [
+        '.  . .    . .',
+        '┌  ─ R220 ─ ┐',
+        'B^ . .    . Lv',
+        '└  ─ ─    ─ ┘',
+        '.  . .    . .',
+      ]).complete,
+    ).toBe(false);
     // Level 7: the short way puts B in series with A, so neither lights.
-    const trap = solved(7, [
+    const trap = check(7, [
       '.  . .    . .',
       '┌  ─ L>   ─ ┐',
       'B^ . .    . Lv',
       '└  ─ R220 ─ ┘',
       '.  . .    . .',
     ]);
-    expect(evaluateLevel(getLevel(7)!, trap).goals[0]!.met).toBe(false);
-    // Level 10: switches in parallel (OR) instead of series (AND) fails.
-    const level9Style = solved(9, SOLUTIONS[9]!);
-    expect(evaluateLevel(getLevel(9)!, level9Style).complete).toBe(true);
+    expect(trap.goals[0]!.met).toBe(false);
+  });
+});
+
+describe('chapter 2: colours', () => {
+  it('2-1: only the 220 Ω resistor gives green a medium glow', () => {
+    for (const r of ['R100', 'R470']) {
+      expect(
+        check(
+          11,
+          SOLUTIONS[11]!.map((row) => row.replace('R220', r)),
+        ).complete,
+        r,
+      ).toBe(false);
+    }
   });
 
+  it('2-2: a resistor makes blue dim; no resistor is bright and safe', () => {
+    const withResistor = check(12, [
+      '. .  .    .   .',
+      '. ┌  R100 ┐   .',
+      '. B^ .    Lbv .',
+      '. └  ─    ┘   .',
+      '. .  .    .   .',
+    ]);
+    expect(withResistor.goals[0]!.met).toBe(false);
+  });
+
+  it('2-3: a shared resistor starves blue; none at all burns red', () => {
+    const shared = check(13, [
+      '.  .    .  . .',
+      '┌  R100 ┬  ─ ┐',
+      'B^ .    Lv . Lbv',
+      '│  .    │  . │',
+      '└  ─    ┴  ─ ┘',
+    ]);
+    expect(shared.goals.map((g) => g.met)).toEqual([true, false]);
+    const none = check(
+      13,
+      SOLUTIONS[13]!.map((r) => r.replace('R100v', '│    ')),
+    );
+    expect(none.problem).toBe('burn');
+    // Resistor on the blue side instead: red burns.
+    const wrongSide = check(13, [
+      '.  . .  . .',
+      '┌  ─ ┬  ─ ┐',
+      'B^ . Lv . Lbv',
+      '│  . │  . R100v',
+      '└  ─ ┴  ─ ┘',
+    ]);
+    expect(wrongSide.problem).toBe('burn');
+  });
+
+  it('2-4: swapping the red and green resistors misses both bands', () => {
+    const swapped = check(14, [
+      '.  . .     . .     .',
+      '┌  ─ ┬     ─ ┬     ┐',
+      'B^ . Lv    . Lgv   Lbv',
+      '│  . R220v . R100v │',
+      '└  ─ ┴     ─ ┴     ┘',
+    ]);
+    expect(swapped.goals.map((g) => g.met)).toEqual([false, false, true]);
+  });
+
+  it('2-5: green sharing red’s resistor is too faint, even once blue is freed', () => {
+    const level = getLevel(15)!;
+    const start = evaluateLevel(level, createLevelBoard(level));
+    expect(start.goals.map((g) => g.met)).toEqual([true, false, false]);
+    // Quick fix: give blue its own path from the battery, leave red and green sharing.
+    const blueFreed = check(15, [
+      '┌  ─    ─  ─   ┐',
+      '├  R100 ┬  ┐   │',
+      'B^ .    Lv Lgv Lbv',
+      '└  ─    ┴  ┴   ┘',
+      '.  .    .  .   .',
+    ]);
+    expect(blueFreed.goals.map((g) => g.met)).toEqual([true, false, true]);
+    const result = simulate(parseBoard(level.board));
+    const leds = result.tiles.filter((t) => t?.kind === 'led');
+    expect(leds.map((t) => t!.status)).toEqual(['OK', 'OK', 'OFF']); // green faint, blue dark
+    expect(leds[1]!.brightness).toBeLessThan(0.1);
+  });
+
+  it('2-6: separate resistors light red AND green; a 100 Ω shared one lets green glow', () => {
+    // Each LED fed through its own resistor: switch ON lights both.
+    const separate = check(16, [
+      '┌  ─    ─   ─ ┐',
+      '├  R220 ┐   . R100v',
+      'B^ .    Lv  . Lgv',
+      '│  .    S0v . │',
+      '└  ─    ┴   ─ ┘',
+    ]);
+    expect(separate.goals.map((g) => g.met)).toEqual([false, true]);
+    const shared100 = check(
+      16,
+      SOLUTIONS[16]!.map((r) => r.replace('R220', 'R100')),
+    );
+    expect(shared100.goals.map((g) => g.met)).toEqual([false, true]);
+  });
+
+  it('2-7: red burns without its resistor; swapped resistors leave red too dim', () => {
+    const bare = check(
+      17,
+      SOLUTIONS[17]!.map((r) => r.replace('R100v', '│    ')),
+    );
+    expect(bare.problem).toBe('burn');
+    const swapped = check(
+      17,
+      SOLUTIONS[17]!.map((r) => r.replace('R100v', 'R220v').replace('R220 ', 'R100 ')),
+    );
+    expect(swapped.goals.map((g) => g.met)).toEqual([true, true, false, false]);
+  });
+
+  it('2-8: with 100 Ω, green still glows faintly while red is on', () => {
+    const r100 = check(
+      18,
+      SOLUTIONS[18]!.map((r) => r.replace('R220', 'R100')),
+    );
+    expect(r100.goals.map((g) => g.met)).toEqual([false, true, true]);
+  });
+});
+
+describe('chapter 3: power up', () => {
+  it('3-1: one battery is not enough; a backwards one cancels; no resistor burns', () => {
+    const one = SOLUTIONS[19]!.map((r, y) => (y === 3 ? r.replace('B^', '│ ') : r));
+    expect(check(19, one).goals[0]!.met).toBe(false);
+    const backwards = SOLUTIONS[19]!.map((r, y) => (y === 3 ? r.replace('B^', 'Bv') : r));
+    expect(check(19, backwards).goals[0]!.met).toBe(false);
+    const noResistor = SOLUTIONS[19]!.map((r) => r.replace('R220', '─   '));
+    expect(check(19, noResistor).problem).toBe('burn');
+  });
+
+  it('3-2: three LEDs on 3 V stay dark', () => {
+    const single = SOLUTIONS[20]!.map((r, y) => (y === 3 ? r.replace('B^', '│ ') : r));
+    expect(check(20, single).goals[0]!.met).toBe(false);
+  });
+
+  it('3-3: one or two 100 Ω resistors burn the LED on 9 V', () => {
+    for (const row of ['┌   R100 ─    ─    ┐', '┌   R100 R100 ─    ┐']) {
+      const picture = SOLUTIONS[21]!.map((r, y) => (y === 1 ? row : r));
+      expect(check(21, picture).problem).toBe('burn');
+    }
+  });
+
+  it('3-4: fixing only some of the faults is not enough', () => {
+    const level = getLevel(22)!;
+    const start = createLevelBoard(level);
+    const battery = 3 * 5 + 1;
+    const led = 2 * 5 + 3;
+    const flipBattery = rotateAt(rotateAt(start, battery), battery);
+    const flipBoth = rotateAt(rotateAt(flipBattery, led), led);
+    expect(evaluateLevel(level, flipBattery).complete).toBe(false);
+    expect(evaluateLevel(level, flipBoth).complete).toBe(false); // still the 1 kΩ: too dim
+    const result = simulate(parseBoard(level.board));
+    expect(result.batteryCurrent).toBeCloseTo(0, 6); // the batteries cancel
+  });
+
+  it('3-5: with no resistor (or 220 Ω) the switch spoils one of the states', () => {
+    const none = check(
+      23,
+      SOLUTIONS[23]!.map((r) => r.replace('R100', '─   ')),
+    );
+    expect(none.problem).toBe('burn');
+    const r220 = check(
+      23,
+      SOLUTIONS[23]!.map((r) => r.replace('R100', 'R220')),
+    );
+    expect(r220.goals.map((g) => g.met)).toEqual([false, true]);
+  });
+
+  it('3-6: on 3 V the four LEDs cannot all be bright', () => {
+    // Best effort on one battery: blue direct, red on 100 Ω, red + green sharing 220 Ω.
+    const oneBattery = check(24, [
+      '.  . .     .     .   .',
+      '┌  ─ ┬     ┬     ┬   ┐',
+      'B^ . Lv    Lv    Lgv Lbv',
+      '│  . R100v R220v │   │',
+      '│  . │     │     │   │',
+      '└  ─ ┴     ┴     ┴   ┘',
+    ]);
+    expect(oneBattery.complete).toBe(false);
+  });
+
+  it('3-7: blue across the whole 6 V burns', () => {
+    const fullStack = check(25, [
+      '┌ ┬  R220 ─   ─ ┐',
+      '│ B^ .    .   . Lv',
+      '│ │  .    .   . Lv',
+      '│ B^ .    Lbv . │',
+      '└ ┴  ─    ┴   ─ ┘',
+    ]);
+    expect(fullStack.complete).toBe(false);
+  });
+});
+
+describe('chapter 4: twist', () => {
+  const twists = LEVELS.filter((l) => l.twist);
+  /** The level's picture as the player must turn it back to: all pieces locked. */
+  const drawn = (level: LevelDef) => {
+    const board = parseBoard(level.board);
+    return fromEngineBoard({
+      ...board,
+      cells: board.cells.map((t) => (t ? { ...t, locked: true } : null)),
+    });
+  };
+
+  it('has twist levels', () => expect(twists.length).toBeGreaterThan(0));
+
+  for (const level of twists) {
+    it(`${levelNumber(level.id)} turns back into its solved picture`, () => {
+      expect(evaluateLevel(level, drawn(level)).complete).toBe(true);
+      const start = createLevelBoard(level);
+      const goal = drawn(level);
+      start.cells.forEach((placed, i) => {
+        const want = goal.cells[i]!;
+        if (!placed) return expect(want).toBeNull();
+        expect(placed.tile.locked).toBe(true);
+        if (!placed.tile.spin) return expect(placed.tile.rotation).toBe(want.tile.rotation);
+        // Some number of taps turns the piece back to its solved ports.
+        let state = start;
+        const reachable = [0, 1, 2, 3].some(() => {
+          state = rotateAt(state, i);
+          return (
+            getPorts(state.cells[i]!.tile).join() === getPorts(want.tile).join() &&
+            (want.tile.kind !== 'led' || state.cells[i]!.tile.rotation === want.tile.rotation)
+          );
+        });
+        expect(reachable, `cell ${i}`).toBe(true);
+      });
+    });
+
+    it(`${levelNumber(level.id)} is not solved by random turning`, () => {
+      const start = createLevelBoard(level);
+      let seed = level.id;
+      const random = () => (seed = (seed * 1103515245 + 12345) >>> 0) / 4294967296;
+      let wins = 0;
+      for (let k = 0; k < 300; k++) {
+        let state = start;
+        start.cells.forEach((p, i) => {
+          if (!p?.tile.spin) return;
+          for (let n = Math.floor(random() * 4); n > 0; n--) state = rotateAt(state, i);
+        });
+        if (evaluateLevel(level, state).complete) wins++;
+      }
+      expect(wins).toBeLessThan(6); // under 2 %
+    });
+  }
+
+  it('twist pieces turn on tap but cannot be erased', () => {
+    const level = getLevel(26)!;
+    const start = createLevelBoard(level);
+    const wire = start.cells.findIndex((p) => p?.tile.kind === 'wire');
+    expect(eraseWire(start, wire)).toBe(start);
+    expect(rotateAt(start, wire)).not.toBe(start);
+    const battery = start.cells.findIndex((p) => p?.tile.kind === 'battery');
+    expect(rotateAt(start, battery)).toBe(start);
+  });
+});
+
+describe('goal text', () => {
   it('describes goals in plain English', () => {
     const l10 = getLevel(10)!;
-    expect(describeGoal(l10.goals[0]!, 1, 2)).toBe(
+    const names10 = ledNamesFor(l10);
+    expect(describeGoal(l10.goals[0]!, names10, 2)).toBe(
       'Light the LED at medium brightness when S1 and S2 are ON',
     );
-    expect(describeGoal(l10.goals[1]!, 1, 2)).toBe('Keep the LED dark when only S1 is ON');
-    expect(describeGoal(getLevel(8)!.goals[1]!, 1, 1)).toBe(
+    expect(describeGoal(l10.goals[1]!, names10, 2)).toBe('Keep the LED dark when only S1 is ON');
+    expect(describeGoal(getLevel(8)!.goals[1]!, ledNamesFor(getLevel(8)!), 1)).toBe(
       'Keep the LED dark when the switch is OFF',
     );
-    expect(describeGoal(getLevel(7)!.goals[1]!, 2, 0)).toBe('Keep B dark');
+    expect(describeGoal(getLevel(7)!.goals[1]!, ledNamesFor(getLevel(7)!), 0)).toBe('Keep B dark');
+  });
+
+  it('names LEDs by colour when that is unambiguous', () => {
+    const stopGo = getLevel(16)!;
+    const names = ledNamesFor(stopGo);
+    expect(describeGoal(stopGo.goals[0]!, names, 1)).toBe(
+      'Light only the red LED when the switch is ON',
+    );
+    const middle = getLevel(25)!;
+    expect(ledNamesFor(middle)).toEqual({ A: 'A', B: 'B', C: 'the blue LED' });
+    expect(describeGoal(middle.goals[0]!, ledNamesFor(middle), 0)).toBe('Light every LED brightly');
+    expect(describeGoal(getLevel(24)!.goals[0]!, {}, 0)).toBe('Light all 4 LEDs brightly');
   });
 });

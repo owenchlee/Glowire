@@ -31,23 +31,26 @@ import { historyReducer } from '../board/history';
 import {
   type SimulationResult,
   type Tile,
+  battery,
   isTwoTerminal,
   led,
+  parseToken,
   resistor,
   simulate,
-  switchTile,
 } from '../engine';
 import {
+  cellsMeantDark,
   createLevelBoard,
   describeGoal,
   evaluateLevel,
+  ledNamesFor,
   levelLabels,
   remainingParts,
 } from '../levels/evaluate';
-import { LEVELS } from '../levels/levels';
+import { chapterOf, levelNumber, nextLevel as levelAfter } from '../levels/levels';
 import type { LevelDef, PartKey } from '../levels/types';
 import { BoardCanvas, type GhostPreview, type ScenePicker } from '../render/BoardScene';
-import { COLORS, formatCurrent, formatOhms } from '../render/theme';
+import { COLORS, LED_PALETTE, formatCurrent, formatOhms } from '../render/theme';
 import { pickHint } from './hints';
 import { useProgress } from './progress';
 import { TileIcon } from './TileIcon';
@@ -61,14 +64,31 @@ type Hover = { kind: 'cell'; cell: number } | { kind: 'trash' } | { kind: 'off' 
 const LIFT = 56;
 const ICON = 52;
 
-const PART_ORDER: PartKey[] = ['led', 'r100', 'r220', 'r470', 'r1000'];
+const PART_ORDER: PartKey[] = [
+  'battery',
+  'led',
+  'ledGreen',
+  'ledBlue',
+  'r100',
+  'r220',
+  'r470',
+  'r1000',
+];
 
 function tileForPart(key: PartKey): Tile {
-  return key === 'led' ? led(0) : resistor(Number(key.slice(1)), 0);
+  if (key === 'battery') return battery(0);
+  if (key === 'led') return led(0);
+  if (key === 'ledGreen') return led(0, 'green');
+  if (key === 'ledBlue') return led(0, 'blue');
+  return resistor(Number(key.slice(1)), 0);
 }
 
 function partLabel(key: PartKey): string {
-  return key === 'led' ? 'LED' : formatOhms(Number(key.slice(1)));
+  if (key === 'battery') return '3 V';
+  if (key === 'led') return 'Red';
+  if (key === 'ledGreen') return 'Green';
+  if (key === 'ledBlue') return 'Blue';
+  return formatOhms(Number(key.slice(1)));
 }
 
 export function LevelScreen({ level }: { level: LevelDef }) {
@@ -125,7 +145,9 @@ export function LevelScreen({ level }: { level: LevelDef }) {
     if (won) markComplete(level.id);
   }, [won, level.id, markComplete]);
 
-  const hint = pickHint(level.intro, result, evaluation, outOfWire);
+  const meantDark = useMemo(() => cellsMeantDark(level), [level]);
+  const engineBoard = useMemo(() => toEngineBoard(board), [board]);
+  const hint = pickHint(level.intro, engineBoard, result, evaluation, outOfWire, meantDark);
   const onSceneReady = useCallback(() => setSceneVersion((v) => v + 1), []);
 
   const measure = useCallback(() => {
@@ -238,6 +260,7 @@ export function LevelScreen({ level }: { level: LevelDef }) {
         const tile = cell == null ? undefined : b.cells[cell]?.tile;
         if (cell == null || !tile) return;
         if (tile.kind === 'switch') edit((s) => toggleSwitch(s, cell));
+        else if (tile.spin) edit((s) => rotateAt(s, cell));
         else if (isLocked(b, cell)) shakeTile(cell);
         else if (tile.kind === 'wire') edit((s) => eraseWire(s, cell));
         else edit((s) => rotateAt(s, cell));
@@ -264,6 +287,7 @@ export function LevelScreen({ level }: { level: LevelDef }) {
           );
           return;
         }
+        if (level.twist) return; // twist levels: turning only, no new wire
         // Empty cells, wires and fixed parts (like the battery) start a wire.
         g.mode = 'draw';
         g.last = cell;
@@ -290,7 +314,7 @@ export function LevelScreen({ level }: { level: LevelDef }) {
         g.board = null;
       });
     return Gesture.Exclusive(pan, tap);
-  }, [cancelDrag, edit, endDrag, level.wireBudget, moveDrag, shakeTile, startDrag]);
+  }, [cancelDrag, edit, endDrag, level.twist, level.wireBudget, moveDrag, shakeTile, startDrag]);
 
   const ghost: GhostPreview | null =
     drag && hover?.kind === 'cell' && canDropOn(board, hover.cell)
@@ -308,7 +332,11 @@ export function LevelScreen({ level }: { level: LevelDef }) {
     result.tiles.findIndex((t) => t?.kind === 'led' && t.status === 'OK') >= 0
       ? result.tiles.findIndex((t) => t?.kind === 'led' && t.status === 'OK')
       : Math.floor(board.cells.length / 2);
-  const nextLevel = LEVELS.find((l) => l.id === level.id + 1);
+  const ledNames = useMemo(() => ledNamesFor(level), [level]);
+  const trayKeys = PART_ORDER.filter((k) => (level.inventory[k] ?? 0) > 0);
+  const next = levelAfter(level.id);
+  const nextChapter =
+    next && chapterOf(next.id) !== chapterOf(level.id) ? chapterOf(next.id) : null;
   const budget = level.wireBudget;
 
   return (
@@ -319,7 +347,7 @@ export function LevelScreen({ level }: { level: LevelDef }) {
           onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))}
         />
         <Text style={styles.levelTitle} numberOfLines={1}>
-          {level.id}. {level.title}
+          {levelNumber(level.id)} {level.title}
         </Text>
         <ToolButton
           label="Undo"
@@ -339,7 +367,7 @@ export function LevelScreen({ level }: { level: LevelDef }) {
       <View style={styles.goals}>
         {evaluation.goals.map(({ goal, met }, i) => (
           <Text key={i} style={[styles.goal, met && styles.goalMet]}>
-            {met ? '✓' : '○'} {describeGoal(goal, ledCount, switchCount)}
+            {met ? '✓' : '○'} {describeGoal(goal, ledNames, switchCount)}
           </Text>
         ))}
         {budget !== null && (
@@ -381,11 +409,12 @@ export function LevelScreen({ level }: { level: LevelDef }) {
           <View style={[styles.trash, hover?.kind === 'trash' && styles.trashActive]}>
             <Text style={styles.trashText}>Drop here to remove</Text>
           </View>
-        ) : (
-          <View style={styles.tray}>
-            {PART_ORDER.filter((k) => (level.inventory[k] ?? 0) > 0).map((key) => (
+        ) : trayKeys.length === 0 ? null : (
+          <View style={[styles.tray, trayKeys.length > 4 && styles.trayCompact]}>
+            {trayKeys.map((key) => (
               <TraySlot
                 key={key}
+                size={trayKeys.length > 5 ? 44 : ICON}
                 tile={tileForPart(key)}
                 label={partLabel(key)}
                 count={remaining[key] ?? 0}
@@ -398,8 +427,9 @@ export function LevelScreen({ level }: { level: LevelDef }) {
           </View>
         )}
         <Text style={styles.howTo}>
-          Drag across the board to draw wire · Tap a wire to erase it{'\n'}Tap a part to turn it ·
-          Drag a part off the board to remove it
+          {level.twist
+            ? 'Tap a piece to turn it · Tap a switch to flip it'
+            : 'Drag across the board to draw wire · Tap a wire to erase it\nTap a part to turn it · Drag a part off the board to remove it'}
         </Text>
       </View>
 
@@ -417,11 +447,15 @@ export function LevelScreen({ level }: { level: LevelDef }) {
           <Text style={styles.winTitle}>Level solved! ⚡</Text>
           <View style={styles.winButtons}>
             <ToolButton label="Keep playing" onPress={() => setShowWin(false)} />
-            {nextLevel ? (
+            {next ? (
               <ToolButton
-                label={`Next: ${nextLevel.title} ›`}
+                label={
+                  nextChapter
+                    ? `Chapter ${nextChapter.id}: ${nextChapter.title} ›`
+                    : `Next: ${next.title} ›`
+                }
                 primary
-                onPress={() => router.replace(`/level/${nextLevel.id}`)}
+                onPress={() => router.replace(`/level/${next.id}`)}
               />
             ) : (
               <ToolButton label="All levels ›" primary onPress={() => router.replace('/')} />
@@ -434,10 +468,7 @@ export function LevelScreen({ level }: { level: LevelDef }) {
         <View style={styles.modalBackdrop}>
           <View style={styles.modal}>
             <Text style={styles.modalKicker}>New part</Text>
-            <TileIcon
-              tile={level.newPart.name === 'Switch' ? switchTile(true) : resistor(220)}
-              size={72}
-            />
+            <TileIcon tile={parseToken(level.newPart.token) ?? resistor(220)} size={72} />
             <Text style={styles.modalTitle}>{level.newPart.name}</Text>
             <Text style={styles.modalText}>{level.newPart.text}</Text>
             <ToolButton label="Got it!" primary onPress={() => setShowIntro(false)} />
@@ -476,6 +507,7 @@ function ToolButton({
 }
 
 function TraySlot({
+  size,
   tile,
   label,
   count,
@@ -484,6 +516,7 @@ function TraySlot({
   onEnd,
   onCancel,
 }: {
+  size: number;
   tile: Tile;
   label: string;
   count: number;
@@ -515,7 +548,7 @@ function TraySlot({
   return (
     <GestureDetector gesture={gesture}>
       <View style={[styles.slot, count <= 0 && styles.slotEmpty]}>
-        <TileIcon tile={tile} size={ICON} />
+        <TileIcon tile={tile} size={size} />
         <Text style={styles.slotLabel}>{label}</Text>
         <View style={styles.countBadge}>
           <Text style={styles.countText}>×{Math.max(0, count)}</Text>
@@ -547,24 +580,27 @@ function Labels({
 }) {
   if (!picker.current || version === 0) return null;
   const nameAt = new Map(Object.entries(labels).map(([name, cell]) => [cell, name]));
-  const tags: { key: number; x: number; y: number; text: string; tone?: 'led' | 'on' }[] = [];
+  const tags: { key: number; x: number; y: number; text: string; tone?: string }[] = [];
   board.cells.forEach((placed, cell) => {
     if (!placed || placed.id === hiddenId) return;
     const t = placed.tile;
     const r = result.tiles[cell];
     const name = nameAt.get(cell);
     let text: string | null = null;
-    let tone: 'led' | 'on' | undefined;
+    let tone: string | undefined;
     if (t.kind === 'resistor') text = formatOhms(t.ohms);
     else if (t.kind === 'battery') text = `${t.volts} V`;
     else if (t.kind === 'switch') {
       text = `${switchCount > 1 && name ? `${name} ` : ''}${t.closed ? 'ON' : 'OFF'}`;
-      tone = t.closed ? 'on' : undefined;
+      tone = t.closed ? 'rgba(91,191,143,0.95)' : undefined;
     } else if (t.kind === 'led') {
-      const lit = r && r.current > 1e-4 && r.status !== 'BURNED_OUT';
+      // Show the current even when it is too faint to glow: that is how hogging shows up.
+      const flowing = r && r.current > 1e-4 && r.status !== 'BURNED_OUT';
       const prefix = ledCount > 1 && name ? name : '';
-      text = lit ? `${prefix ? `${prefix} · ` : ''}${formatCurrent(r.current)}` : prefix || null;
-      tone = lit ? 'led' : undefined;
+      text = flowing
+        ? `${prefix ? `${prefix} · ` : ''}${formatCurrent(r.current)}`
+        : prefix || null;
+      tone = r?.status === 'OK' ? LED_PALETTE[t.color].tag : undefined;
     }
     if (!text) return;
     const p = picker.current!.project(cell, 0.9);
@@ -577,8 +613,7 @@ function Labels({
           key={tag.key}
           style={[
             styles.tag,
-            tag.tone === 'led' && styles.tagLed,
-            tag.tone === 'on' && styles.tagOn,
+            tag.tone ? { backgroundColor: tag.tone } : null,
             { left: tag.x - 36, top: tag.y - 30 },
           ]}
         >
@@ -649,12 +684,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     gap: 18,
+    flexWrap: 'wrap',
     backgroundColor: COLORS.card,
     borderRadius: 24,
     paddingVertical: 10,
     paddingHorizontal: 10,
     ...shadow,
   },
+  trayCompact: { gap: 10, paddingHorizontal: 6 },
   slot: { alignItems: 'center', gap: 4 },
   slotEmpty: { opacity: 0.35 },
   slotLabel: { fontSize: 12, fontWeight: '700', color: COLORS.textSoft },
@@ -700,8 +737,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   tagText: { fontSize: 12, fontWeight: '800', color: COLORS.text },
-  tagLed: { backgroundColor: 'rgba(255,90,95,0.92)' },
-  tagOn: { backgroundColor: 'rgba(91,191,143,0.95)' },
   tagToneText: { color: '#fff' },
   winCard: {
     position: 'absolute',

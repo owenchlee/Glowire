@@ -3,7 +3,7 @@
 import { StyleSheet, Text, View } from 'react-native';
 
 import { type Direction, type Tile, type TwoTerminalTile, getPorts, getTerminals } from '../engine';
-import { COLORS, resistorBands } from '../render/theme';
+import { COLORS, LED_PALETTE, resistorBands } from '../render/theme';
 
 const BASE_COLOR: Record<Tile['kind'], string> = {
   wire: COLORS.wireBase,
@@ -68,6 +68,7 @@ export function TileIcon({ tile, size = 52 }: { tile: Tile; size?: number }) {
           ))}
         </View>
       )}
+      {tile.kind === 'battery' && <Polarity tile={tile} size={size} />}
       {tile.kind === 'battery' && (
         <View
           style={[
@@ -82,8 +83,12 @@ export function TileIcon({ tile, size = 52 }: { tile: Tile; size?: number }) {
         <>
           <View
             style={[
-              styles.led,
-              { width: size * 0.42, height: size * 0.42, borderRadius: size * 0.21 },
+              {
+                width: size * 0.42,
+                height: size * 0.42,
+                borderRadius: size * 0.21,
+                backgroundColor: LED_PALETTE[tile.color].lit,
+              },
             ]}
           />
           <Polarity tile={tile} size={size} />
@@ -150,7 +155,6 @@ const styles = StyleSheet.create({
     gap: 3,
   },
   battery: { backgroundColor: COLORS.batteryBody, borderRadius: 8 },
-  led: { backgroundColor: COLORS.ledRed },
   mark: {
     position: 'absolute',
     fontSize: 11,

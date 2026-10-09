@@ -125,10 +125,15 @@ export function placeTile(state: BoardState, cell: number, tile: Tile): BoardSta
   return put(state, cell, autoOrient(state, cell, tile));
 }
 
-/** Turn a part 90° clockwise. Locked tiles don't turn. */
+/** Can the player turn whatever is in this cell? Free parts, and locked ones marked spin. */
+export function canTurn(state: BoardState, cell: number): boolean {
+  return canEdit(state, cell) || !!state.cells[cell]?.tile.spin;
+}
+
+/** Turn a part 90° clockwise. Locked tiles don't turn (unless they spin). */
 export function rotateAt(state: BoardState, cell: number): BoardState {
   const placed = state.cells[cell];
-  if (!placed || !canEdit(state, cell)) return state;
+  if (!placed || !canTurn(state, cell)) return state;
   return withCells(state, (c) => (c[cell] = { ...placed, tile: rotateTile(placed.tile) }));
 }
 

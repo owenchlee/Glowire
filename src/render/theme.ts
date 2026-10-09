@@ -1,3 +1,5 @@
+import type { LedColor } from '../engine';
+
 // Pastel palette shared by the 3D scene and the 2D UI.
 export const COLORS = {
   background: '#f3ece4',
@@ -25,6 +27,8 @@ export const COLORS = {
   markingLight: '#ffffff',
 
   ledRed: '#ff5a5f',
+  ledGreen: '#3fcf7f',
+  ledBlue: '#4d8dff',
   ledBurned: '#4a4048',
   resistorBody: '#f1dcb4',
   batteryBody: '#6f8fe0',
@@ -40,6 +44,16 @@ export const COLORS = {
   danger: '#ff7b6b',
   success: '#5bbf8f',
 } as const;
+
+/** Per LED colour: lit dome, unlit dome, glow halo, and the label tag behind its current. */
+export const LED_PALETTE: Record<
+  LedColor,
+  { lit: string; unlit: string; halo: string; tag: string }
+> = {
+  red: { lit: COLORS.ledRed, unlit: '#e98f93', halo: '#ff7a6e', tag: 'rgba(255,90,95,0.92)' },
+  green: { lit: COLORS.ledGreen, unlit: '#93d4ae', halo: '#7dffb4', tag: 'rgba(47,177,105,0.92)' },
+  blue: { lit: COLORS.ledBlue, unlit: '#9db8e6', halo: '#82b4ff', tag: 'rgba(66,120,230,0.92)' },
+};
 
 /** Standard resistor colour code (digits 0–9). */
 export const BAND_COLORS = [

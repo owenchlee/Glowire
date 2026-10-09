@@ -1,5 +1,7 @@
 // Physical constants and model parameters, all SI units.
 
+import type { LedColor } from './types';
+
 /** Every wire tile (port to port) has this resistance so no loop is a perfect 0 Ω. */
 export const WIRE_RESISTANCE = 0.01;
 
@@ -45,14 +47,18 @@ export interface LedModel {
   reverseVoltage: number;
 }
 
-export const LED_MODELS: Record<'red', LedModel> = {
-  red: {
-    ratedVoltage: 2.0,
-    ratedCurrent: 0.02,
-    maxCurrent: 0.03,
-    visibleCurrent: 0.0005,
-    emissionCoefficient: 2,
-    seriesResistance: 10,
-    reverseVoltage: 0.5,
-  },
+const LED_BASE = {
+  ratedCurrent: 0.02,
+  maxCurrent: 0.03,
+  visibleCurrent: 0.0005,
+  emissionCoefficient: 2,
+  seriesResistance: 10,
+  reverseVoltage: 0.5,
+};
+
+/** Colours differ only in forward voltage, as real LEDs roughly do: red < green < blue. */
+export const LED_MODELS: Record<LedColor, LedModel> = {
+  red: { ...LED_BASE, ratedVoltage: 2.0 },
+  green: { ...LED_BASE, ratedVoltage: 2.2 },
+  blue: { ...LED_BASE, ratedVoltage: 3.0 },
 };

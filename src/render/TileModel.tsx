@@ -4,11 +4,19 @@ import { useFrame } from './r3f';
 import { useEffect, useMemo, useRef } from 'react';
 import { Color, type Group, type Material, MeshBasicMaterial, type Sprite } from 'three';
 
-import { type Direction, type Tile, type TileResult, E, W, getPorts } from '../engine';
+import {
+  type Direction,
+  type LedColor,
+  type Tile,
+  type TileResult,
+  E,
+  W,
+  getPorts,
+} from '../engine';
 import { createLedMaterials, getAssets } from './assets';
 import { currentLevel, perceivedGlow } from './flow';
 import { BASE_HEIGHT, DIR_VECTORS, TOP } from './layout';
-import { COLORS, resistorBandDigits } from './theme';
+import { LED_PALETTE, resistorBandDigits } from './theme';
 
 interface Props {
   tile: Tile;
@@ -26,7 +34,7 @@ export function TileModel({ tile, result, ghost = false }: Props) {
   return (
     <group>
       <mesh geometry={g.base} material={pick(m.base[tile.kind])} position-y={BASE_HEIGHT / 2} />
-      {tile.locked && !ghost && tile.kind !== 'switch' && <Rivets />}
+      {tile.locked && !tile.spin && !ghost && tile.kind !== 'switch' && <Rivets />}
       {tile.kind === 'wire' && (
         <>
           {getPorts({ ...tile, rotation: 0 }).map((d) => (
@@ -69,7 +77,9 @@ export function TileModel({ tile, result, ghost = false }: Props) {
           <Minus position={[0.15, TOP + 0.415, 0]} material={pick(m.markingLight)} />
         </>
       )}
-      {tile.kind === 'led' && <LedModel result={result} ghost={ghost} wireMat={wireMat} />}
+      {tile.kind === 'led' && (
+        <LedModel color={tile.color} result={result} ghost={ghost} wireMat={wireMat} />
+      )}
       {tile.kind === 'switch' && (
         <SwitchModel closed={tile.closed} ghost={ghost} wireMat={wireMat} />
       )}
@@ -204,17 +214,19 @@ function Rivets() {
 const PUFF_SECONDS = 0.9;
 
 function LedModel({
+  color,
   result,
   ghost,
   wireMat,
 }: {
+  color: LedColor;
   result: TileResult | null;
   ghost: boolean;
   wireMat: Material;
 }) {
   const { geometry: g, material: m } = getAssets();
   const mats = useMemo(() => {
-    const led = createLedMaterials();
+    const led = createLedMaterials(color);
     const puff = new MeshBasicMaterial({
       color: '#b9b2c0',
       transparent: true,
@@ -222,7 +234,7 @@ function LedModel({
       depthWrite: false,
     });
     return { ...led, puff };
-  }, []);
+  }, [color]);
   useEffect(() => () => Object.values(mats).forEach((mat) => mat.dispose()), [mats]);
 
   const halo = useRef<Sprite>(null);
@@ -234,11 +246,11 @@ function LedModel({
 
   useEffect(() => {
     mats.dome.emissiveIntensity = 2.4 * glow;
-    mats.dome.color = new Color(glow > 0 ? COLORS.ledRed : '#e98f93');
+    mats.dome.color = new Color(glow > 0 ? LED_PALETTE[color].lit : LED_PALETTE[color].unlit);
     mats.halo.opacity = glow > 0 ? 0.25 + 0.65 * glow : 0;
     if (burned && prevStatus.current !== 'BURNED_OUT') puffStart.current = -2; // start next frame
     prevStatus.current = result?.status;
-  }, [glow, burned, mats, result?.status]);
+  }, [glow, burned, mats, color, result?.status]);
 
   useFrame(({ clock }) => {
     const t = clock.elapsedTime;

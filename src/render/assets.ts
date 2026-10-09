@@ -18,7 +18,8 @@ import {
 } from 'three';
 import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
 
-import { BAND_COLORS, COLORS } from './theme';
+import type { LedColor } from '../engine';
+import { BAND_COLORS, COLORS, LED_PALETTE } from './theme';
 import { BASE_HEIGHT } from './layout';
 
 /** Soft round alpha falloff, generated in JS (no image files, no canvas needed). */
@@ -127,12 +128,13 @@ export function getAssets() {
 }
 
 /** Per-LED materials (brightness differs per LED, so these can't be shared). */
-export function createLedMaterials() {
+export function createLedMaterials(color: LedColor) {
+  const palette = LED_PALETTE[color];
   const { glowTexture } = getAssets();
   return {
     dome: new MeshStandardMaterial({
-      color: COLORS.ledRed,
-      emissive: new Color(COLORS.ledRed),
+      color: palette.lit,
+      emissive: new Color(palette.lit),
       emissiveIntensity: 0,
       roughness: 0.25,
       transparent: true,
@@ -140,7 +142,7 @@ export function createLedMaterials() {
     }),
     halo: new SpriteMaterial({
       map: glowTexture,
-      color: '#ff7a6e',
+      color: palette.halo,
       blending: AdditiveBlending,
       transparent: true,
       depthWrite: false,
