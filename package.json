@@ -39,7 +39,8 @@
     "typecheck": "tsc --noEmit",
     "lint": "expo lint",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "play-version": "node scripts/play-version.mjs"
   },
   "private": true
 }
