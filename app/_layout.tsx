@@ -2,15 +2,15 @@ import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
-import { ProgressProvider } from '../src/ui/progress';
+import { GameProvider } from '../src/ui/game';
 
 export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <StatusBar style="dark" />
-      <ProgressProvider>
+      <StatusBar style="auto" />
+      <GameProvider>
         <Stack screenOptions={{ headerShown: false }} />
-      </ProgressProvider>
+      </GameProvider>
     </GestureHandlerRootView>
   );
 }

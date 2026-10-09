@@ -19,10 +19,11 @@ export function chapterOf(id: number): ChapterDef | undefined {
   return CHAPTERS.find((c) => c.levels.some((l) => l.id === id));
 }
 
-/** The level's number as players see it, e.g. "2-4". */
+/** The level's number as players see it, e.g. "2-4", or "2-Boss" for a boss fight. */
 export function levelNumber(id: number): string {
   const chapter = chapterOf(id);
   if (!chapter) return String(id);
+  if (getLevel(id)?.boss) return `${chapter.id}-Boss`;
   return `${chapter.id}-${chapter.levels.findIndex((l) => l.id === id) + 1}`;
 }
 

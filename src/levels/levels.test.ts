@@ -30,6 +30,11 @@ function solved(id: number, picture: string[]): BoardState {
     ...board,
     cells: board.cells.map((p, i) => {
       const fixed = start.cells[i];
+      if (fixed?.tile.spin) {
+        // Twist pieces may be turned, but nothing else about them changes.
+        expect(p?.tile.kind, `level ${id} cell ${i}`).toBe(fixed.tile.kind);
+        return { ...p!, tile: { ...p!.tile, locked: true, spin: true } };
+      }
       if (fixed?.tile.locked) {
         // The solution must leave every locked part exactly where it was.
         expect(p && shape(p.tile), `level ${id} cell ${i}`).toEqual(shape(fixed.tile));
@@ -43,121 +48,16 @@ function solved(id: number, picture: string[]): BoardState {
 /** Evaluate a picture of a board for a level. */
 const check = (id: number, picture: string[]) => evaluateLevel(getLevel(id)!, solved(id, picture));
 
-const SOLUTIONS: Record<number, string[]> = {
-  // ---- Chapter 1 ----
-  1: ['. .  .    .  .', '. ┌  R220 ┐  .', '. B^ .    Lv .', '. └  ─    ┘  .', '. .  .    .  .'],
-  2: ['┌  ─ R220 ─ ┐', '│  . #    . │', 'B^ . #    . Lv', '│  . #    . │', '└  ─ ─    ─ ┘'],
-  4: [
-    '. .  .     .  .',
-    '. ┌  R1000 ┐  .',
-    '. B^ .     Lv .',
-    '. └  ─     ┘  .',
-    '. .  .     .  .',
-  ],
-  5: [
-    '.  .  .     .  .',
-    '┌  ─  ┬     ─  ┐',
-    'B^ .  R220v .  R220v',
-    '│  .  Lv    .  Lv',
-    '└  ─  ┴     ─  ┘',
-  ],
-  6: ['.  ┌ R220 ┐ .', '┌  ┴ R220 ┴ ┐', 'B^ . .    . Lv', '└  ─ ─    ─ ┘', '.  . .    . .'],
-  7: ['┌  ─ ─    ─ ┐', '│  . L>   . │', 'B^ . .    . Lv', '└  ─ R220 ─ ┘', '.  . .    . .'],
-  8: ['. .  .    .  .', '. ┌  R220 ┐  .', '. B^ .    Lv .', '. └  S0   ┘  .', '. .  .    .  .'],
-  9: ['.  ┌ S0   ┐ .', '┌  ┴ S0   ┴ ┐', 'B^ . .    . Lv', '└  ─ R220 ─ ┘', '.  . .    . .'],
-  10: [
-    '┌  ─    S0 ─    ┐',
-    '│  .    #  .    │',
-    'B^ .    #  .    Lv',
-    '│  .    #  .    │',
-    '└  R100 S0 R100 ┘',
-  ],
-
-  // ---- Chapter 2 ----
-  11: [
-    '. .  .    .   .',
-    '. ┌  R220 ┐   .',
-    '. B^ .    Lgv .',
-    '. └  ─    ┘   .',
-    '. .  .    .   .',
-  ],
-  12: ['. .  . .   .', '. ┌  ─ ┐   .', '. B^ . Lbv .', '. └  ─ ┘   .', '. .  . .   .'],
-  13: ['.  . .     . .', '┌  ─ ┬     ─ ┐', 'B^ . Lv    . Lbv', '│  . R100v . │', '└  ─ ┴     ─ ┘'],
-  14: [
-    '.  . .     . .     .',
-    '┌  ─ ┬     ─ ┬     ┐',
-    'B^ . Lv    . Lgv   Lbv',
-    '│  . R100v . R220v │',
-    '└  ─ ┴     ─ ┴     ┘',
-  ],
-  15: [
-    '.  . .     .     .',
-    '┌  ─ ┬     ┬     ┐',
-    'B^ . Lv    Lgv   Lbv',
-    '│  . R100v R220v │',
-    '└  ─ ┴     ┴     ┘',
-  ],
-  16: [
-    '.  .    .   . .',
-    '┌  R220 ┬   ─ ┐',
-    'B^ .    Lv  . Lgv',
-    '│  .    S0v . │',
-    '└  ─    ┴   ─ ┘',
-  ],
-  17: [
-    '.  . .     ┌ S0   ┐',
-    '┌  ─ ┬     ┴ R220 ┤',
-    'B^ . Lv    . .    Lbv',
-    '│  . R100v . .    │',
-    '└  ─ ┴     ─ ─    ┘',
-  ],
-  18: [
-    '.  .    .   .   . .',
-    '┌  R220 ┬   ┬   ─ ┐',
-    'B^ .    Lv  Lgv . Lbv',
-    '│  .    S0v S0v . │',
-    '└  ─    ┴   ┴   ─ ┘',
-  ],
-
-  // ---- Chapter 3 ----
-  19: ['. .  .    .  .', '. ┌  R220 ┐  .', '. B^ .    Lv .', '. B^ .    Lv .', '. └  ─    ┘  .'],
-  20: ['.  . .  .  .', '┌  ─ ─  L> ┐', 'B^ . .  .  Lv', 'B^ . .  .  │', '└  ─ L< ─  ┘'],
-  21: [
-    '.   .    .    .    .',
-    '┌   R100 R100 R100 ┐',
-    'B9^ .    .    .    Lv',
-    '└   ─    ─    ─    ┘',
-    '.   .    .    .    .',
-  ],
-  22: ['. .  .    .  .', '. ┌  R220 ┐  .', '. B^ .    Lv .', '. B^ .    Lv .', '. └  ─    ┘  .'],
-  23: [
-    '.   .    .  .  .  .',
-    '┌   R100 L> L> ┬  ┐',
-    'B6^ .    .  .  Lv S0v',
-    '└   ─    ─  ─  ┴  ┘',
-    '.   .    .  .  .  .',
-  ],
-  24: [
-    '.  . .   . . .',
-    '┌  ─ ┬   ─ ─ ┐',
-    'B^ . Lv  . . Lbv',
-    'B^ . Lv  . . R220v',
-    '│  . Lgv . . │',
-    '└  ─ ┴   ─ ─ ┘',
-  ],
-  25: [
-    '. ┌  R220 ─   ─ ┐',
-    '. B^ .    .   . Lv',
-    '. ├  ─    ┐   . Lv',
-    '. B^ .    Lbv . │',
-    '. └  ─    ┴   ─ ┘',
-  ],
-};
+/** Every level's worked solution (twist levels: the drawn picture). */
+const SOLUTIONS: Record<number, string[]> = {};
+for (const l of LEVELS) {
+  const picture = l.solution ?? (l.twist ? l.board : null);
+  if (picture) SOLUTIONS[l.id] = picture;
+}
 
 describe('levels', () => {
-  it('has unique, ordered ids and valid pictures', () => {
+  it('has unique ids and valid pictures', () => {
     const ids = LEVELS.map((l) => l.id);
-    expect(ids).toEqual([...ids].sort((a, b) => a - b));
     expect(new Set(ids).size).toBe(ids.length);
     for (const level of LEVELS) {
       const labels = levelLabels(level);
@@ -173,7 +73,8 @@ describe('levels', () => {
     expect(CHAPTERS.map((c) => c.id)).toEqual([1, 2, 3, 4]);
     expect(levelNumber(1)).toBe('1-1');
     expect(levelNumber(11)).toBe('2-1');
-    expect(nextLevel(10)?.id).toBe(11);
+    expect(nextLevel(10)?.id).toBe(32); // the Maple Street boss
+    expect(nextLevel(32)?.id).toBe(11);
     expect(nextLevel(LEVELS.at(-1)!.id)).toBeUndefined();
   });
 
@@ -186,9 +87,7 @@ describe('levels', () => {
   });
 
   it('every level has a worked solution', () => {
-    const missing = LEVELS.filter((l) => !SOLUTIONS[l.id] && l.id !== 3 && !l.twist).map(
-      (l) => l.id,
-    );
+    const missing = LEVELS.filter((l) => !SOLUTIONS[l.id]).map((l) => l.id);
     expect(missing).toEqual([]);
   });
 

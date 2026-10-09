@@ -137,6 +137,17 @@ export function rotateAt(state: BoardState, cell: number): BoardState {
   return withCells(state, (c) => (c[cell] = { ...placed, tile: rotateTile(placed.tile) }));
 }
 
+/** Overwrite a cell outright (used by helpers like Scout's dig, not by player gestures). */
+export function setCell(state: BoardState, cell: number, tile: Tile | null): BoardState {
+  if (!tile) return withCells(state, (c) => (c[cell] = null));
+  const placed = state.cells[cell];
+  // Keep the id when the same kind of thing stays put, so it animates instead of popping.
+  if (placed && placed.tile.kind === tile.kind) {
+    return withCells(state, (c) => (c[cell] = { ...placed, tile }));
+  }
+  return put(state, cell, tile);
+}
+
 /** Remove whatever is in the cell (wires are tidied like an erase). */
 export function removeAt(state: BoardState, cell: number): BoardState {
   if (!canEdit(state, cell)) return state;

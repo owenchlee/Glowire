@@ -8,7 +8,8 @@ Each version is a git tag you can play again (see [Play an old version](#play-an
 | `v0.1-first-spark` | Day 1 | Oct 8, 2026 | A real circuit simulator and one 3D board to play with          |
 | `v0.2-puzzles`     | Day 1 | Oct 8, 2026 | Puzzles: draw wires, levels 1–10, walls, wire limits, switches  |
 | `v0.3-campaign`    | Day 1 | Oct 8, 2026 | A campaign: 4 chapters, 31 levels, coloured LEDs, twist puzzles |
-| `v0.4-glowtown`    | Day 1 | Oct 8, 2026 | _In progress:_ from exercises to a video game                   |
+| `v0.4-glowtown`    | Day 1 | Oct 8, 2026 | A game layer: town map, story, stars, shop, pets, daily, bosses |
+| `v0.5-open-world`  | Day 2 | Oct 9, 2026 | _In progress:_ walk around pixel-art worlds as one hero         |
 
 ---
 
@@ -110,9 +111,9 @@ That led to undo/reset and a top-down camera option.
 
 ---
 
-## v0.4 Glowtown (in progress)
+## v0.4 Glowtown
 
-**Day 1, night (about 21:46)**
+**Day 1, night, to Day 2 (Oct 8–9, 2026)** · tag `v0.4-glowtown`
 
 ### What I decided
 
@@ -134,6 +135,40 @@ Choices I made:
   jobs on top.
 - **Keep a version history** (this file), so I can show the game day by day in a video
   series.
+
+### What got built
+
+- **Glowtown map:** four districts down a winding night road. Each job is a building that
+  lights up when solved; Pip waits by the next one.
+- **Story:** a prologue, district intro and outro scenes, 21 townspeople with portraits,
+  and Grumble the villain.
+- **Stars and sparks:** every job has 3 stars (solve it, plus two goals like "use 6 wire
+  or less" or "no burnouts"). Stars pay sparks.
+- **Shop:** pets that help (Scout digs a piece into place, Hoot crosses out parts you
+  won't need, Penny earns extra sparks), wire colours, board skins, and hats for Pip.
+- **Daily Blackout:** a new generated puzzle every day, with a streak.
+- **Bosses:** one per district, in rounds. Grumble sabotages the board between rounds.
+
+### What it looked like
+
+![v0.4 Glowtown map](v0.4/town-map-full.jpg)
+
+### What I thought
+
+First, on the look:
+
+> "it needs a total ui revamp, it looks SUPER ai coded right now like the font and the
+> text boxes"
+
+Then, after seeing it running:
+
+> "No, no, no, no, no. This is not what I wanted the thing to look like … the game should
+> actually be played horizontally … the person should be an actual character … moving
+> around the city. Talking to people, helping them fix lights … find some resources or
+> generate some images yourself rather than just using like shapes and blocks … I need it
+> to look professional … each world is like different map or like a different city."
+
+So the v0.4 map is replaced in v0.5. The puzzles, stars, shop, pets and story carry over.
 
 ---
 

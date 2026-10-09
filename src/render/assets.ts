@@ -31,8 +31,10 @@ function radialTexture(size = 64, power = 2): DataTexture {
       const dy = (y + 0.5) / size - 0.5;
       const r = Math.min(1, Math.sqrt(dx * dx + dy * dy) * 2);
       const i = (y * size + x) * 4;
-      data[i] = data[i + 1] = data[i + 2] = 255;
-      data[i + 3] = Math.round(255 * Math.pow(1 - r, power));
+      // The falloff goes in every channel: as a `map` the alpha fades it, and as an
+      // `alphaMap` three.js reads the green channel (white there drew hard-edged squares).
+      const v = Math.round(255 * Math.pow(1 - r, power));
+      data[i] = data[i + 1] = data[i + 2] = data[i + 3] = v;
     }
   }
   const tex = new DataTexture(data, size, size, RGBAFormat);
@@ -154,4 +156,39 @@ export function createLedMaterials(color: LedColor) {
 
 export function disposeMaterials(materials: Record<string, Material>) {
   for (const m of Object.values(materials)) m.dispose();
+}
+
+/** Colours a skin can change: wires, and the board under them. */
+export interface Skin {
+  wire: { color: string; glow: string };
+  board: { side: string; cellA: string; cellB: string; backdrop: string };
+}
+
+const skin: Skin = {
+  wire: { color: COLORS.wire, glow: COLORS.wireGlow },
+  board: {
+    side: COLORS.boardSide,
+    cellA: COLORS.cellA,
+    cellB: COLORS.cellB,
+    backdrop: COLORS.background,
+  },
+};
+
+/** The skin in use; the board scene reads it when it mounts. */
+export function currentSkin(): Skin {
+  return skin;
+}
+
+/** Recolour the shared materials, so every board from now on wears the new skin. */
+export function applySkin(wire: Skin['wire'], board: Skin['board']) {
+  skin.wire = { color: wire.color, glow: wire.glow };
+  skin.board = { ...board };
+  const { material: m } = getAssets();
+  for (const level of m.wireLevels) {
+    level.color.set(wire.color);
+    level.emissive.set(wire.glow);
+  }
+  m.wireShort.color.set(wire.color);
+  m.cellA.color.set(board.cellA);
+  m.cellB.color.set(board.cellB);
 }

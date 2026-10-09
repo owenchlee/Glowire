@@ -1,3 +1,3 @@
-import { LevelSelect } from '../src/ui/LevelSelect';
+import { TownMap } from '../src/ui/town/TownMap';
 
-export default LevelSelect;
+export default TownMap;

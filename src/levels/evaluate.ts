@@ -61,6 +61,20 @@ function twistBoard(board: Board, seed: number): Board {
   };
 }
 
+/** Spin every turnable piece of a board in play (twist bosses re-scramble mid-fight). */
+export function scrambleState(state: BoardState, seed: number): BoardState {
+  const random = rng(seed);
+  return {
+    ...state,
+    cells: state.cells.map((placed) => {
+      if (!placed?.tile.spin) return placed;
+      let tile = placed.tile;
+      for (let n = scrambleTurns(tile, random); n > 0; n--) tile = rotateTile(tile);
+      return { ...placed, tile };
+    }),
+  };
+}
+
 /**
  * The level's starting board. Pre-placed parts are locked, except in repair levels, where
  * wires and any part the inventory lists can be reworked, and twist levels, where pieces
@@ -246,7 +260,8 @@ export function describeGoal(
   let verb: string;
   if (goal.kind === 'lit') verb = `Light ${name(goal.led)}${how}`;
   else if (goal.kind === 'dark') verb = `Keep ${name(goal.led)} dark`;
-  else if (goal.kind === 'all') verb = `Light all ${goal.count} LEDs${how}`;
+  else if (goal.kind === 'all')
+    verb = goal.count === 2 ? `Light both LEDs${how}` : `Light all ${goal.count} LEDs${how}`;
   else if (goal.leds.length === 0) verb = 'Keep every LED dark';
   else if (goal.leds.length === ledCount)
     verb = `Light ${ledCount === 1 ? 'the LED' : ledCount === 2 ? 'both LEDs' : 'every LED'}${how}`;

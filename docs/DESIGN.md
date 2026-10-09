@@ -1,5 +1,81 @@
 # Glowire: game design
 
+## v0.4: Glowtown (the video game around the puzzles)
+
+v0.3 played like homework: a list of exercises with nothing to come back for, and every
+level handed you exactly the parts you needed. v0.4 wraps the same puzzles in a game world,
+the way Prodigy wraps maths, and makes the puzzles push back. The circuit puzzles stay the
+heart of it. Everything else exists to give them meaning, rewards and a reason to return.
+
+### The fantasy
+
+Glowtown went dark the night **Grumble**, a cranky little thundercloud, zapped the power
+station. You are the new apprentice at **Gran Watts' Workshop**. Your sidekick is **Pip**, a
+tiny robot built from a battery with an LED for an eye. Townspeople call with jobs; every
+job is a puzzle; every solved job lights a building on the map. The town map is the home
+screen, so progress is something you _see_: a dark town slowly filling with light.
+
+### Core loop
+
+1. **Town map** (home). Districts stacked down a winding road at night. Each job is a
+   building: dark until solved, then its windows glow and the street lamps beside it come on.
+   Pip stands at your next job with a "!" over it.
+2. **Job card.** Tap a building: the client's portrait, their request in their own voice,
+   the reward, and the three star goals.
+3. **Puzzle.** The same board as before. Pip sits in the hint bubble and _says_ the hints,
+   with a face that matches (happy, worried, shocked on a short circuit). Tap Pip for a tip
+   written for that job. Your pet sits beside Pip and can be tapped to use its ability.
+4. **Payday.** The client thanks you, stars pop in one by one, sparks (⚡, the coin) count
+   up. Back on the map the building lights up.
+5. **Spend.** The shop sells pets (tools) and cosmetics.
+6. **Come back tomorrow.** A new generated **Daily Blackout** every day, with a streak.
+
+### Stars (difficulty for people who want it)
+
+Every job has three stars: ★ solve it, plus two **star goals** that ask for elegance or
+mastery, for example "use at most 9 wire", "use only 2 parts", "solve in 12 turns or fewer",
+or an extra condition like "make B bright too". Each job's star goals are proven reachable
+by a test that solves the job with all three stars, and pars are set from the best known
+solution, so ★★★ is a real challenge. Missing stars are a reason to replay.
+
+### Sparks and the shop
+
+- Sparks: ★ 10, ★★ +10, ★★★ +15 the first time each star is earned; boss jobs pay double.
+  Daily Blackout: 30 plus a streak bonus.
+- **Pets are the tools.** One is equipped at a time; each has one ability per job:
+  - **Scout the Mole** — _Dig_: fixes one piece of your board to match a known solution.
+  - **Hoot the Owl** — _Wise Eye_: crosses out the parts in your tray you won't need.
+  - **Penny the Magpie** — _Shiny Finder_: +50% sparks from every job.
+- **Cosmetics:** wire colours, board themes, and hats for Pip.
+- Pip's own tip is always free, so nobody gets stuck behind a paywall of sparks.
+
+### Harder puzzles
+
+- Star goals on every job (see above).
+- **Boss jobs**: each district ends with a Grumble sabotage, a hard job that combines the
+  district's ideas. They pay double.
+- **Daily Blackout**: a generated twist puzzle that scales with the weekday (Monday small,
+  Sunday big), so the game never runs out of puzzles.
+- Jobs unlock in order, so difficulty ramps instead of being skipped.
+
+### Districts
+
+| District        | Chapter | Feel                                   |
+| --------------- | ------- | -------------------------------------- |
+| Maple Street    | 1       | Cozy houses; first lights, switches    |
+| Market Square   | 2       | Shop signs and traffic lights: colours |
+| The Docks       | 3       | Lighthouse and boats: big batteries    |
+| Clocktower Hill | 4       | The old clock's gears: twist puzzles   |
+
+### How it is built
+
+- `src/game/`: pure TypeScript game rules: save file (v2, migrates v1), rewards, shop
+  catalogue, stars, daily generator, story data. Tested like the engine.
+- `src/ui/town/`, `src/ui/characters/`: SVG art drawn in code (`react-native-svg`, in
+  Expo Go), animated with React Native's `Animated`. No image files.
+- `expo-haptics` for buzzes on wins, burnouts and purchases.
+- Every version is logged in `docs/history/` (see the devlog).
+
 ## What Glowire is
 
 **One long puzzle campaign about real electronics, told in chapters.** Every chapter adds one

@@ -21,6 +21,75 @@ export type Goal =
   /** Free builds: at least `count` LEDs on the board (placed ones too), every one lit. */
   | { kind: 'all'; count: number; brightness?: Brightness; when?: SwitchStates };
 
+/**
+ * Extra challenges for the second and third star (the first star is solving the job).
+ * - wire:  at most `max` wire tiles on the board.
+ * - parts: at most `max` parts placed by the player (wires don't count).
+ * - turns: twist jobs, at most `max` taps that turn a piece.
+ * - goal:  an extra condition on top of the job's goals.
+ * - safe:  no LED burned out at any point (the board the job starts with doesn't count).
+ * - solo:  solved without Pip's tip or a pet's ability.
+ */
+export type StarGoal =
+  | { kind: 'wire'; max: number }
+  | { kind: 'parts'; max: number }
+  | { kind: 'turns'; max: number }
+  | { kind: 'goal'; goal: Goal }
+  | { kind: 'safe' }
+  | { kind: 'solo' };
+
+/** Something Grumble does to the board between boss phases. */
+export type Sabotage =
+  /** Every battery: a new voltage, and/or turned around. */
+  | { op: 'battery'; volts?: number; flip?: boolean }
+  /** One placed part of this kind is zapped off the board, and the tray loses one. */
+  | { op: 'zap'; part: PartKey }
+  /** Gran throws in spare parts. */
+  | { op: 'give'; part: PartKey; count: number }
+  /** A boulder lands on cell (x, y), crushing whatever was there. */
+  | { op: 'drop'; at: [number, number] }
+  /** Twist bosses: every turnable piece spins again (from this seed). */
+  | { op: 'scramble'; seed: number };
+
+export interface Phase {
+  /** What Grumble says as he strikes. */
+  grumble: string;
+  sabotage: Sabotage[];
+  intro: string;
+  goals: Goal[];
+  /** A known solution for this phase, starting from the board after the sabotage. */
+  solution: string[];
+}
+
+/** Who asked for the job, and what it means in the town. */
+export interface Job {
+  /** A townsperson id from game/cast.ts. */
+  client: string;
+  /** The building on the town map, e.g. "Mrs. Pell's porch". */
+  place: string;
+  building: BuildingKind;
+  /** The client's request, in their own voice. */
+  ask: string;
+  /** What the client says when the job is done. */
+  thanks: string;
+}
+
+export type BuildingKind =
+  | 'house'
+  | 'cottage'
+  | 'shop'
+  | 'cafe'
+  | 'school'
+  | 'signal'
+  | 'tower'
+  | 'lighthouse'
+  | 'boat'
+  | 'warehouse'
+  | 'clock'
+  | 'workshop'
+  | 'station'
+  | 'treehouse';
+
 export interface LevelDef {
   id: number;
   title: string;
@@ -28,6 +97,23 @@ export interface LevelDef {
   intro: string;
   /** Starting board as a picture (see engine/parse.ts). Pre-placed parts are locked. */
   board: string[];
+  /**
+   * A known solution as a picture (twist levels: `board` itself). Tests prove it solves the
+   * job with all three stars, and pets use it to help.
+   */
+  solution?: string[];
+  /** Pip's tip when the player taps Pip: a nudge, not the answer. */
+  tip?: string;
+  /** Goals for the second and third star. */
+  stars?: [StarGoal, StarGoal];
+  job?: Job;
+  /** A Grumble sabotage at the end of a district: harder, and pays double. */
+  boss?: boolean;
+  /**
+   * Boss fights: after the first goals are met, Grumble sabotages the board and sets new
+   * goals, once per phase. The level's own goals, intro and solution are phase one.
+   */
+  phases?: Phase[];
   /**
    * Repair levels: pre-placed wires can be erased, and pre-placed parts whose kind is in
    * the inventory can be moved, turned and removed. Everything else stays locked.

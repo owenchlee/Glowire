@@ -18,7 +18,7 @@ import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeom
 
 import type { BoardState } from '../board/board';
 import type { SimulationResult, Tile } from '../engine';
-import { getAssets } from './assets';
+import { currentSkin, getAssets } from './assets';
 import { AnimatedTile } from './AnimatedTile';
 import { FlowParticles } from './FlowParticles';
 import { cellToWorld, TOP, worldToCell } from './layout';
@@ -62,7 +62,7 @@ export function BoardCanvas(props: Props) {
       orthographic
       camera={{ position: [10, 10, 10], zoom: 60, near: 0.1, far: 100 }}
     >
-      <color attach="background" args={[COLORS.background]} />
+      <color attach="background" args={[currentSkin().board.backdrop]} />
       <Scene {...props} />
     </Canvas>
   );
@@ -131,6 +131,12 @@ function CameraRig({
   const size = useThree((s) => s.size);
 
   useLayoutEffect(() => {
+    // Set the frame from the canvas size here (R3F does too, but possibly later), so the
+    // picker below never projects with a stale camera after a resize.
+    camera.left = -size.width / 2;
+    camera.right = size.width / 2;
+    camera.top = size.height / 2;
+    camera.bottom = -size.height / 2;
     if (view === 'iso') {
       // True isometric: equal angles to all three axes, looking at the board centre.
       camera.position.set(10, 10, 10);
@@ -169,6 +175,21 @@ function CameraRig({
     onReady();
   }, [camera, size.width, size.height, board.width, board.height, pickerRef, onReady, view]);
 
+  // R3F can still adjust the camera after that effect (on web, around a resize). Check each
+  // frame and tell the 2D overlay again if the view really moved, so value tags never stick
+  // to stale spots.
+  const seen = useRef('');
+  useFrame(() => {
+    camera.updateMatrixWorld();
+    const e = camera.projectionMatrix.elements;
+    const w = camera.matrixWorld.elements;
+    const key = `${e[0]},${e[5]},${e[12]},${e[13]},${w[12]},${w[13]},${w[14]}`;
+    if (key === seen.current) return;
+    const first = seen.current === '';
+    seen.current = key;
+    if (!first) onReady();
+  });
+
   return null;
 }
 
@@ -177,7 +198,7 @@ function BoardBase({ board, highlight }: { board: BoardState; highlight: number 
   const slab = useMemo(
     () => ({
       geometry: new RoundedBoxGeometry(board.width + 0.35, 0.45, board.height + 0.35, 4, 0.16),
-      top: new MeshStandardMaterial({ color: COLORS.boardSide, roughness: 0.9 }),
+      top: new MeshStandardMaterial({ color: currentSkin().board.side, roughness: 0.9 }),
       blob: new MeshBasicMaterial({
         color: COLORS.shadow,
         alphaMap: getAssets().glowTexture,
