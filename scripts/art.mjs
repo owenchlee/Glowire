@@ -262,6 +262,26 @@ const HERO_RECOLOUR = {
   '51614e': '262d52', // trouser shade
 };
 
+/**
+ * Outfits from the shop: the same hero in other colours (shirt, shirt shade, trousers,
+ * trouser shade). "uniform" is the default one above. Keep ids in sync with OUTFITS in
+ * src/game/shop.ts.
+ */
+const OUTFITS = {
+  ember: ['e0564a', 'a83a3a', '3a2f45', '27202f'],
+  tide: ['3fb7c9', '2b8496', '2f3c5a', '1f283f'],
+  moss: ['6fae4a', '4c7f33', '5a4632', '3f3022'],
+  plum: ['9a6ad6', '6e48a8', '2c2a48', '1c1b30'],
+  snow: ['f2eee6', 'c9c2b4', '4a5a8a', '34406e'],
+};
+const outfitRecolour = ([shirt, shade, trousers, trouserShade]) => ({
+  e3f1f5: shirt,
+  f2eaf1: shirt,
+  d3a2c0: shade,
+  548789: trousers,
+  '51614e': trouserShade,
+});
+
 /** Pip, the robot sidekick: the village pack's robot in sky blue, with friendly yellow eyes. */
 const PIP_RECOLOUR = {
   '56864c': '3da6bd', // body
@@ -271,8 +291,9 @@ const PIP_RECOLOUR = {
   '8f3e56': 'd2b37d', // eye shade (portrait)
 };
 
-function recolour(png, map) {
-  for (let i = 0; i < png.data.length; i += 4) {
+/** Swap colours. `fromRow`: leave rows above it alone (a portrait's face shares shirt colours). */
+function recolour(png, map, fromRow = 0) {
+  for (let i = fromRow * png.width * 4; i < png.data.length; i += 4) {
     const key = ((png.data[i] << 16) | (png.data[i + 1] << 8) | png.data[i + 2])
       .toString(16)
       .padStart(6, '0');
@@ -319,13 +340,23 @@ const EMOTES = { 22: 'job', 23: 'question', 27: 'heart', 20: 'chat', 29: 'star' 
  * speech bubbles. Portraits are upscaled ×4 for the 2D UI.
  */
 function characters() {
-  const ids = ['hero', ...Object.keys(CAST_SPRITES)];
+  const outfitIds = Object.keys(OUTFITS).map((o) => `hero-${o}`);
+  const ids = ['hero', ...Object.keys(CAST_SPRITES), ...outfitIds];
   const sheets = ids.map((id) => {
-    const dir = join(NINJA, 'characters', id === 'hero' ? 'Boy' : CAST_SPRITES[id]);
+    const isHero = id === 'hero' || id.startsWith('hero-');
+    const dir = join(NINJA, 'characters', isHero ? 'Boy' : CAST_SPRITES[id]);
     const sheet = read(join(dir, 'SpriteSheet.png'));
     const face = read(join(dir, 'Faceset.png'));
-    const map = id === 'hero' ? HERO_RECOLOUR : id === 'pip' ? PIP_RECOLOUR : null;
-    return map ? { id, sheet: recolour(sheet, map), face: recolour(face, map) } : { id, sheet, face };
+    const map = id.startsWith('hero-')
+      ? outfitRecolour(OUTFITS[id.slice(5)])
+      : id === 'hero'
+        ? HERO_RECOLOUR
+        : id === 'pip'
+          ? PIP_RECOLOUR
+          : null;
+    // In the portrait, only the shirt (bottom quarter) changes colour.
+    const shirtRow = isHero ? Math.floor(face.height * 0.74) : 0;
+    return map ? { id, sheet: recolour(sheet, map), face: recolour(face, map, shirtRow) } : { id, sheet, face };
   });
   // Pets: two side-on frames each (facing right), in their own 64px columns.
   for (const [id, file] of Object.entries(PETS)) {

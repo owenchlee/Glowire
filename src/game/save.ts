@@ -9,7 +9,7 @@ export interface SaveData {
   stars: Record<string, number>;
   sparks: number;
   owned: string[];
-  equipped: { pet: string | null; wire: string; board: string; hat: string };
+  equipped: { pet: string | null; wire: string; board: string; hat: string; outfit: string };
   daily: {
     /** The last day solved, as YYYY-MM-DD. */
     last: string | null;
@@ -28,8 +28,8 @@ export const NEW_SAVE: SaveData = {
   version: 2,
   stars: {},
   sparks: 0,
-  owned: ['copper', 'wood', 'nohat'],
-  equipped: { pet: null, wire: 'copper', board: 'wood', hat: 'nohat' },
+  owned: ['copper', 'wood', 'nohat', 'uniform'],
+  equipped: { pet: null, wire: 'copper', board: 'wood', hat: 'nohat', outfit: 'uniform' },
   daily: { last: null, streak: 0, best: 0, stars: {} },
   seen: [],
   unlockAll: false,
@@ -63,6 +63,7 @@ export function migrate(raw: unknown): SaveData {
       wire: typeof equipped.wire === 'string' ? equipped.wire : base.equipped.wire,
       board: typeof equipped.board === 'string' ? equipped.board : base.equipped.board,
       hat: typeof equipped.hat === 'string' ? equipped.hat : base.equipped.hat,
+      outfit: typeof equipped.outfit === 'string' ? equipped.outfit : base.equipped.outfit,
     },
     daily: {
       last: typeof daily.last === 'string' ? daily.last : null,

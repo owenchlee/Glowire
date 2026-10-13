@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { Image, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { BOARDS, type BoardItem, type ItemKind, PETS, type ShopItem, WIRES, type WireItem } from '../game/shop';
+import { BOARDS, type BoardItem, type ItemKind, OUTFITS, PETS, type ShopItem, WIRES, type WireItem, outfitSprite } from '../game/shop';
 import { FACES } from './faces.generated';
 import { useGame } from './game';
 import { buzz } from './haptics';
@@ -32,6 +32,7 @@ const TABS: { kind: ItemKind; label: string; items: ShopItem[]; blurb: string }[
     items: PETS,
     blurb: 'Pets follow you around town and help on jobs. Tap your pet on the job screen.',
   },
+  { kind: 'outfit', label: 'Outfits', items: OUTFITS, blurb: 'What you wear around town.' },
   { kind: 'wire', label: 'Wire glow', items: WIRES, blurb: 'The colour your wires glow when current flows.' },
   { kind: 'board', label: 'Workbench', items: BOARDS, blurb: 'The light over your workbench.' },
 ];
@@ -140,6 +141,8 @@ function Preview({ item }: { item: ShopItem }) {
       return <WireSwatch wire={item} />;
     case 'board':
       return <BenchSwatch board={item} />;
+    case 'outfit':
+      return <Image source={FACES[outfitSprite(item.id)]} style={styles.face} />;
     case 'hat':
       return null;
   }

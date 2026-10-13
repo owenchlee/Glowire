@@ -9,6 +9,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
 import { type SaveData, dayKey, totalStars } from '../game/save';
+import { outfitSprite } from '../game/shop';
 import { NOTES, SCENES, type Scene } from '../game/story';
 import { LEVELS } from '../levels/levels';
 import type { LevelDef } from '../levels/types';
@@ -404,6 +405,7 @@ export function WorldScreen({ map, worldId }: { map: WorldMap; worldId: string }
         map={map}
         paused={!focused}
         pet={save.equipped.pet}
+        hero={outfitSprite(save.equipped.outfit)}
         lit={lit}
         fog={fog}
         residents={residents}

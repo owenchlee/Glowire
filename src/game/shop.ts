@@ -1,6 +1,6 @@
 // Everything sparks can buy. Pets are tools; the rest is cosmetic.
 
-export type ItemKind = 'pet' | 'wire' | 'board' | 'hat';
+export type ItemKind = 'pet' | 'wire' | 'board' | 'hat' | 'outfit';
 
 interface ItemBase {
   id: string;
@@ -38,7 +38,12 @@ export interface HatItem extends ItemBase {
   kind: 'hat';
 }
 
-export type ShopItem = PetItem | WireItem | BoardItem | HatItem;
+/** Clothes for the hero. The sprites are made by scripts/art.mjs (OUTFITS there). */
+export interface OutfitItem extends ItemBase {
+  kind: 'outfit';
+}
+
+export type ShopItem = PetItem | WireItem | BoardItem | HatItem | OutfitItem;
 
 export const PETS: PetItem[] = [
   {
@@ -200,7 +205,19 @@ export const HATS: HatItem[] = [
   { id: 'crown', kind: 'hat', name: 'Crown', price: 250, blurb: 'Ruler of Glowtown.' },
 ];
 
-export const CATALOGUE: ShopItem[] = [...PETS, ...WIRES, ...BOARDS, ...HATS];
+export const OUTFITS: OutfitItem[] = [
+  { id: 'uniform', kind: 'outfit', name: 'Glowire uniform', price: 0, blurb: 'Sunny yellow. Gran’s orders.' },
+  { id: 'ember', kind: 'outfit', name: 'Ember hoodie', price: 80, blurb: 'Warm as a lit filament.' },
+  { id: 'tide', kind: 'outfit', name: 'Harbour blue', price: 100, blurb: 'Captain Rosa approves.' },
+  { id: 'moss', kind: 'outfit', name: 'Explorer', price: 120, blurb: 'Wren lent you the pattern.' },
+  { id: 'plum', kind: 'outfit', name: 'Stargazer', price: 150, blurb: 'For Star Night.' },
+  { id: 'snow', kind: 'outfit', name: 'Night shift', price: 200, blurb: 'So bright it glows in the dark. Almost.' },
+];
+
+export const CATALOGUE: ShopItem[] = [...PETS, ...WIRES, ...BOARDS, ...HATS, ...OUTFITS];
+
+/** The hero's sprite (people.generated.ts) for an outfit. */
+export const outfitSprite = (id: string) => (id === 'uniform' ? 'hero' : `hero-${id}`);
 
 export function item(id: string): ShopItem | undefined {
   return CATALOGUE.find((i) => i.id === id);

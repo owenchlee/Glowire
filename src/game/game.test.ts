@@ -34,7 +34,7 @@ describe('save file', () => {
     expect(migrate('nope')).toEqual(NEW_SAVE);
     const save = migrate({ version: 2, sparks: -5, owned: ['scout', 4], stars: { 1: 'x', 2: 3 } });
     expect(save.sparks).toBe(0);
-    expect(save.owned).toEqual(['copper', 'wood', 'nohat', 'scout']);
+    expect(save.owned).toEqual(['copper', 'wood', 'nohat', 'uniform', 'scout']);
     expect(save.stars).toEqual({ '2': 3 });
   });
 
@@ -87,7 +87,7 @@ describe('shop', () => {
     save = equip(save, 'midnight');
     save = equip(save, 'crown');
     save = equip(save, 'hoot');
-    expect(save.equipped).toEqual({ pet: 'hoot', wire: 'neon', board: 'midnight', hat: 'crown' });
+    expect(save.equipped).toEqual({ pet: 'hoot', wire: 'neon', board: 'midnight', hat: 'crown', outfit: 'uniform' });
     expect(equip(save, 'hoot').equipped.pet).toBeNull();
     expect(equip(save, 'gold')).toBe(save); // not owned
   });
@@ -152,5 +152,13 @@ describe('story', () => {
   it('numbers the notebook pages 1, 2, 3… with no gaps', () => {
     const pages = Object.values(NOTES).map((n) => n.page).sort((a, b) => a - b);
     expect(pages).toEqual(pages.map((_, i) => i + 1));
+  });
+});
+
+describe('outfits', () => {
+  it('every outfit in the shop has a hero sprite and a portrait', async () => {
+    const { OUTFITS, outfitSprite } = await import('./shop');
+    const { PEOPLE } = await import('../world/people.generated');
+    for (const o of OUTFITS) expect(PEOPLE as readonly string[], o.id).toContain(outfitSprite(o.id));
   });
 });

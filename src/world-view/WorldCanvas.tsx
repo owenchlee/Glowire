@@ -41,6 +41,8 @@ interface Props {
   /** Residents with a speech bubble over their head. */
   bubbles: { who: string; x: number; y: number; kind: (typeof EXTRAS)[number] }[];
   walker: RefObject<Walker>;
+  /** The hero's sprite (an outfit). */
+  hero?: string;
   /** The pet trotting along behind the hero, if one is equipped. */
   pet?: string | null;
   onTick: (dt: number) => void;
@@ -89,6 +91,7 @@ function Scene({
   sheets,
   pet,
   fog,
+  hero = 'hero',
 }: Props & { sheets: { city: Texture; people: Texture } }) {
   const fogTexture = useMemo(() => createFog(map.width, map.height), [map]);
   const lighting = useMemo(() => createLighting('#6a74ad', fogTexture), [fogTexture]);
@@ -172,7 +175,7 @@ function Scene({
       {residents.map((r) => (
         <Person key={`${r.who}@${r.x},${r.y}`} who={r.who} x={r.x} y={r.y} facing={r.facing} sheet={peopleSheet} material={people} />
       ))}
-      <Hero walker={walker} sheet={peopleSheet} material={people} />
+      <Hero key={hero} who={hero} walker={walker} sheet={peopleSheet} material={people} />
       {pet && <Pet key={pet} id={pet} walker={walker} sheet={peopleSheet} material={people} />}
       {bubbles.map((b) => (
         <Bubble key={`${b.who}@${b.x},${b.y}`} {...b} sheet={peopleSheet} material={people} />
@@ -308,8 +311,9 @@ function Person({
   );
 }
 
-function Hero({ walker, sheet, material }: { walker: RefObject<Walker>; sheet: Sheet; material: ShaderMaterial }) {
-  const g = useQuad(sheet, 0, 0, T, T);
+function Hero({ who, walker, sheet, material }: { who: string; walker: RefObject<Walker>; sheet: Sheet; material: ShaderMaterial }) {
+  const column = Math.max(0, PEOPLE.indexOf(who as (typeof PEOPLE)[number])) * 64;
+  const g = useQuad(sheet, column, 0, T, T);
   const group = useRef<Mesh>(null);
   const last = useRef('');
   useFrame(() => {
@@ -319,7 +323,7 @@ function Hero({ walker, sheet, material }: { walker: RefObject<Walker>; sheet: S
     const key = `${w.facing}${frame}`;
     if (key !== last.current) {
       last.current = key;
-      setQuadSource(g, sheet, FACING_COLUMN[w.facing] * T, frame * T, T, T);
+      setQuadSource(g, sheet, column + FACING_COLUMN[w.facing] * T, frame * T, T, T);
     }
     if (group.current) group.current.position.set(p.x, -p.y, depth(p.y + 1) + 0.005);
   });
