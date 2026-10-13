@@ -5,7 +5,8 @@
 //   row 0: wires, column = arm mask (N=1, E=2, S=4, W=8)
 //   row 1: battery, LED red/green/blue/burned, resistors 100/220/470/1000 Ω,
 //          switch open/closed, rivets, spark, hover frame, bench A, bench B
-//   row 2: bushes (from the village pack), then the diode at column 4
+//   row 2: bushes (from the village pack), then the diode at column 4, changeover switch
+//          up / down (5, 6), ammeter (7), voltmeter (8)
 //
 // Pixels that light up (copper cores, LED domes, sparks) get alpha 254; the shader makes
 // them glow when current flows.
@@ -231,6 +232,60 @@ function toggle(closed) {
   return s;
 }
 
+/**
+ * A changeover switch: the common lead comes in from the west to a pivot; the lever touches
+ * the north contact (up) or the south one (down).
+ */
+function changeover(up) {
+  const s = new Sprite();
+  for (let x = 0; x <= 5; x++) (s.set(x, 7, C.copperLight, true), s.set(x, 8, C.copper, true));
+  for (let y = 0; y <= 3; y++) (s.set(7, y, C.copperLight, true), s.set(8, y, C.copper, true));
+  for (let y = 12; y <= 15; y++) (s.set(7, y, C.copperLight, true), s.set(8, y, C.copper, true));
+  // Contacts: brass pads at the end of each throw.
+  s.rect(6, 3, 5, 2, C.grey);
+  s.rect(6, 3, 5, 1, C.greyLight);
+  s.rect(6, 11, 5, 2, C.grey);
+  s.rect(6, 11, 5, 1, C.greyLight);
+  // Pivot.
+  s.rect(3, 6, 3, 4, C.grey);
+  s.rect(3, 6, 3, 1, C.greyLight);
+  // The lever, from the pivot to the chosen contact, with a knob on the end.
+  for (let i = 0; i <= 4; i++) {
+    const y = up ? 6 - i : 9 + i;
+    s.set(5 + i, y, C.solder);
+    s.set(5 + i, y + (up ? 1 : -1), C.solderDark);
+  }
+  s.rect(9, up ? 1 : 13, 2, 2, up ? C.green : C.gold);
+  s.outline();
+  return s;
+}
+
+/** A meter: a round dial on a dark case, with a needle and A (amps) or V (volts). */
+function meterSprite(mode) {
+  const s = new Sprite();
+  leads(s, 2, 13);
+  s.rect(2, 2, 12, 12, C.shadow);
+  for (let y = 3; y <= 12; y++)
+    for (let x = 3; x <= 12; x++) {
+      const d = Math.hypot(x - 7.5, y - 8);
+      if (d <= 4.8) s.set(x, y, d > 3.9 ? C.rimDark : C.cream, d <= 3.9);
+    }
+  // Scale ticks across the top of the dial, and the needle swung to the right.
+  for (const [x, y] of [[5, 6], [7, 5], [8, 5], [10, 6]]) s.set(x, y, C.rimDark);
+  s.set(8, 8, C.red);
+  s.set(9, 7, C.red);
+  s.set(10, 6, C.red);
+  s.set(7, 9, C.ink);
+  // The letter, small, at the bottom of the case.
+  const letter = mode === 'A'
+    ? [[6, 13], [7, 12], [8, 12], [9, 13], [7, 13], [8, 13]]
+    : [[6, 12], [9, 12], [7, 13], [8, 13]];
+  s.rect(5, 12, 6, 2, C.shadow);
+  for (const [x, y] of letter) s.set(x, y, mode === 'A' ? C.gold : C.batteryShine);
+  s.outline();
+  return s;
+}
+
 function rivets() {
   const s = new Sprite();
   for (const [x, y] of [
@@ -325,6 +380,10 @@ export function circuitSheet(bushes) {
   ];
   row1.forEach((s, i) => stamp(png, s, i, 1));
   stamp(png, diode(), 4, 2);
+  stamp(png, changeover(true), 5, 2);
+  stamp(png, changeover(false), 6, 2);
+  stamp(png, meterSprite('A'), 7, 2);
+  stamp(png, meterSprite('V'), 8, 2);
   bushes.forEach((tile, i) => {
     for (let y = 0; y < 16; y++)
       for (let x = 0; x < 16; x++) {

@@ -68,9 +68,38 @@ export interface DiodeTile extends TileBase {
   kind: 'diode';
 }
 
-export type Tile = WireTile | BlockTile | ResistorTile | LedTile | BatteryTile | SwitchTile | DiodeTile;
+/**
+ * A changeover (two-way) switch: three terminals. At rotation 0 the common terminal is on
+ * the W side; flipped up it joins the N terminal, flipped down the S terminal. Two of them
+ * wired together make a staircase light, switchable from either end.
+ */
+export interface ChangeoverTile extends TileBase {
+  kind: 'changeover';
+  up: boolean;
+}
+
+/**
+ * A meter, wired in like any two-terminal part (+ on W at rotation 0). An ammeter ('A') is
+ * practically a wire and reads the current through it; a voltmeter ('V') is practically a
+ * gap and reads the voltage between its two ends.
+ */
+export interface MeterTile extends TileBase {
+  kind: 'meter';
+  mode: 'A' | 'V';
+}
+
+export type Tile =
+  | WireTile
+  | BlockTile
+  | ResistorTile
+  | LedTile
+  | BatteryTile
+  | SwitchTile
+  | DiodeTile
+  | ChangeoverTile
+  | MeterTile;
 /** Parts with a + and a − terminal on opposite sides. */
-export type TwoTerminalTile = ResistorTile | LedTile | BatteryTile | SwitchTile | DiodeTile;
+export type TwoTerminalTile = ResistorTile | LedTile | BatteryTile | SwitchTile | DiodeTile | MeterTile;
 export type TileKind = Tile['kind'];
 
 /** A rectangular grid. Cell (x, y) lives at index y * width + x; y grows towards S. */

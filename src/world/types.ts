@@ -67,7 +67,11 @@ export type Spot =
   | { kind: 'daily'; x: number; y: number }
   | { kind: 'sign'; x: number; y: number; text: string }
   | { kind: 'note'; x: number; y: number; note: string }
-  | { kind: 'exit'; x: number; y: number; to: string };
+  /** Something odd to look at closely: a story secret (game/lore.ts). It twinkles until found. */
+  | { kind: 'secret'; x: number; y: number; secret: string }
+  | { kind: 'exit'; x: number; y: number; to: string }
+  /** A mini-game to play (game/games.ts). */
+  | { kind: 'game'; x: number; y: number; game: 'colours' | 'signal' };
 
 /** One stretch of the route. */
 export interface Area {
@@ -85,9 +89,27 @@ export interface Area {
   gate?: string;
 }
 
+/**
+ * A figure seen in the distance: there one moment, gone when you get close. Walking up to
+ * where they stood finds a secret.
+ */
+export interface Sighting {
+  /** A secret id (game/lore.ts): what you find, and how the sighting is remembered. */
+  id: string;
+  /** Who's seen (a sprite id). */
+  who: string;
+  x: number;
+  y: number;
+  /** Only seen once this light group is lit. */
+  after?: string;
+}
+
 export interface WorldMap {
   id: string;
   name: string;
+  /** The colour of the night here (the shader's ambient light). */
+  night?: string;
+  sightings: Sighting[];
   width: number;
   height: number;
   /** Ground tiles, row by row; -1 for none. */

@@ -14,6 +14,7 @@ import { PNG } from 'pngjs';
 
 import { blobTable } from './autotile.mjs';
 import { circuitSheet } from './circuit-art.mjs';
+import { townSheet } from './town-art.mjs';
 
 const SRC = 'art/source';
 const OUT = 'assets/art';
@@ -102,6 +103,7 @@ const SHEETS = [
   { id: 'field', file: 'TilesetField.png' },
   { id: 'abandoned', file: 'TilesetVillageAbandoned.png' },
   { id: 'towers', file: 'TilesetTowers.png' },
+  { id: 'town', file: null, make: townSheet },
 ];
 
 /** Doorways in the village houses: their dark openings glow warm once the house is lit. */
@@ -163,6 +165,7 @@ function markDoors(house) {
 
 function world(palette) {
   const pngs = SHEETS.map((s) => {
+    if (s.make) return s.make();
     if (!s.file) return cityTiles(palette);
     const png = read(join(NINJA, 'tilesets', s.file));
     return s.id === 'house' ? markDoors(png) : png;
@@ -248,6 +251,10 @@ const CAST_SPRITES = {
   grumble: 'Spirit',
   wren: 'Villager5',
   bolt: 'RobotGrey',
+  hazel: 'OldWoman',
+  bram: 'Hunter',
+  moth: 'Villager',
+  glimmer: 'Spirit',
   marigold: 'EggGirl',
 };
 
@@ -290,6 +297,19 @@ const PIP_RECOLOUR = {
   '345a52': '2d697b', // body shade
   e0394c: 'ffe166', // eyes
   '8f3e56': 'd2b37d', // eye shade (portrait)
+};
+
+/**
+ * Mossbell Hollow's people are village-pack characters in new colours, so nobody looks
+ * like someone from another world: Hazel grey-haired in moss green, Bram in a ferryman's teal coat,
+ * Moth in a plum hoodie, and Glimmer, the lantern spirit, in gold (Grumble's sprite is the
+ * same spirit in storm blue: they're twins).
+ */
+const CAST_RECOLOUR = {
+  hazel: { a5608b: '9ba7aa', d3a2c0: 'd2c9c9', '548789': '4a7f4b', '2d697b': '345a52' },
+  bram: { d14b34: '61372e', '8f3e56': '3b3643', '4a5270': '2d697b' },
+  moth: { d14b34: 'a5608b', '548789': '3b3643', '4e484a': '61372e' },
+  glimmer: { '79b8ce': 'ffe166', '9ba7aa': 'f1ae41' },
 };
 
 /** Swap colours. `fromRow`: leave rows above it alone (a portrait's face shares shirt colours). */
@@ -354,7 +374,7 @@ function characters() {
         ? HERO_RECOLOUR
         : id === 'pip'
           ? PIP_RECOLOUR
-          : null;
+          : (CAST_RECOLOUR[id] ?? null);
     // In the portrait, only the shirt (bottom quarter) changes colour.
     const shirtRow = isHero ? Math.floor(face.height * 0.74) : 0;
     return map ? { id, sheet: recolour(sheet, map), face: recolour(face, map, shirtRow) } : { id, sheet, face };
@@ -379,9 +399,12 @@ function characters() {
   extras.forEach((img, i) => blit(atlas, img, i * 16 + Math.floor((16 - img.width) / 2), 112 + 16 - img.height));
   write(join(OUT, 'people.png'), atlas);
 
-  rmSync(join(OUT, 'faces'), { recursive: true, force: true });
-  mkdirSync(join(OUT, 'faces'), { recursive: true });
-  for (const s of sheets) write(join(OUT, 'faces', `${s.id}.png`), upscale(s.face, 4));
+  // Overwrite portraits in place and only remove ones nobody uses any more: deleting the
+  // whole folder makes a running Metro lose track of every file in it.
+  const faces = join(OUT, 'faces');
+  mkdirSync(faces, { recursive: true });
+  for (const s of sheets) write(join(faces, `${s.id}.png`), upscale(s.face, 4));
+  for (const f of readdirSync(faces)) if (!ids.includes(f.replace(/\.png$/, ''))) rmSync(join(faces, f));
 
   writeFileSync(
     'src/world/people.generated.ts',

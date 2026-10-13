@@ -14,6 +14,12 @@ export const BATTERY_INTERNAL_RESISTANCE = 0.3;
  */
 export const OPEN_SWITCH_RESISTANCE = 1e9;
 
+/** An ammeter is meant to be invisible to the circuit: as good as a wire. */
+export const AMMETER_RESISTANCE = 0.01;
+
+/** A voltmeter is meant to draw no current: as good as a gap (like an open switch). */
+export const VOLTMETER_RESISTANCE = 1e9;
+
 /** Battery current above this is a short circuit. */
 export const SHORT_CIRCUIT_CURRENT = 2;
 

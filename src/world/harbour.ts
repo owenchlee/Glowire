@@ -131,10 +131,15 @@ function lighthouse(b: MapBuilder) {
   b.resident('gus', 51, 33, 'left', { job: 21 });
   b.resident('gus', 48, 33, 'right', { job: 23 });
   b.house('round', 42, 17);
+  // Old Gus's signal lamp, on a post by the lighthouse path: the Signal Lamp game.
+  b.lamp(46, 25, 'job:21', 'hook');
+  b.spots.push({ kind: 'game', x: 46, y: 25, game: 'signal' });
   b.prop(45, 20, 'well');
   b.treeLine(38, 62, 'top', 14, ['pine', 'bigGreen', 'round']);
   rocks(b, [[44, 34], [56, 33], [55, 37], [45, 38], [58, 30]]);
   b.lamp(42, 23, 'area:point', 'post');
+  b.secret({ id: 'sea-lamps', x: 50, y: 35 });
+  b.sighting({ id: 'cliff-lantern', who: 'glimmer', x: 58, y: 21 });
   b.lamp(57, 25, 'area:point', 'post');
 }
 
@@ -202,6 +207,7 @@ function warehouses(b: MapBuilder) {
   b.resident('rosa', door.x + 1, door.y, 'down', { job: 34 });
   b.resident('grumble', door.x - 2, door.y, 'right', { until: 'job:34', after: 'job:25' });
   for (const x of [88, 89, 101, 102]) b.prop(x, 23, 'crate');
+  b.secret({ id: 'mossbell-crate', x: 88, y: 23 });
   b.prop(90, 23, 'barrel');
   b.prop(97, 25, 'cone');
   b.prop(98, 25, 'cone');
@@ -231,7 +237,9 @@ function clockHill(b: MapBuilder) {
   b.path('darkDirt', [{ x: 106, y: 25 }, { x: 112, y: 25 }, { x: 118, y: 21 }, { x: 110, y: 15 }, { x: 117, y: 9 }, { x: 128, y: 9 }], 3);
 
   // Professor Lumen's clocktower, all four of its jobs round its foot.
-  const tower = b.building({ x: 118, y: 11, w: 7, roof: 3, roofStyle: 'slate', wall: 'orange', door: 'double', window: 'tall', group: 'area:hill' });
+  const tower = b.clocktower(119, 11, 'town', 'area:hill');
+  b.glow(121.5, 14.2, 'area:hill', 5, '#fff1b0');
+  b.path('darkDirt', [{ x: 117, y: 21 }, { x: 121, y: 21 }], 2);
   lumenJob(b, 26, tower.x, tower.y - 1, tower.x + 1, tower.y);
   b.group('job:27', [27]);
   b.object(112, 19, 2, 2, [at('towers', 60), at('towers', 61), at('towers', 84), at('towers', 85)], 'job:27');
@@ -241,8 +249,8 @@ function clockHill(b: MapBuilder) {
   b.lamp(108, 15, 'job:28', 'park');
   lumenJob(b, 28, 108, 15, 108, 16);
   b.group('job:29', [29]);
-  b.lamp(122, 21, 'job:29', 'park');
-  lumenJob(b, 29, 122, 21, 121, 21);
+  b.lamp(126, 21, 'job:29', 'park');
+  lumenJob(b, 29, 126, 21, 125, 21);
 
   b.treeLine(106, 128, 'top', 4, ['pine', 'dead']);
   for (const [x, y] of [[115, 27], [125, 26], [111, 11], [124, 17]] as const) b.tree(x, y, 'pine');
@@ -283,6 +291,10 @@ function hilltop(b: MapBuilder) {
   b.glow(146, 13.5, 'job:35', 6, '#c9e7ff');
   lumenJob(b, 35, 145, 14, 147, 15);
   b.resident('grumble', 146, 16, 'up', { after: 'job:31', until: 'job:35' });
+  // The bus that goes one stop further: up the valley to Mossbell Hollow.
+  b.object(131, 7, 1, 2, [b.cityTile(167), b.cityTile(194)]);
+  b.block(131, 8, 1, 1);
+  b.spots.push({ kind: 'exit', x: 131, y: 8, to: 'mossbell' });
   b.treeLine(128, W, 'top', 4, ['pine', 'dead']);
   b.treeLine(128, W, 'bottom', 24, ['pine', 'round']);
   rocks(b, [[137, 19], [148, 10], [131, 15]]);

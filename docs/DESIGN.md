@@ -124,9 +124,9 @@ Why a campaign, not a collection of minigames:
 | 2   | Colours     | Green and blue LEDs: forward voltage, hogging     | 8 levels  |
 | 3   | Power Up    | Batteries as parts: series voltage, LED strings   | 7 levels  |
 | 4   | Twist       | Rotate-only puzzles (new format)                  | 6 levels  |
-| 5   | Crossroads  | Changeover (two-way) switch: staircase light, XOR | planned   |
-| 6   | One Way     | Plain diodes: steering current, diode logic       | planned   |
-| 7   | Meters      | Hit an exact current or voltage                   | planned   |
+| 5   | Two Ways    | Changeover (two-way) switch: staircase light      | 4 levels  |
+| 6   | Meters      | Hit an exact current or voltage                   | 4 + boss  |
+| 7   | One Way     | Plain diodes: steering current, diode logic       | 2 jobs    |
 | 8   | Flicker     | Capacitors (needs a time-stepping solver)         | planned   |
 | 9   | Amplify     | Transistors as switches                           | planned   |
 | 10+ | …           | Light sensors, buzzers, motors, logic gates       | planned   |
@@ -197,6 +197,5 @@ around the switch, a cup that bypasses the resistor.
 - **Daily circuit:** generate a goal and a board from a seed, check it with a solver search,
   and give everyone the same puzzle each day.
 - **Diodes:** done (v0.6), jobs 36 and 37 in Driftwood Harbour.
-- **Changeover switch, meters:** new three-terminal tiles; the solver already handles any
-  resistor/diode/source network.
+- **Changeover switch, meters:** done (v0.7), chapters 5 and 6 in Mossbell Hollow.
 - **Capacitors and transistors:** need a time-stepping solver and a 3-terminal model.

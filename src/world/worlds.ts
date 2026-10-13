@@ -2,6 +2,7 @@
 
 import { buildGlowtown } from './glowtown';
 import { buildHarbour } from './harbour';
+import { buildMossbell } from './mossbell';
 import type { WorldMap } from './types';
 
 export interface WorldInfo {
@@ -28,6 +29,13 @@ export const WORLDS: WorldInfo[] = [
     tagline: 'Fishing boats, a lighthouse, and the old clock on the hill where the Glowire begins.',
     chapters: [3, 4],
     build: buildHarbour,
+  },
+  {
+    id: 'mossbell',
+    name: 'Mossbell Hollow',
+    tagline: 'An old mill village up the valley, where a lantern walks the lanes at night.',
+    chapters: [5, 6],
+    build: buildMossbell,
   },
 ];
 

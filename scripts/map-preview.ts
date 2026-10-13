@@ -3,6 +3,7 @@
 //
 //   npm run map-preview -- glowtown            → map-glowtown.png in the working directory
 //   MAP_OUT=docs/history/v0.6 npm run map-preview -- glowtown
+//   MAP_IDS=glowtown MAP_CROP=150,0,30,40 MAP_SCALE=2 npm run map-preview   → just those cells
 //
 // It runs through vitest (which already compiles TypeScript), as a single "test".
 
@@ -21,7 +22,9 @@ function draw(map: WorldMap, opts: { scale: number; lit: boolean }) {
   const atlas = PNG.sync.read(readFileSync('assets/art/world.png'));
   const people = PNG.sync.read(readFileSync('assets/art/people.png'));
   const cols = atlas.width / T;
-  const out = new PNG({ width: map.width * T * opts.scale, height: map.height * T * opts.scale });
+  const [cx0, cy0, cw, ch] = (process.env.MAP_CROP ?? `0,0,${map.width},${map.height}`).split(',').map(Number);
+  const crop = { x: cx0!, y: cy0!, w: Math.min(cw!, map.width - cx0!), h: Math.min(ch!, map.height - cy0!) };
+  const out = new PNG({ width: crop.w * T * opts.scale, height: crop.h * T * opts.scale });
   const W = map.width * T;
   const H = map.height * T;
   const buf = new Uint8Array(W * H * 3);
@@ -85,7 +88,7 @@ function draw(map: WorldMap, opts: { scale: number; lit: boolean }) {
 
   for (let y = 0; y < out.height; y++)
     for (let x = 0; x < out.width; x++) {
-      const i = (Math.floor(y / opts.scale) * W + Math.floor(x / opts.scale)) * 3;
+      const i = ((Math.floor(y / opts.scale) + crop.y * T) * W + Math.floor(x / opts.scale) + crop.x * T) * 3;
       const o = (y * out.width + x) * 4;
       out.data[o] = buf[i]!;
       out.data[o + 1] = buf[i + 1]!;

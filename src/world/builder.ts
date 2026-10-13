@@ -7,7 +7,7 @@
 // in one source sheet into an atlas tile.
 
 import { ATLAS_COLS, SHEETS, type SheetId, TERRAIN_TILES, type TerrainId } from './atlas.generated';
-import type { Area, Facing, LightSource, Point, Rect, Resident, Spot, WorldMap, WorldObject } from './types';
+import type { Area, Facing, LightSource, Point, Rect, Resident, Sighting, Spot, WorldMap, WorldObject } from './types';
 
 export function at(sheet: SheetId, i: number): number {
   const o = SHEETS[sheet];
@@ -27,6 +27,25 @@ type Slice = readonly number[];
 const slice = (sheet: SheetId, i: number): Slice => cut(sheet, i, 3, 3);
 
 const city = (i: number) => at('city', i);
+/** A tile of the drawn town sheet (scripts/town-art.mjs), by column and row. */
+const town = (col: number, row: number) => at('town', row * SHEETS.town.cols + col);
+
+/** Where things sit in the town sheet (keep in sync with scripts/town-art.mjs). */
+const TOWN = {
+  /** Seamless 4×4 cobble patches: first column. */
+  cobbles: { grey: 0, warm: 4 },
+  /** 3×3 kerb frames (middle empty): first column. */
+  kerb: { grey: 8, warm: 11 },
+  /** Bits to scatter on a square: row 3, these columns. */
+  details: [8, 9, 10, 11, 12, 13],
+  /** 4×4 mosaics (rows 4–7): first column, and the cobbles they belong on. */
+  mosaics: { star: { col: 0, paving: 'grey' }, sun: { col: 4, paving: 'warm' } },
+  /** The 4×4 fountain (rows 4–7): first column. */
+  fountain: 8,
+  /** 5×10 towers (rows 8–17): first column. */
+  towers: { town: 0, moss: 5 },
+} as const;
+export type TowerStyle = keyof typeof TOWN.towers;
 
 /** Ground you paint with. Grass kinds are plain; the rest blend into the grass around them. */
 export type Ground = 'grass' | 'meadow' | 'sand' | TerrainId | 'paved';
@@ -63,6 +82,33 @@ export const HOUSES = {
   barn: { i: 26, w: 3, h: 3, door: 1 },
 } as const;
 export type HouseStyle = keyof typeof HOUSES;
+
+/**
+ * Mossy, half-abandoned buildings (village pack, abandoned sheet): top-left tile, size,
+ * and the door's column.
+ */
+export const RUINS = {
+  stoneHut: { i: 0, w: 4, h: 3, door: 1 },
+  kiln: { i: 4, w: 2, h: 3, door: 1 },
+  mossHouse: { i: 11, w: 3, h: 3, door: 1 },
+  paleHouse: { i: 71, w: 3, h: 3, door: 1 },
+  stiltHut: { i: 14, w: 3, h: 5, door: 1 },
+  aFrame: { i: 132, w: 4, h: 5, door: 1 },
+  mound: { i: 116, w: 4, h: 5, door: 2 },
+} as const;
+export type RuinStyle = keyof typeof RUINS;
+
+/** Big mossy things from the same sheet: size and top-left tile. */
+const MOSSY = {
+  bigTree: { i: 120, w: 4, h: 3 },
+  bigTree2: { i: 180, w: 4, h: 3 },
+  tree: { i: 124, w: 2, h: 2 },
+  tree2: { i: 184, w: 2, h: 2 },
+  boulder: { i: 107, w: 2, h: 2 },
+  frog: { i: 109, w: 2, h: 2 },
+  pillar: { i: 167, w: 2, h: 4 },
+} as const;
+export type MossyStyle = keyof typeof MOSSY;
 
 /** City buildings (Kenney): roofs seen from above, then a brick front. */
 const CITY_ROOFS = { tan: slice('city', 81), slate: slice('city', 89) } as const;
@@ -105,6 +151,8 @@ export const PROPS = {
   pot: { t: at('house', 413), solid: true },
   sign: { t: at('element', 34), solid: true },
   well: { t: at('element', 2), solid: true },
+  grave: { t: at('element', 36), solid: true },
+  cross: { t: at('element', 35), solid: true },
   stump: { t: at('nature', 196), solid: true },
   log: { t: at('nature', 197), solid: true },
   rock: { t: at('nature', 329), solid: true },
@@ -167,6 +215,7 @@ export class MapBuilder {
   readonly lights: LightSource[] = [];
   readonly residents: Resident[] = [];
   readonly spots: Spot[] = [];
+  readonly sightings: Sighting[] = [];
   readonly groups: Record<string, number[]> = {};
   readonly areas: Area[] = [];
   readonly gates: { area: number; cells: Point[] }[] = [];
@@ -193,6 +242,20 @@ export class MapBuilder {
 
   cityTile(i: number) {
     return city(i);
+  }
+
+  waterTile(i: number) {
+    return at('water', i);
+  }
+
+  /** A hidden thing to find (see game/lore.ts SECRETS). */
+  secret(s: { id: string; x: number; y: number }) {
+    this.spots.push({ kind: 'secret', x: s.x, y: s.y, secret: s.id });
+  }
+
+  /** Someone glimpsed in the distance, who vanishes when you come close. */
+  sighting(s: Sighting) {
+    this.sightings.push(s);
   }
 
   // ── Ground ─────────────────────────────────────────────────────────────────
@@ -256,15 +319,69 @@ export class MapBuilder {
       }
   }
 
+  /**
+   * A cobbled square with kerbstones round its edge, and a few drains, cracks and puddles
+   * scattered over it so a big square doesn't look like a flat colour.
+   */
   plaza(x: number, y: number, w: number, h: number, grey = false) {
-    this.fill(x, y, w, h, grey ? TILES.plazaGrey : TILES.plaza);
+    const paving = grey ? 'grey' : 'warm';
+    const c0 = TOWN.cobbles[paving];
+    const k0 = TOWN.kerb[paving];
+    for (let j = 0; j < h; j++)
+      for (let i = 0; i < w; i++) {
+        const cx = x + i;
+        const cy = y + j;
+        this.setGround(cx, cy, town(c0 + (((cx % 4) + 4) % 4), ((cy % 4) + 4) % 4));
+        const col = i === 0 ? 0 : i === w - 1 ? 2 : 1;
+        const row = j === 0 ? 0 : j === h - 1 ? 2 : 1;
+        if (col !== 1 || row !== 1) this.setDecal(cx, cy, town(k0 + col, row));
+        else {
+          this.setDecal(cx, cy, -1);
+          const n = hash(cx * 1.31, cy * 0.77);
+          if (n < 0.045) this.setDecal(cx, cy, town(TOWN.details[Math.floor(n * 1000) % TOWN.details.length]!, 3));
+        }
+      }
   }
 
-  /** Plain asphalt with a little variety. */
+  /** A round mosaic (4×4) set into a square, its top-left at (x, y). */
+  mosaic(x: number, y: number, kind: keyof typeof TOWN.mosaics) {
+    const m = TOWN.mosaics[kind];
+    const c0 = TOWN.cobbles[m.paving];
+    for (let j = 0; j < 4; j++)
+      for (let i = 0; i < 4; i++) {
+        this.setGround(x + i, y + j, town(c0 + (((x + i) % 4) + 4) % 4, (((y + j) % 4) + 4) % 4));
+        this.setDecal(x + i, y + j, town(m.col + i, 4 + j));
+      }
+  }
+
+  /** A round fountain (4×4) on a square. Its water glows once `group` is lit. */
+  fountain(x: number, y: number, group?: string) {
+    const tiles: number[] = [];
+    for (let j = 0; j < 4; j++) for (let i = 0; i < 4; i++) tiles.push(town(TOWN.fountain + i, 4 + j));
+    this.object(x, y, 4, 4, tiles, group);
+    this.block(x, y + 1, 4, 3);
+  }
+
+  /**
+   * A clocktower (5 wide, 10 tall). Its clock face and windows glow once `group` is lit.
+   * Returns the cell just outside its door.
+   */
+  clocktower(x: number, y: number, style: TowerStyle = 'town', group?: string): Point {
+    const c0 = TOWN.towers[style];
+    const tiles: number[] = [];
+    for (let j = 0; j < 10; j++) for (let i = 0; i < 5; i++) tiles.push(town(c0 + i, 8 + j));
+    this.object(x, y, 5, 10, tiles, group);
+    // Only the bottom storeys stand on the ground; the top is seen from in front.
+    this.block(x, y + 5, 5, 5);
+    return { x: x + 2, y: y + 10 };
+  }
+
+  /** Plain asphalt with a little variety (it clears any kerb or crack drawn there). */
   asphalt(x: number, y: number, w: number, h: number) {
     const a = TILES.asphalt;
     for (let j = 0; j < h; j++)
       for (let i = 0; i < w; i++) {
+        this.setDecal(x + i, y + j, -1);
         const n = hash(x + i, y + j);
         this.setGround(x + i, y + j, n < 0.7 ? a[0]! : a[1 + (Math.floor((n - 0.7) * 10) % 3)]!);
       }
@@ -332,6 +449,21 @@ export class MapBuilder {
     this.object(x, y, h.w, h.h, cut('house', h.i, h.w, h.h), group);
     this.block(x, y, h.w, h.h);
     return { x: x + h.door, y: y + h.h };
+  }
+
+  /** An old mossy building. Returns the cell just outside its door. */
+  ruin(style: RuinStyle, x: number, y: number, group?: string): Point {
+    const r = RUINS[style];
+    this.object(x, y, r.w, r.h, cut('abandoned', r.i, r.w, r.h), group);
+    this.block(x, y + Math.max(0, r.h - 3), r.w, Math.min(3, r.h));
+    return { x: x + r.door, y: y + r.h };
+  }
+
+  /** A big mossy tree, boulder or statue; it blocks its bottom row (two rows for pillars). */
+  mossy(style: MossyStyle, x: number, y: number) {
+    const m = MOSSY[style];
+    this.object(x, y, m.w, m.h, cut('abandoned', m.i, m.w, m.h));
+    this.block(x, y + m.h - 1, m.w, 1);
   }
 
   /**
@@ -576,7 +708,7 @@ export class MapBuilder {
     this.gates.push({ area: index, cells });
   }
 
-  finish(meta: { id: string; name: string; spawn: Point & { facing: Facing } }): WorldMap {
+  finish(meta: { id: string; name: string; spawn: Point & { facing: Facing }; night?: string }): WorldMap {
     this.resolveGround();
     return {
       ...meta,
@@ -589,6 +721,7 @@ export class MapBuilder {
       lights: this.lights,
       residents: this.residents,
       spots: this.spots,
+      sightings: this.sightings,
       groups: this.groups,
       areas: this.areas,
       areaOf: this.areaOf,

@@ -36,7 +36,7 @@ function lay(board: BoardState, picture: string[], where: string): BoardState {
 
 describe('boss fights', () => {
   it('every district ends with a boss', () => {
-    expect(BOSSES.map((b) => levelNumber(b.id))).toEqual(['1-Boss', '2-Boss', '3-Boss', '4-Boss']);
+    expect(BOSSES.map((b) => levelNumber(b.id))).toEqual(['1-Boss', '2-Boss', '3-Boss', '4-Boss', '6-Boss']);
   });
 
   for (const boss of BOSSES) {

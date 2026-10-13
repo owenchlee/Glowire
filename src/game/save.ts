@@ -20,6 +20,8 @@ export interface SaveData {
   };
   /** Story scenes already shown. */
   seen: string[];
+  /** Best score in each mini-game (games.ts). */
+  games: Record<string, number>;
   /** Testing switch: every job is open. */
   unlockAll: boolean;
 }
@@ -32,6 +34,7 @@ export const NEW_SAVE: SaveData = {
   equipped: { pet: null, wire: 'copper', board: 'wood', hat: 'nohat', outfit: 'uniform' },
   daily: { last: null, streak: 0, best: 0, stars: {} },
   seen: [],
+  games: {},
   unlockAll: false,
 };
 
@@ -72,6 +75,7 @@ export function migrate(raw: unknown): SaveData {
       stars: isRecord(daily.stars) ? numbers(daily.stars) : {},
     },
     seen: Array.isArray(raw.seen) ? raw.seen.filter((x) => typeof x === 'string') : [],
+    games: isRecord(raw.games) ? numbers(raw.games) : {},
     unlockAll: raw.unlockAll === true,
   };
 }
@@ -159,6 +163,21 @@ export function recordDaily(save: SaveData, today: string, stars: number): JobPa
     },
     earned,
     firstClear,
+  };
+}
+
+/** Sparks for each point a mini-game score beats your best by. */
+export const GAME_SPARKS_PER_POINT = 3;
+
+/** A mini-game finished: a new best pays sparks for every point it beats the old one by. */
+export function recordGame(save: SaveData, game: string, score: number): JobPayout {
+  const best = save.games[game] ?? 0;
+  if (score <= best) return { save, earned: 0, firstClear: false };
+  const earned = withPetBonus(save, (score - best) * GAME_SPARKS_PER_POINT);
+  return {
+    save: { ...save, sparks: save.sparks + earned, games: { ...save.games, [game]: score } },
+    earned,
+    firstClear: best === 0,
   };
 }
 

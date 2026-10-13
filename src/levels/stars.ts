@@ -1,7 +1,7 @@
 // Stars: ★ for solving a job, plus one for each star goal met. Pure TypeScript.
 
 import { type BoardState, wireCount } from '../board/board';
-import { type Evaluation, evaluateLevel, describeGoal } from './evaluate';
+import { type Evaluation, evaluateLevel, type GoalWords, describeGoal } from './evaluate';
 import type { LevelDef, StarGoal } from './types';
 
 /** What happened while the player worked on the job (things the board alone can't show). */
@@ -67,6 +67,7 @@ export function describeStar(
   goal: StarGoal,
   names: Record<string, string>,
   switchCount: number,
+  words: GoalWords = {},
 ): string {
   switch (goal.kind) {
     case 'wire':
@@ -80,6 +81,6 @@ export function describeStar(
     case 'solo':
       return 'Solve it without help from Pip or a pet';
     case 'goal':
-      return `Also: ${describeGoal(goal.goal, names, switchCount).replace(/^./, (c) => c.toLowerCase())}`;
+      return `Also: ${describeGoal(goal.goal, names, switchCount, words).replace(/^./, (c) => c.toLowerCase())}`;
   }
 }

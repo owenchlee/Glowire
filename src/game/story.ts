@@ -6,6 +6,10 @@
 // first switched it on, lightning struck it and left a little storm cloud behind: Grumble.
 // He hides from bright lights and hums in the dark, and last night he zapped the power.
 // Marigold's pages hint that the Glowire is older than her, and runs in from the sea.
+//
+// After Star Night, one light stays on far up the valley, in Mossbell Hollow, where a
+// "Lantern Lady" walks at night. She is Glimmer, Grumble's twin. The mystery behind it
+// all, and the secrets that hint at it, live in lore.ts.
 
 /** Who speaks a line: Pip, Grumble, or a townsperson id from cast.ts. */
 export type Speaker = 'pip' | 'grumble' | string;
@@ -232,6 +236,103 @@ export const SCENES: Record<string, Scene> = Object.fromEntries(
       },
       { who: 'gran', text: 'Well, why didn’t you just SAY so? One night a year, we’ll switch the whole town off. Star Night.' },
       { who: 'pip', text: 'Was that… a smile? Gran! Grumble is SMILING!' },
+      { who: 'wren', text: 'Wait. Everybody’s switched off for Star Night… so why is there still ONE light on? Way up the valley?' },
+      { who: 'lumen', text: '…Mossbell Hollow. That light hasn’t gone out in fifty years.' },
+      { who: 'grumble', text: '…' },
+      { who: 'pip', text: 'Grumble? Your sparks have gone all wobbly.' },
+      { who: 'grumble', text: 'Nothing. It’s NOTHING. Don’t go up there.' },
+      { who: 'gran', text: 'There’s a bus by the hilltop gate that goes one stop further. I think it’s time I took it again.' },
+    ]),
+
+    // ── Mossbell Hollow ──
+    scene('hollow-intro', [
+      { who: 'wren', text: 'Mossbell Hollow. It’s on Marigold’s map. It isn’t on anybody else’s.' },
+      { who: 'gran', text: 'I’ve been here before. A long, long time ago.' },
+      { who: 'pip', text: 'Gran? Why are you whispering?' },
+      {
+        who: 'gran',
+        text: 'Stay on the path, kiddo. And if you see a light moving where no light should be… don’t chase it. Let it come to you.',
+      },
+      { who: 'pip', text: 'Bzzt. That is the spookiest thing you have ever said.' },
+    ]),
+    scene('gran-hollow', [
+      { who: 'gran', text: 'Hazel Thorn still keeps the mill, I think. If anyone knows what’s going on up here, she will.' },
+    ]),
+    scene('wren-hollow', [
+      { who: 'wren', text: 'My map says the Glowire runs right through the middle of the village… and ends at a bell.' },
+    ]),
+    scene('mill-intro', [
+      { who: 'hazel', text: 'Visitors? Nobody visits Mossbell. Not since the Long Dark.' },
+      { who: 'pip', text: 'The… Long Dark?' },
+      {
+        who: 'hazel',
+        text: 'Fifty years ago every lamp in the Hollow went out at once, and the bell rang thirteen times. By morning, half the village had packed up and gone.',
+      },
+      { who: 'hazel', text: 'I stayed. My Tom stayed. Somebody had to keep the lamps lit for… well. You’ll see.' },
+    ]),
+    scene('mill-outro', [
+      { who: 'hazel', text: 'Light on the mill again. Tom would have cried like a baby.' },
+      { who: 'wren', text: 'Hazel… Thorn? My mum’s name was Thorn. Ivy Thorn. She grew up somewhere she never told me about.' },
+      { who: 'hazel', text: '…Ivy? My little Ivy? Then you’re… oh. Oh, come here.' },
+      { who: 'pip', text: 'Bzzt! She’s Wren’s GRANDMA! I’m crying. Robots can’t cry. I’m leaking.' },
+      { who: 'hazel', text: 'The Mere’s next. Mind the fog. It doesn’t like light, and it’s been getting braver.' },
+    ]),
+    scene('mere-intro', [
+      { who: 'bram', text: 'Stop there. Don’t step off the path. The fog’s in tonight.' },
+      { who: 'bram', text: 'It rolls off the water when the lamps get low. Swallows the light whole, then moves on to the next lamp.' },
+      { who: 'grumble', text: 'That’s NOT me, before anyone asks. I don’t DO fog.' },
+      { who: 'pip', text: 'Grumble?! You came after all!' },
+      { who: 'grumble', text: 'I got bored on the bus. Shush.' },
+    ]),
+    scene('mere-outro', [
+      { who: 'bram', text: 'Look at it pull back. Fog can’t stand a good bright lamp.' },
+      { who: 'moth', text: 'Psst! Up here! You fixed the Mere? Then you HAVE to come to Bellfield. She was there last night.' },
+      { who: 'moth', text: 'The Lantern Lady.' },
+    ]),
+    scene('bellfield-intro', [
+      { who: 'pip', text: 'BONG… bong… bong… bong… bong… …thirteen? Bells don’t DO thirteen!' },
+      { who: 'moth', text: 'It does that when she’s close. I count every time.' },
+      { who: 'moth', text: 'Nobody’s lived in Bellfield since the Long Dark. I just visit. Grandpa used to look after the lamps here.' },
+      { who: 'wren', text: 'Look at the moss. Footprints. Glowing ones. Going toward the tower.' },
+    ]),
+    scene('bellfield-outro', [
+      { who: 'moth', text: 'Every house in Bellfield lit! Grandpa would be SO happy.' },
+      { who: 'lumen', text: 'Hello, Mossbell. It’s been seventy years.' },
+      { who: 'pip', text: 'Professor Lumen?! What are YOU doing here?' },
+      {
+        who: 'lumen',
+        text: 'Coming home, Pip. I was born in that little house. And I think it’s time I told you what I saw the night of the Long Dark.',
+      },
+    ]),
+    scene('tower-intro', [
+      {
+        who: 'lumen',
+        text: 'I was six. I looked up, and she was at the top of the tower with a lantern, trying to keep every lamp in the Hollow lit all by herself.',
+      },
+      { who: 'lumen', text: 'She couldn’t. The lamps went out, the bell rang, and everyone ran. Everyone but me. She waved at me.' },
+      { who: 'grumble', text: '…I know that bell.' },
+      { who: 'pip', text: 'Grumble? Your sparks are going all wobbly again.' },
+    ]),
+    scene('tower-outro', [
+      { who: 'glimmer', text: 'A hundred years I’ve kept Marigold’s lantern burning up here. I was getting so tired.' },
+      { who: 'grumble', text: 'You could have come HOME. You could have come and found ME.' },
+      {
+        who: 'glimmer',
+        text: 'I tried! But every time I came near the town, the lamps were so bright I couldn’t find you. And you were always hiding in the dark.',
+      },
+      {
+        who: 'gran',
+        text: 'Two clouds from one storm. One who loves the dark, one who loves the light. Grandma Marigold told me. I was the only one who believed her.',
+      },
+      { who: 'grumble', text: '…I missed you.' },
+      { who: 'glimmer', text: 'I missed you too, little brother.' },
+      { who: 'grumble', text: 'I’m OLDER!' },
+      { who: 'glimmer', text: 'By one lightning bolt.' },
+      { who: 'pip', text: 'Bzzt… my eye’s glowing all by itself. Gran… is my LED from her lantern?' },
+      { who: 'gran', text: 'It is. Marigold gave it to me. “Keep a bit of the light with you,” she said. “It’ll always find its way home.”' },
+      { who: 'wren', text: 'Then that’s the end of the Glowire. My map’s finished!' },
+      { who: 'lumen', text: 'Is it? Read what’s written round the bell.' },
+      { who: 'pip', text: '“Cast from the light under the sea.” …Under the SEA?!' },
     ]),
   ].map((s) => [s.id, s]),
 );
@@ -276,6 +377,14 @@ export const NOTES: Record<string, Note> = Object.fromEntries(
     note('beginning', 8, 'Where it begins', [
       'I followed the line to the top of Clocktower Hill. It ends in the clock’s heart, under a sky full of stars.',
       'Whoever built it wanted us to have light at night. But I wonder if they meant us to switch it off, now and then, and look up.',
+    ]),
+    note('valley', 9, 'Up the valley', [
+      'The little cloud is not alone. On the night of the storm I saw another light going AWAY, following the wire up the valley.',
+      'Up to the Hollow, where the mill-folk keep their lamps burning late. I hope they’re kind to it.',
+    ]),
+    note('two', 10, 'Two of them', [
+      'I never told anyone, because who would believe it? The lightning didn’t leave one little cloud. It left TWO.',
+      'One sulked in the dark. One sang in the light. I named the dark one Grumble. The bright one named herself: Glimmer. She lit my kitchen for a week.',
     ]),
   ].map((n) => [n.id, n]),
 );

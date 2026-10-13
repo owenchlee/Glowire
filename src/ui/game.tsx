@@ -18,6 +18,7 @@ import {
   equip as equipItem,
   migrate,
   recordDaily,
+  recordGame,
   recordJob,
 } from '../game/save';
 import { itemOf } from '../game/shop';
@@ -33,6 +34,8 @@ interface Game {
   /** Record a job's stars; returns what it paid. */
   finishJob: (id: number, stars: number, boss?: boolean) => JobPayout;
   finishDaily: (day: string, stars: number) => JobPayout;
+  /** Record a mini-game score; returns what a new best paid. */
+  finishGame: (game: string, score: number) => JobPayout;
   buy: (id: string) => boolean;
   equip: (id: string) => void;
   markSeen: (sceneId: string) => void;
@@ -82,6 +85,14 @@ export function GameProvider({ children }: { children: ReactNode }) {
     },
     [save, commit],
   );
+  const finishGame = useCallback(
+    (game: string, score: number) => {
+      const payout = recordGame(save, game, score);
+      if (payout.save !== save) commit(payout.save);
+      return payout;
+    },
+    [save, commit],
+  );
   const buy = useCallback(
     (id: string) => {
       const result = buyItem(save, id);
@@ -107,8 +118,8 @@ export function GameProvider({ children }: { children: ReactNode }) {
   useEffect(() => wearSkin(wire, board), [wire, board]);
 
   const value = useMemo(
-    () => ({ save, finishJob, finishDaily, buy, equip, markSeen, setUnlockAll }),
-    [save, finishJob, finishDaily, buy, equip, markSeen, setUnlockAll],
+    () => ({ save, finishJob, finishDaily, finishGame, buy, equip, markSeen, setUnlockAll }),
+    [save, finishJob, finishDaily, finishGame, buy, equip, markSeen, setUnlockAll],
   );
   return <GameContext.Provider value={value}>{children}</GameContext.Provider>;
 }

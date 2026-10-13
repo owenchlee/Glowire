@@ -38,6 +38,10 @@ interface Props {
   /** Darkness per cell over the route not reached yet (0–255); fades when it changes. */
   fog: Uint8Array;
   residents: Resident[];
+  /** Secrets not found yet: a little twinkle over each. */
+  sparkles?: { x: number; y: number }[];
+  /** Figures glimpsed in the distance (the Lantern Lady): flickering, with a glow round them. */
+  ghosts?: { who: string; x: number; y: number }[];
   /** Residents with a speech bubble over their head. */
   bubbles: { who: string; x: number; y: number; kind: (typeof EXTRAS)[number] }[];
   walker: RefObject<Walker>;
@@ -92,9 +96,11 @@ function Scene({
   pet,
   fog,
   hero = 'hero',
+  sparkles = [],
+  ghosts = [],
 }: Props & { sheets: { city: Texture; people: Texture } }) {
   const fogTexture = useMemo(() => createFog(map.width, map.height), [map]);
-  const lighting = useMemo(() => createLighting('#6a74ad', fogTexture), [fogTexture]);
+  const lighting = useMemo(() => createLighting(map.night ?? '#6a74ad', fogTexture), [fogTexture, map.night]);
   // The fog drifts toward its new shape instead of snapping, so a newly opened stretch of
   // road brightens in front of you. It starts out already in place.
   const fogNow = useRef<Float32Array | null>(null);
@@ -162,10 +168,17 @@ function Scene({
     [map, litKey],
   );
 
+  // Ghosts carry their own flickering lantern light.
+  const ghostLights = useMemo(
+    () => ghosts.map((g) => ({ x: g.x + 0.5, y: -g.y - 0.3, r: 3.2, color: [1.3, 1.05, 0.45] as const }) as Lit),
+    [ghosts],
+  );
   useFrame((state, delta) => {
     onTick(Math.min(delta, 0.05));
     driftFog(fogNow, fog, fogTexture, delta);
-    onView(frame(state, walkerPosition(walker.current), map, lights, lighting));
+    const flicker = 0.75 + 0.25 * Math.sin(state.clock.elapsedTime * 13) * Math.sin(state.clock.elapsedTime * 3.1);
+    const all = ghostLights.length ? [...ghostLights.map((l) => ({ ...l, r: l.r * flicker })), ...lights] : lights;
+    onView(frame(state, walkerPosition(walker.current), map, all, lighting));
   });
 
   return (
@@ -177,6 +190,12 @@ function Scene({
       ))}
       <Hero key={hero} who={hero} walker={walker} sheet={peopleSheet} material={people} />
       {pet && <Pet key={pet} id={pet} walker={walker} sheet={peopleSheet} material={people} />}
+      {ghosts.map((g) => (
+        <Ghost key={`${g.who}@${g.x},${g.y}`} {...g} sheet={peopleSheet} material={people} />
+      ))}
+      {sparkles.map((p) => (
+        <Sparkle key={`${p.x},${p.y}`} x={p.x} y={p.y} sheet={peopleSheet} material={people} />
+      ))}
       {bubbles.map((b) => (
         <Bubble key={`${b.who}@${b.x},${b.y}`} {...b} sheet={peopleSheet} material={people} />
       ))}
@@ -379,6 +398,39 @@ function Pet({ id, walker, sheet, material }: { id: string; walker: RefObject<Wa
       setQuadSource(g, sheet, column * 64 + frame * T, 0, T, T, s.left);
     }
     mesh.position.set(at.x, -at.y, depth(at.y + 1) + 0.002);
+  });
+  return <mesh ref={ref} geometry={g} material={material} />;
+}
+
+/** Someone who isn't quite there: they bob, and flicker in and out like a candle. */
+function Ghost({ who, x, y, sheet, material }: { who: string; x: number; y: number; sheet: Sheet; material: ShaderMaterial }) {
+  const column = Math.max(0, PEOPLE.indexOf(who as (typeof PEOPLE)[number]));
+  const g = useQuad(sheet, column * 64, 0, T, T);
+  const ref = useRef<Mesh>(null);
+  useFrame(({ clock }) => {
+    const t = clock.elapsedTime;
+    const mesh = ref.current;
+    if (!mesh) return;
+    mesh.position.set(x, -y + Math.round(Math.sin(t * 1.6) * 2) / 16, depth(y + 1));
+    // Mostly there, with quick gaps, like a light that can't quite stay on.
+    mesh.visible = Math.sin(t * 9.3) * Math.sin(t * 2.7 + x) > -0.55;
+  });
+  return <mesh ref={ref} geometry={g} material={material} />;
+}
+
+/** A tiny twinkle that comes and goes: something here is worth a closer look. */
+function Sparkle({ x, y, sheet, material }: { x: number; y: number; sheet: Sheet; material: ShaderMaterial }) {
+  const g = useQuad(sheet, EXTRAS.indexOf('star') * T, 112, T, T, 0.5, 0.5);
+  const ref = useRef<Mesh>(null);
+  const phase = useMemo(() => (x * 3.7 + y * 1.3) % 6, [x, y]);
+  useFrame(({ clock }) => {
+    const mesh = ref.current;
+    if (!mesh) return;
+    const t = (clock.elapsedTime + phase) % 3;
+    mesh.visible = t < 0.9;
+    const s = t < 0.9 ? Math.sin((t / 0.9) * Math.PI) : 0;
+    mesh.scale.setScalar(0.4 + 0.6 * s);
+    mesh.position.set(x + 0.5 - 0.25 * (0.4 + 0.6 * s), -y + 0.9, 3);
   });
   return <mesh ref={ref} geometry={g} material={material} />;
 }

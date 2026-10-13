@@ -10,7 +10,10 @@ export const BRIGHTNESS = {
 } as const;
 export type Brightness = keyof typeof BRIGHTNESS;
 
-/** Switch positions a goal is checked in. Switches not listed are OFF. */
+/**
+ * Switch positions a goal is checked in. Switches not listed are OFF. For a changeover
+ * switch, true means UP and false DOWN.
+ */
 export type SwitchStates = Record<string, boolean>;
 
 export type Goal =
@@ -19,7 +22,9 @@ export type Goal =
   /** Exactly these LEDs light (in the band, if given) and every other LED is dark. */
   | { kind: 'only'; leds: string[]; brightness?: Brightness; when?: SwitchStates }
   /** Free builds: at least `count` LEDs on the board (placed ones too), every one lit. */
-  | { kind: 'all'; count: number; brightness?: Brightness; when?: SwitchStates };
+  | { kind: 'all'; count: number; brightness?: Brightness; when?: SwitchStates }
+  /** A meter's reading lands between min and max: milliamps (ammeter) or volts (voltmeter). */
+  | { kind: 'meter'; meter: string; min: number; max: number; when?: SwitchStates };
 
 /**
  * Extra challenges for the second and third star (the first star is solving the job).

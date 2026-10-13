@@ -10,16 +10,21 @@
 //   LED             anode ──Rs── x ──▷|── cathode   (Shockley diode + series resistance)
 //   battery         + ──R_int── x ──(+V−)── −      (ideal source + internal resistance)
 //   switch          + ──R── −   (wire resistance when closed, 1 GΩ when open)
+//   changeover      common ──R── centre, centre ──R── each throw (closed one ≈ 0, open one 1 GΩ)
+//   meter           + ──R── −   (ammeter ≈ 0 Ω, voltmeter 1 GΩ)
 //   block           nothing
 
-import { DIODE_MODEL,
+import {
+  AMMETER_RESISTANCE,
+  DIODE_MODEL,
   BATTERY_INTERNAL_RESISTANCE,
+  VOLTMETER_RESISTANCE,
   LED_MODELS,
   OPEN_SWITCH_RESISTANCE,
   THERMAL_VOLTAGE,
   WIRE_RESISTANCE,
 } from './constants';
-import { getPorts, getTerminals, isConnected, neighbourIndex, opposite } from './tiles';
+import { getChangeoverPorts, getPorts, getTerminals, isConnected, neighbourIndex, opposite } from './tiles';
 import type { Board, Direction } from './types';
 
 export interface DiodeModel {
@@ -136,16 +141,36 @@ export function buildCircuit(board: Board): Circuit {
       return;
     }
 
+    if (tile.kind === 'changeover') {
+      // common ──R── centre, then centre ──closed── the chosen throw, ──open── the other.
+      const [c, u, d] = getChangeoverPorts(tile);
+      const centre = nodeCount++;
+      const legs: [Direction, number][] = [
+        [c, WIRE_RESISTANCE / 2],
+        [u, tile.up ? WIRE_RESISTANCE / 2 : OPEN_SWITCH_RESISTANCE],
+        [d, tile.up ? OPEN_SWITCH_RESISTANCE : WIRE_RESISTANCE / 2],
+      ];
+      for (const [dir, ohms] of legs) {
+        const e = add({ type: 'R', a: portNode(cell, dir), b: centre, ohms, cell });
+        port(cell, dir, e, 'a');
+      }
+      return;
+    }
+
     const [plus, minus] = getTerminals(tile);
     const p = portNode(cell, plus);
     const m = portNode(cell, minus);
-    if (tile.kind === 'resistor' || tile.kind === 'switch') {
+    if (tile.kind === 'resistor' || tile.kind === 'switch' || tile.kind === 'meter') {
       const ohms =
         tile.kind === 'resistor'
           ? tile.ohms
-          : tile.closed
-            ? WIRE_RESISTANCE
-            : OPEN_SWITCH_RESISTANCE;
+          : tile.kind === 'meter'
+            ? tile.mode === 'A'
+              ? AMMETER_RESISTANCE
+              : VOLTMETER_RESISTANCE
+            : tile.closed
+              ? WIRE_RESISTANCE
+              : OPEN_SWITCH_RESISTANCE;
       const e = add({ type: 'R', a: p, b: m, ohms, cell });
       port(cell, plus, e, 'a');
       port(cell, minus, e, 'b');

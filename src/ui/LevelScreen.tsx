@@ -45,7 +45,10 @@ import {
   describeGoal,
   evaluateLevel,
   ledNamesFor,
+  goalWordsFor,
+  isLedLabel,
   levelLabels,
+  meterReading,
   remainingParts,
 } from '../levels/evaluate';
 import { item } from '../game/shop';
@@ -418,7 +421,7 @@ export function LevelScreen({ level, day }: { level: LevelDef; day?: string }) {
         const cell = picker.current?.cellAt(e.x, e.y);
         const tile = cell == null ? undefined : b.cells[cell]?.tile;
         if (cell == null || !tile) return;
-        if (tile.kind === 'switch') edit((s) => toggleSwitch(s, cell));
+        if (tile.kind === 'switch' || tile.kind === 'changeover') edit((s) => toggleSwitch(s, cell));
         else if (tile.spin) {
           edit((s) => rotateAt(s, cell));
           setRecord((r) => ({ ...r, turns: r.turns + 1 }));
@@ -487,13 +490,14 @@ export function LevelScreen({ level, day }: { level: LevelDef; day?: string }) {
   const draggingId = drag?.source === 'board' ? drag.id : null;
   const showFloating = drag && !ghost;
 
-  const ledCount = Object.keys(labels).filter((k) => !k.startsWith('S')).length;
-  const switchCount = Object.keys(labels).length - ledCount;
+  const ledCount = Object.keys(labels).filter(isLedLabel).length;
+  const switchCount = Object.keys(labels).filter((k) => /^S\d+$/.test(k)).length;
   const celebrateCell =
     result.tiles.findIndex((t) => t?.kind === 'led' && t.status === 'OK') >= 0
       ? result.tiles.findIndex((t) => t?.kind === 'led' && t.status === 'OK')
       : Math.floor(board.cells.length / 2);
   const ledNames = useMemo(() => ledNamesFor(level), [level]);
+  const goalWords = useMemo(() => goalWordsFor(level), [level]);
   const trayKeys = PART_ORDER.filter((k) => (active.inventory[k] ?? 0) > 0);
   const budget = active.wireBudget;
   const starGoals = starGoalsFor(level);
@@ -538,7 +542,7 @@ export function LevelScreen({ level, day }: { level: LevelDef; day?: string }) {
         <ScrollView style={styles.flex} contentContainerStyle={styles.goals}>
           {evaluation.goals.map(({ goal, met }, i) => (
             <PixelText key={i} size={12} color={met ? GREEN : CREAM} shadow>
-              {met ? '✓' : '○'} {describeGoal(goal, ledNames, switchCount)}
+              {met ? '✓' : '○'} {describeGoal(goal, ledNames, switchCount, goalWords)}
             </PixelText>
           ))}
           {budget !== null && (
@@ -563,7 +567,7 @@ export function LevelScreen({ level, day }: { level: LevelDef; day?: string }) {
                 shadow
                 style={missed ? styles.lost : undefined}
               >
-                {earned ? '★' : '☆'} {describeStar(g, ledNames, switchCount)}
+                {earned ? '★' : '☆'} {describeStar(g, ledNames, switchCount, goalWords)}
                 {g.kind === 'turns' ? ` (${record.turns})` : ''}
               </PixelText>
             );
@@ -979,6 +983,13 @@ function Labels({
     else if (t.kind === 'switch') {
       text = `${switchCount > 1 && name ? `${name} ` : ''}${t.closed ? 'ON' : 'OFF'}`;
       tone = t.closed ? '#3f7a52' : undefined;
+    } else if (t.kind === 'changeover') {
+      text = `${switchCount > 1 && name ? `${name} ` : ''}${t.up ? 'UP' : 'DOWN'}`;
+      tone = '#3f5a7a';
+    } else if (t.kind === 'meter') {
+      const reading = meterReading(r, t.mode);
+      text = t.mode === 'A' ? `${reading < 10 ? reading.toFixed(1) : Math.round(reading)} mA` : `${reading.toFixed(2)} V`;
+      tone = t.mode === 'A' ? '#8a6a1f' : '#2d697b';
     } else if (t.kind === 'led') {
       // Show the current even when it is too faint to glow: that is how hogging shows up.
       const flowing = r && r.current > 1e-4 && r.status !== 'BURNED_OUT';

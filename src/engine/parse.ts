@@ -1,5 +1,5 @@
 // Build boards from little text pictures. Used by tests and by level definitions.
-import { battery, block, diode, led, resistor, switchTile, wire } from './tiles';
+import { battery, block, changeover, diode, led, meter, resistor, switchTile, wire } from './tiles';
 import type { Board, LedColor, Rotation, Tile } from './types';
 
 /**
@@ -13,6 +13,9 @@ import type { Board, LedColor, Rotation, Tile } from './types';
  *   D> D< Dv D^    diode; the arrow points anode → cathode, the way current may flow
  *   R100 R100v     resistor, horizontal / vertical
  *   S0 S1 S0v S1v  switch open (0) / closed (1), horizontal / vertical
+ *   Cu Cd Cu2      changeover switch flipped up / down; common on W, throws N and S, then
+ *                  an optional number of quarter turns (Cu2: common on E, throws S and N)
+ *   MA MAv MV MVv  ammeter / voltmeter, + on W (horizontal) or N (vertical)
  */
 export function parseBoard(rows: string[]): Board {
   const grid = rows.map((r) => r.trim().split(/\s+/));
@@ -68,6 +71,10 @@ export function parseToken(token: string): Tile | null {
   }
   const dm = /^D([<>v^])$/.exec(token);
   if (dm) return diode(ARROW_ROTATION[dm[1] as keyof typeof ARROW_ROTATION]);
+  const co = /^C([ud])([0-3]?)$/.exec(token);
+  if (co) return changeover(co[1] === 'u', Number(co[2] || 0) as Rotation);
+  const mt = /^M([AV])(v?)$/.exec(token);
+  if (mt) return meter(mt[1] as 'A' | 'V', mt[2] ? 1 : 0);
   const sw = /^S([01])(v?)$/.exec(token);
   if (sw) return switchTile(sw[1] === '1', sw[2] ? 1 : 0);
   const r = /^R(\d+)(v?)$/.exec(token);

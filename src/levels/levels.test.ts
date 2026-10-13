@@ -6,6 +6,7 @@ import {
   createLevelBoard,
   describeGoal,
   evaluateLevel,
+  goalWordsFor,
   ledNamesFor,
   levelLabels,
   remainingParts,
@@ -16,7 +17,9 @@ import type { LevelDef } from './types';
 /** A tile's identity, ignoring lock flags and switch positions. */
 const shape = (tile: Tile) => {
   const { locked: _locked, ...rest } = tile;
-  return rest.kind === 'switch' ? { ...rest, closed: false } : rest;
+  if (rest.kind === 'switch') return { ...rest, closed: false };
+  if (rest.kind === 'changeover') return { ...rest, up: false };
+  return rest;
 };
 
 /** A finished board drawn as a picture, with the level's locked parts kept locked. */
@@ -70,7 +73,7 @@ describe('levels', () => {
   });
 
   it('numbers levels within their chapter and links them in order', () => {
-    expect(CHAPTERS.map((c) => c.id)).toEqual([1, 2, 3, 4]);
+    expect(CHAPTERS.map((c) => c.id)).toEqual([1, 2, 3, 4, 5, 6]);
     expect(levelNumber(1)).toBe('1-1');
     expect(levelNumber(11)).toBe('2-1');
     expect(nextLevel(10)?.id).toBe(32); // the Maple Street boss
@@ -441,5 +444,79 @@ describe('diodes', () => {
     const withWire = level.solution!.map((row) => row.replace('Dv', '│ '));
     expect(check(37, level.solution!).complete).toBe(true);
     expect(check(37, withWire).complete).toBe(false);
+  });
+});
+
+describe('changeover switches (chapter 5)', () => {
+  it('the staircase needs both travellers', () => {
+    // Cut the top traveller: one combination of the switches can no longer reach the lamp.
+    const cut = getLevel(39)!.solution!.map((row, y) => (y === 0 ? '.  .  . .  .    .   .' : row));
+    expect(check(39, cut).complete).toBe(false);
+  });
+
+  it('Low and High: the resistors on the wrong legs swap dim and bright', () => {
+    const swapped = getLevel(40)!.solution!.map((row) =>
+      row.replace('R1000', 'R100X').replace('R100 ', 'R1000').replace('R100X', 'R100 '),
+    );
+    expect(check(40, swapped).complete).toBe(false);
+  });
+
+  it('Back-up Battery: one shared resistor either pops the lamp or leaves it dim', () => {
+    // Shared 100 Ω between the lamp and the switch: the 6 V side burns it out.
+    const shared = (r: string) => [
+      '┌  ─  ─   ─  ─ ─ ─   ┐',
+      '│  .  .   ┌  ─ ─ B<  ┤',
+      `└  L< ${r} Cu . . .   │`,
+      '.  .  .   └  ─ ─ B6< ┘',
+    ];
+    expect(check(41, shared('R100')).problem).toBe('burn');
+    expect(check(41, shared('R220')).complete).toBe(false);
+    expect(check(41, getLevel(41)!.solution!).complete).toBe(true);
+  });
+
+  it('says UP and DOWN for changeover switches', () => {
+    const level = getLevel(39)!;
+    expect(describeGoal(level.goals[0]!, ledNamesFor(level), 2, goalWordsFor(level))).toBe(
+      'Light the LED when S1 is UP and S2 is DOWN',
+    );
+  });
+});
+
+describe('meters (chapter 6)', () => {
+  it('Reading the Dial: only 220 Ω puts the needle between 5 and 6 mA', () => {
+    const with100 = getLevel(42)!.solution!.map((r) => r.replace('R220', 'R100'));
+    const with470 = getLevel(42)!.solution!.map((r) => r.replace('R220', 'R470'));
+    expect(check(42, with100).complete).toBe(false);
+    expect(check(42, with470).complete).toBe(false);
+  });
+
+  it('Adding Up: one shared resistor only gives half the current', () => {
+    const shared = [
+      '┌  R100 ┬  ─    ─  ┐',
+      '│  .    │  .    .  Lv',
+      'B^ .    │  .    .  │',
+      '│  .    └  ─    L> ┤',
+      '└  ─    MA ─    ─  ┘',
+    ];
+    expect(check(43, shared).complete).toBe(false);
+  });
+
+  it('Half and Half: unequal resistors miss the middle', () => {
+    const uneven = getLevel(44)!.solution!.map((r) => r.replace('R220v', 'R470v'));
+    expect(check(44, uneven).complete).toBe(false);
+  });
+
+  it('The LED’s Share: 470 Ω is too dim, 100 Ω pops it', () => {
+    const dim = getLevel(45)!.solution!.map((r) => r.replace('R220', 'R470'));
+    const pop = getLevel(45)!.solution!.map((r) => r.replace('R220', 'R100'));
+    expect(check(45, dim).complete).toBe(false);
+    expect(check(45, pop).problem).toBe('burn');
+  });
+
+  it('describes meter goals in milliamps and volts', () => {
+    const l42 = getLevel(42)!;
+    const l44 = getLevel(44)!;
+    expect(describeGoal(l42.goals[1]!, ledNamesFor(l42), 0, goalWordsFor(l42))).toBe('Make the meter read 5–6 mA');
+    expect(describeGoal(l44.goals[0]!, ledNamesFor(l44), 0, goalWordsFor(l44))).toBe('Make the meter read 1.4–1.6 V');
   });
 });

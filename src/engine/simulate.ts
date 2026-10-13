@@ -3,7 +3,7 @@
 import { buildCircuit } from './circuit';
 import { DIODE_MODEL, CURRENT_EPSILON, LED_MODELS, SHORT_CIRCUIT_CURRENT } from './constants';
 import { solveNetlist } from './mna';
-import { getTerminals } from './tiles';
+import { getChangeoverPorts, getTerminals } from './tiles';
 import type { Board, ComponentStatus, Direction, SimulationResult, TileResult } from './types';
 
 export function simulate(board: Board): SimulationResult {
@@ -28,7 +28,8 @@ export function simulate(board: Board): SimulationResult {
     return k;
   };
   for (const el of circuit.elements) {
-    if (board.cells[el.cell]?.kind === 'wire') parent[find(el.a)] = find(el.b);
+    const t = board.cells[el.cell];
+    if (t?.kind === 'wire' || (t?.kind === 'meter' && t.mode === 'A')) parent[find(el.a)] = find(el.b);
   }
 
   let batteryCurrent = 0;
@@ -68,6 +69,20 @@ export function simulate(board: Board): SimulationResult {
       };
     }
 
+    if (tile.kind === 'changeover') {
+      const [c] = getChangeoverPorts(tile);
+      const current = Math.abs(portCurrents[c] ?? 0);
+      return {
+        cell,
+        kind: tile.kind,
+        voltage: 0,
+        current,
+        portCurrents,
+        brightness: 0,
+        status: current > CURRENT_EPSILON ? 'OK' : 'OFF',
+      };
+    }
+
     const [plus, minus] = getTerminals(tile);
     const pNode = nodeAt.get(cell * 4 + plus)!;
     const mNode = nodeAt.get(cell * 4 + minus)!;
@@ -91,6 +106,11 @@ export function simulate(board: Board): SimulationResult {
     } else if (tile.kind === 'switch') {
       current = intoPlus;
       status = tile.closed && Math.abs(current) > CURRENT_EPSILON ? 'OK' : 'OFF';
+    } else if (tile.kind === 'meter') {
+      current = intoPlus;
+      // A voltmeter "works" when it's across something powered; an ammeter when current flows.
+      const reading = tile.mode === 'A' ? Math.abs(current) > CURRENT_EPSILON : powered;
+      status = reading ? 'OK' : 'OFF';
     } else if (tile.kind === 'diode') {
       current = intoPlus;
       if (bypassed) status = 'BYPASSED';

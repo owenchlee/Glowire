@@ -164,12 +164,16 @@ export function moveTile(state: BoardState, from: number, to: number): BoardStat
   return withCells(lifted, (c) => (c[to] = { ...placed, tile }));
 }
 
-/** Flip a switch on or off. Works on locked (level) switches too: that's how you play. */
+/**
+ * Flip a switch on or off (or a changeover switch up or down). Works on locked (level)
+ * switches too: that's how you play.
+ */
 export function toggleSwitch(state: BoardState, cell: number): BoardState {
   const placed = state.cells[cell];
-  if (placed?.tile.kind !== 'switch') return state;
-  const tile = { ...placed.tile, closed: !placed.tile.closed };
-  return withCells(state, (c) => (c[cell] = { ...placed, tile }));
+  const t = placed?.tile;
+  if (t?.kind === 'switch') return withCells(state, (c) => (c[cell] = { ...placed!, tile: { ...t, closed: !t.closed } }));
+  if (t?.kind === 'changeover') return withCells(state, (c) => (c[cell] = { ...placed!, tile: { ...t, up: !t.up } }));
+  return state;
 }
 
 function directionBetween(state: BoardState, a: number, b: number): Direction | null {

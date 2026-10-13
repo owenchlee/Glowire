@@ -10,6 +10,8 @@ import {
   type Tile,
   type TileResult,
   E,
+  N,
+  S,
   W,
   getPorts,
 } from '../engine';
@@ -34,7 +36,7 @@ export function TileModel({ tile, result, ghost = false }: Props) {
   return (
     <group>
       <mesh geometry={g.base} material={pick(m.base[tile.kind])} position-y={BASE_HEIGHT / 2} />
-      {tile.locked && !tile.spin && !ghost && tile.kind !== 'switch' && <Rivets />}
+      {tile.locked && !tile.spin && !ghost && tile.kind !== 'switch' && tile.kind !== 'changeover' && <Rivets />}
       {tile.kind === 'wire' && (
         <>
           {getPorts({ ...tile, rotation: 0 }).map((d) => (
@@ -94,7 +96,92 @@ export function TileModel({ tile, result, ghost = false }: Props) {
       {tile.kind === 'switch' && (
         <SwitchModel closed={tile.closed} ghost={ghost} wireMat={wireMat} />
       )}
+      {tile.kind === 'changeover' && <ChangeoverModel up={tile.up} ghost={ghost} wireMat={wireMat} />}
+      {tile.kind === 'meter' && <MeterModel mode={tile.mode} result={result} ghost={ghost} wireMat={wireMat} />}
     </group>
+  );
+}
+
+/** Where the lever of a changeover switch pivots, and where its two contacts stand. */
+const PIVOT: Vec3 = [-0.22, 0, 0];
+const CONTACT_Z = 0.27;
+const LEVER_REACH = Math.hypot(0.22, CONTACT_Z);
+const LEVER_SWING = Math.atan2(CONTACT_Z, 0.22);
+
+/**
+ * A changeover switch: the common wire runs in from the west to a pivot, and a lever swings
+ * to touch the north contact (up) or the south one (down).
+ */
+function ChangeoverModel({ up, ghost, wireMat }: { up: boolean; ghost: boolean; wireMat: Material }) {
+  const { geometry: g, material: m } = getAssets();
+  const lever = useRef<Group>(null);
+  const target = up ? LEVER_SWING : -LEVER_SWING;
+  useFrame((_, delta) => {
+    if (!lever.current) return;
+    const y = lever.current.rotation.y;
+    lever.current.rotation.y = y + (target - y) * (1 - Math.exp(-delta * 16));
+  });
+  const pick = (mat: Material) => (ghost ? m.ghost : mat);
+  return (
+    <>
+      <Arm dir={W} length={0.28} material={wireMat} />
+      <Arm dir={N} length={0.23} material={wireMat} />
+      <Arm dir={S} length={0.23} material={wireMat} />
+      <mesh geometry={g.switchPost} material={pick(m.marking)} position={[PIVOT[0], TOP + 0.06, 0]} />
+      <mesh geometry={g.switchPost} material={pick(up ? m.switchOn : m.marking)} position={[0, TOP + 0.06, -CONTACT_Z]} />
+      <mesh geometry={g.switchPost} material={pick(up ? m.marking : m.switchOn)} position={[0, TOP + 0.06, CONTACT_Z]} />
+      <group ref={lever} position={[PIVOT[0], TOP + 0.13, 0]} rotation-y={target}>
+        <mesh geometry={g.lever} material={pick(wireMat)} scale-x={LEVER_REACH / 0.5} />
+        <mesh geometry={g.knob} material={pick(m.switchOn)} position={[LEVER_REACH, 0.03, 0]} />
+      </group>
+    </>
+  );
+}
+
+/** Full-scale needle: 30 mA on an ammeter, 10 V on a voltmeter. */
+const FULL_SCALE = { A: 0.03, V: 10 };
+
+/** A meter: a dark case with a half-round dial whose needle swings with the reading. */
+function MeterModel({
+  mode,
+  result,
+  ghost,
+  wireMat,
+}: {
+  mode: 'A' | 'V';
+  result: TileResult | null;
+  ghost: boolean;
+  wireMat: Material;
+}) {
+  const { geometry: g, material: m } = getAssets();
+  const needle = useRef<Group>(null);
+  const value = mode === 'A' ? Math.abs(result?.current ?? 0) : Math.abs(result?.voltage ?? 0);
+  const frac = Math.min(1, value / FULL_SCALE[mode]);
+  useFrame((_, delta) => {
+    if (!needle.current) return;
+    const target = Math.PI * (1 - frac);
+    const y = needle.current.rotation.y;
+    needle.current.rotation.y = y + (target - y) * (1 - Math.exp(-delta * 6));
+  });
+  const pick = (mat: Material) => (ghost ? m.ghost : mat);
+  return (
+    <>
+      <Arm dir={W} length={0.2} material={wireMat} />
+      <Arm dir={E} length={0.2} material={wireMat} />
+      <mesh geometry={g.meterCase} material={pick(m.meterCase)} position-y={TOP + 0.08} />
+      <mesh geometry={g.meterFace} material={pick(m.meterFace)} position={[0, TOP + 0.17, 0.08]} />
+      <group ref={needle} position={[0, TOP + 0.185, 0.08]} rotation-y={Math.PI}>
+        <mesh geometry={g.needle} material={pick(m.needle)} />
+      </group>
+      <mesh
+        geometry={g.knob}
+        material={pick(mode === 'A' ? m.ammeterMark : m.voltmeterMark)}
+        position={[0, TOP + 0.17, 0.17]}
+        scale={[0.6, 0.3, 0.6]}
+      />
+      <Plus position={[-0.2, TOP + 0.17, 0.19]} material={pick(m.markingLight)} />
+      <Minus position={[0.2, TOP + 0.17, 0.19]} material={pick(m.markingLight)} />
+    </>
   );
 }
 

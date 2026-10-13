@@ -29,6 +29,10 @@ export function spriteCell(tile: Tile): [number, number] {
       return [0, 2];
     case 'diode':
       return [4, 2];
+    case 'changeover':
+      return [tile.up ? 5 : 6, 2];
+    case 'meter':
+      return [tile.mode === 'A' ? 7 : 8, 2];
   }
 }
 

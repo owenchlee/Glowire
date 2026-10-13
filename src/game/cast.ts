@@ -224,6 +224,30 @@ export const CAST: Record<string, Person> = {
     role: 'The harbour’s old warehouse robot. Loves rules.',
     look: { skin: '#9aa3ad', hair: '#5a6470', hairStyle: 'bald', shirt: '#7b8794' },
   },
+  hazel: {
+    id: 'hazel',
+    name: 'Hazel Thorn',
+    role: 'The last miller in Mossbell Hollow. Never left.',
+    look: { skin: SKIN[1], hair: '#c9c3cf', hairStyle: 'bun', shirt: '#4a7f4b' },
+  },
+  bram: {
+    id: 'bram',
+    name: 'Bram',
+    role: 'Ferryman on the Mere. Doesn’t like the fog.',
+    look: { skin: SKIN[3], hair: '#61372e', hairStyle: 'spiky', shirt: '#2d697b', beard: true },
+  },
+  moth: {
+    id: 'moth',
+    name: 'Moth',
+    role: 'Age 9. Has seen the Lantern Lady. Twice.',
+    look: { skin: SKIN[2], hair: '#3b3643', hairStyle: 'short', shirt: '#a5608b', kid: true },
+  },
+  glimmer: {
+    id: 'glimmer',
+    name: 'Glimmer',
+    role: 'A spirit of light. Grumble’s twin.',
+    look: { skin: '#ffe166', hair: '#f1ae41', hairStyle: 'bald', shirt: '#ffe166' },
+  },
   wren: {
     id: 'wren',
     name: 'Wren',

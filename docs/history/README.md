@@ -279,6 +279,71 @@ Driftwood Harbour:
 
 ---
 
+## v0.7 Mossbell Hollow
+
+**Day 4 (Oct 13, 2026)** · tag `v0.7-mossbell`
+
+### What I decided
+
+- **Finish the to-do list:** “other mini-games besides circuits, a changeover switch and
+  meters, and some art polish (the plain paved squares in the city areas, and a clocktower
+  that actually looks like a clock). FINISH UP THIS STUFF”
+- **Fix the movement:** “right now it only detects up down left right. it should let me hold
+  w and d to go horizontally like right now its not smooth.”
+- **A better story:** “the story should be a little more interesting and have MORE
+  lore/secrets to find out about certain characters or slightly scary mystery stuff
+  happening.”
+
+### What got built
+
+- **Smooth movement in 8 directions.** Hold two keys to walk diagonally. The hero slides
+  along walls and is nudged into gaps instead of stopping dead. Tapped walks cut corners, and
+  touch screens get a thumb stick.
+- **Two new parts.** The **changeover switch** has one lever and two roads for the current,
+  and two of them make a staircase light. **Meters** come as an ammeter, which sits in the
+  loop and reads milliamps, and a voltmeter, which sits across a part and reads volts. Both
+  read live on the board.
+- **World 3, Mossbell Hollow:** an old mill village up the valley, empty for fifty years.
+  It has five areas: Hollow Stop, Mill Lane, the foggy Mere, the empty houses of Bellfield,
+  and the mossy Bell Tower. It holds nine new jobs: chapter 5 “Two Ways” and chapter 6
+  “Meters”, plus a three-round boss. You get there on the bus from the harbour hilltop.
+- **The mystery.** Every clock on the Glowire stops at 11:52, and a Lantern Lady walks at
+  night (she flickers in the distance and vanishes when you get close). The bell rings
+  thirteen times. The answer: the lightning left *two* clouds. Glimmer is Grumble’s
+  golden twin, and she has kept Marigold’s lantern lit for a hundred years. On the way, you
+  find out that Hazel the miller is Wren’s grandma, that Pip’s eye came from the lantern,
+  and that Gran met Glimmer as a girl. The ending hints at a light under the sea.
+- **Secrets to find:** twinkles mark odd things in all three worlds (a warm coin, a hundred
+  scratches, a well that rings). Help people, then talk to them again and choose **Ask
+  about…** to hear their secret. Marigold’s notebook now has 10 pages.
+- **Journal:** your notebook pages, the secrets you’ve found, and what you know about
+  everyone.
+- **Mini-games:** **Colour Code** at Ms. Ito’s blackboard, where you read resistor colour
+  bands against the clock. **Signal Lamp** at the lighthouse, where you repeat a growing
+  pattern of flashes (go far enough and something at sea flashes back). Beating your best
+  score pays sparks.
+- **Art.** The flat paved squares are now cobblestones with kerbs, drains and puddles, and
+  the market has a round fountain. There’s a real clocktower, with a bell and a clock face
+  that lights up when it’s fixed, in Glowtown and on Clocktower Hill, and a mossy one in
+  Mossbell. All of it is drawn in `scripts/town-art.mjs`.
+
+### What it looked like
+
+![The Lantern Lady across the mill stream](v0.7/lantern-lady.png)
+![The clocktower, fixed](v0.7/clocktower.png)
+![Cobbles and the fountain](v0.7/market-cobbles.png)
+![A changeover switch](v0.7/changeover.png)
+![Reading the Dial, solved](v0.7/meter-solved.png)
+![Colour Code](v0.7/colour-code.png)
+![Signal Lamp](v0.7/signal-lamp.png)
+![The journal](v0.7/journal.png)
+
+Mossbell Hollow:
+
+![Mossbell Hollow map](v0.7/map-mossbell.png)
+
+---
+
 ## Play an old version
 
 ```bash

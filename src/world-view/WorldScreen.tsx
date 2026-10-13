@@ -1,5 +1,6 @@
-// Walking a world's route. Arrow keys / WASD (or tap where to go) to walk; walk up to
-// someone and press E / Enter / Space (or tap them) to talk. Their job opens the puzzle.
+// Walking a world's route. Arrow keys / WASD (two at once to go diagonally), the stick on a
+// touch screen, or tap where to go; walk up to someone and press E / Enter / Space (or tap
+// them) to talk. Their job opens the puzzle.
 //
 // The route goes one area at a time: walking into a new area plays its scene, and the road
 // ahead stays dark (and gated) until every job in the area you're in is done.
@@ -10,6 +11,8 @@ import { Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native'
 
 import { type SaveData, dayKey, totalStars } from '../game/save';
 import { outfitSprite } from '../game/shop';
+import { GAMES } from '../game/games';
+import { PERSON_SECRETS, SECRETS, secretKey, secretsIn } from '../game/lore';
 import { NOTES, SCENES, type Scene } from '../game/story';
 import { LEVELS } from '../levels/levels';
 import type { LevelDef } from '../levels/types';
@@ -31,8 +34,9 @@ import {
   targetAt,
 } from '../world/logic';
 import type { Facing, Point, WorldMap } from '../world/types';
-import { type Walker, newWalker, stepWalker } from '../world/walker';
+import { type Walker, facingCells, newWalker, smoothPath, stepWalker, walkerCell } from '../world/walker';
 import { WORLDS } from '../world/worlds';
+import { Joystick } from './Joystick';
 import { type View as CameraView, WorldCanvas } from './WorldCanvas';
 
 /** Where the hero was standing in each world, so coming back from a puzzle feels seamless. */
@@ -93,6 +97,27 @@ export function WorldScreen({ map, worldId }: { map: WorldMap; worldId: string }
   const dailyDone = (save.daily.stars[dayKey(new Date())] ?? 0) > 0;
   const notes = useMemo(() => map.spots.flatMap((s) => (s.kind === 'note' ? [s.note] : [])), [map]);
   const notesFound = notes.filter((n) => save.seen.includes(noteKey(n))).length;
+  const found = useCallback((id: string) => save.seen.includes(secretKey(id)), [save.seen]);
+  const worldSecrets = useMemo(() => secretsIn(map.id).filter((x) => !x.about), [map.id]);
+  const secretsFound = worldSecrets.filter((x) => found(x.id)).length;
+  const areaIndex = useCallback((x: number, y: number) => map.areaOf[y * map.width + x] ?? 255, [map]);
+  // Secrets still to find twinkle, once their part of the route is open.
+  const sparkles = useMemo(
+    () => map.spots.flatMap((sp) => (sp.kind === 'secret' && !found(sp.secret) && areaIndex(sp.x, sp.y) < open ? [{ x: sp.x, y: sp.y }] : [])),
+    [map, found, areaIndex, open],
+  );
+  // The Lantern Lady, glimpsed in the distance: there until you get close.
+  const ghosts = useMemo(
+    () =>
+      map.sightings.filter(
+        (g) => !found(g.id) && (!g.after || lit.has(g.after)) && areaIndex(g.x, g.y) < open,
+      ),
+    [map, found, lit, areaIndex, open],
+  );
+  const ghostsNow = useRef(ghosts);
+  useEffect(() => {
+    ghostsNow.current = ghosts;
+  }, [ghosts]);
 
   const [start] = useState(() => startingPlace(worldId, map));
   const walker = useRef<Walker>(newWalker(start.x, start.y, start.facing));
@@ -108,7 +133,10 @@ export function WorldScreen({ map, worldId }: { map: WorldMap; worldId: string }
 
   // Which area the hero is standing in (changes only when they cross into another).
   const areaAt = useCallback((x: number, y: number) => map.areaOf[y * map.width + x] ?? 255, [map]);
-  const [here, setHere] = useState(() => map.areaOf[start.y * map.width + start.x] ?? 255);
+  const [here, setHere] = useState(() => {
+    const c = walkerCell(start);
+    return map.areaOf[c.y * map.width + c.x] ?? 255;
+  });
   const area = map.areas[here === 255 ? 0 : here]!;
 
   // A story scene waiting to be seen takes over until it's done.
@@ -135,6 +163,10 @@ export function WorldScreen({ map, worldId }: { map: WorldMap; worldId: string }
   // Dev only: let the browser console poke at the walk state.
   useEffect(() => {
     if (__DEV__ && Platform.OS === 'web') (globalThis as Record<string, unknown>).__world = { walker, view, talking };
+  }, []);
+
+  const steer = useCallback((x: number, y: number) => {
+    walker.current.input = { x, y };
   }, []);
 
   const remember = useCallback(() => {
@@ -168,6 +200,23 @@ export function WorldScreen({ map, worldId }: { map: WorldMap; worldId: string }
     [map],
   );
 
+  /** "Ask about…": a townsperson's secret, once you've helped them (see lore.ts). */
+  const askChoice = useCallback(
+    (who: string, helped: boolean): Choice[] => {
+      const ps = PERSON_SECRETS[who];
+      if (!ps || !helped || (ps.afterScene && !save.seen.includes(ps.afterScene))) return [];
+      const sec = SECRETS[ps.secret]!;
+      return [
+        {
+          label: found(sec.id) ? 'Ask again…' : 'Ask about…',
+          tone: 'teal',
+          onPress: () => setChat({ lines: sec.lines, seenId: secretKey(sec.id) }),
+        },
+      ];
+    },
+    [save.seen, found],
+  );
+
   const talkToPip = useCallback(() => {
     setChat({
       lines: [
@@ -180,10 +229,11 @@ export function WorldScreen({ map, worldId }: { map: WorldMap; worldId: string }
       ],
       choices: [
         { label: dailyDone ? 'Play it again' : 'On my way!', tone: dailyDone ? 'gold' : 'orange', onPress: () => go('/daily') },
+        ...askChoice('pip', true),
         { label: 'Later', tone: 'cream', onPress: close },
       ],
     });
-  }, [dailyDone, go, close]);
+  }, [dailyDone, go, close, askChoice]);
 
   /** What talking to someone (or using a door) says and offers. */
   const interact = useCallback(
@@ -209,6 +259,7 @@ export function WorldScreen({ map, worldId }: { map: WorldMap; worldId: string }
             lines: [{ who: client, text: level.job!.thanks }],
             choices: [
               { label: stars < 3 ? `Try for ${3 - stars} more ★` : 'Play again', tone: 'gold', onPress: () => startJob(level) },
+              ...askChoice(client, true),
               { label: 'Bye!', tone: 'cream', onPress: close },
             ],
           });
@@ -229,7 +280,11 @@ export function WorldScreen({ map, worldId }: { map: WorldMap; worldId: string }
         const r = target.resident;
         if (r.who === 'pip') return talkToPip();
         const lines = r.chat ? SCENES[r.chat]?.lines : undefined;
-        setChat({ lines: lines ?? [{ who: r.who, text: 'Thank you for the lights!' }] });
+        const ask = askChoice(r.who, true);
+        setChat({
+          lines: lines ?? [{ who: r.who, text: 'Thank you for the lights!' }],
+          choices: ask.length ? [...ask, { label: 'Bye!', tone: 'cream', onPress: close }] : undefined,
+        });
         return;
       }
       const s = target.spot;
@@ -271,15 +326,29 @@ export function WorldScreen({ map, worldId }: { map: WorldMap; worldId: string }
           });
         }
       } else if (s.kind === 'sign') setChat({ lines: [{ who: 'pip', text: s.text }] });
+      else if (s.kind === 'game') {
+        const info = GAMES[s.game];
+        setChat({
+          lines: [{ who: info.host, text: info.how }],
+          choices: [
+            { label: `Play ${info.title}`, tone: 'orange', onPress: () => go(`/game/${s.game}`) },
+            { label: 'Not now', tone: 'cream', onPress: close },
+          ],
+        });
+      } else if (s.kind === 'secret') {
+        const sec = SECRETS[s.secret];
+        if (sec) setChat({ lines: sec.lines, seenId: secretKey(sec.id) });
+      }
     },
-    [map, save, solved, startJob, close, talkToPip, go],
+    [map, save, solved, startJob, close, talkToPip, go, askChoice],
   );
 
   const facingTarget = useCallback((): Target | null => {
-    const w = walker.current;
-    if (w.to) return null;
-    const d = STEP[w.facing];
-    return targetAt(residents, map, w.x + d.x, w.y + d.y, solved);
+    for (const c of facingCells(walker.current)) {
+      const t = targetAt(residents, map, c.x, c.y, solved);
+      if (t) return t;
+    }
+    return null;
   }, [residents, map, solved]);
 
   const act = useCallback(() => {
@@ -296,7 +365,7 @@ export function WorldScreen({ map, worldId }: { map: WorldMap; worldId: string }
     (dt: number) => {
       const w = walker.current;
       if (talking.current) {
-        w.held = null;
+        w.input = { x: 0, y: 0 };
         w.path = [];
       }
       const { arrived } = stepWalker(w, dt, free);
@@ -311,22 +380,33 @@ export function WorldScreen({ map, worldId }: { map: WorldMap; worldId: string }
         lastLabel.current = label;
         setFacingLabel(label);
       }
-      if (!w.to) {
-        const a = areaAt(w.x, w.y);
-        if (a !== 255 && a !== lastArea.current) {
-          lastArea.current = a;
-          setHere(a);
-        }
+      // Get close to a glimpsed figure and it's gone, leaving Pip rattled.
+      if (!talking.current)
+        for (const g of ghostsNow.current)
+          if (Math.hypot(g.x - w.x, g.y - w.y) < 3.5) {
+            const sec = SECRETS[g.id];
+            if (sec) setChat({ lines: sec.lines, seenId: secretKey(sec.id) });
+            break;
+          }
+      const c = walkerCell(w);
+      const a = areaAt(c.x, c.y);
+      if (a !== 255 && a !== lastArea.current) {
+        lastArea.current = a;
+        setHere(a);
       }
     },
     [facingTarget, interact, free, areaAt],
   );
 
-  // Keyboard (web): hold arrows / WASD to walk; E / Enter / Space to talk.
+  // Keyboard (web): hold arrows / WASD to walk (two at once for diagonals); E / Enter /
+  // Space to talk.
   useEffect(() => {
     if (Platform.OS !== 'web') return;
     const held: Facing[] = [];
-    const sync = () => (walker.current.held = held[held.length - 1] ?? null);
+    const sync = () => {
+      const on = (f: Facing) => (held.includes(f) ? 1 : 0);
+      walker.current.input = { x: on('right') - on('left'), y: on('down') - on('up') };
+    };
     const down = (e: KeyboardEvent) => {
       if (talking.current) return;
       const dir = KEYS[e.key];
@@ -370,17 +450,19 @@ export function WorldScreen({ map, worldId }: { map: WorldMap; worldId: string }
     };
     const w = walker.current;
     const target = targetAt(residents, map, cell.x, cell.y, solved);
-    const from = w.to ?? { x: w.x, y: w.y };
-    const path = findPath(map, blocked, from, cell);
-    if (!path) return;
-    w.path = path;
-    w.held = null;
+    const from = walkerCell(w);
+    const cells = findPath(map, blocked, from, cell);
+    if (!cells) return;
+    // Settle into the cell you're on, then cut corners wherever nothing is in the way.
+    w.path = smoothPath(w, [from, ...cells], free);
     w.faceAtEnd = target ? cell : null;
     autoInteract.current = target !== null;
-    if (target && path.length === 0 && !w.to) {
-      w.facing = (Object.keys(STEP) as Facing[]).find(
-        (f) => w.x + STEP[f].x === cell.x && w.y + STEP[f].y === cell.y,
-      )!;
+    const settled = Math.abs(w.x - from.x) + Math.abs(w.y - from.y) < 0.05;
+    if (target && cells.length === 0 && settled) {
+      const f = (Object.keys(STEP) as Facing[]).find((k) => from.x + STEP[k].x === cell.x && from.y + STEP[k].y === cell.y);
+      if (f) w.facing = f;
+      w.path = [];
+      w.faceAtEnd = null;
       autoInteract.current = false;
       interact(target);
     }
@@ -410,11 +492,14 @@ export function WorldScreen({ map, worldId }: { map: WorldMap; worldId: string }
         fog={fog}
         residents={residents}
         bubbles={bubbles}
+        sparkles={sparkles}
+        ghosts={ghosts}
         walker={walker}
         onTick={onTick}
         onView={onView}
       />
       <Pressable style={StyleSheet.absoluteFill} onPress={(e) => onTap(e.nativeEvent.locationX, e.nativeEvent.locationY)} />
+      {!talk && !travelling && <Joystick onInput={steer} />}
 
       <View style={styles.hud} pointerEvents="box-none">
         <Pressable style={styles.title} onPress={() => setTravelling(true)}>
@@ -428,6 +513,8 @@ export function WorldScreen({ map, worldId }: { map: WorldMap; worldId: string }
         <View style={styles.flex} pointerEvents="none" />
         <Counter icon="✦" value={`${litCount}/${worldJobs.length}`} color="#ffe58a" />
         <Counter icon="✎" value={`${notesFound}/${notes.length}`} color="#c9e7ff" />
+        {worldSecrets.length > 0 && <Counter icon="◉" value={`${secretsFound}/${worldSecrets.length}`} color="#ffd27a" />}
+        <PixelButton label="Journal" tone="cream" size={13} onPress={() => go('/journal')} />
         <Counter icon="⚡" value={save.sparks} />
         <Counter icon="★" value={totalStars(save)} />
         <PixelButton label="Worlds" tone="teal" size={13} onPress={() => go('/')} />
@@ -491,6 +578,10 @@ function labelFor(t: Target): string {
     case 'sign':
     case 'note':
       return 'Read';
+    case 'secret':
+      return 'Look';
+    case 'game':
+      return 'Play';
   }
 }
 

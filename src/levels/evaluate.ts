@@ -96,18 +96,26 @@ export function createLevelBoard(level: LevelDef): BoardState {
   });
 }
 
-/** Labels → cell: explicit ones, else LEDs A, B, … and switches S1, S2, … in reading order. */
+/** Switch (S1, S2, …) and meter (M1, M2, …) labels; every other label names an LED. */
+export const isLedLabel = (k: string) => !/^[SM]\d+$/.test(k);
+
+/**
+ * Labels → cell: explicit ones, else LEDs A, B, …, switches S1, S2, … (changeovers too) and
+ * meters M1, M2, … in reading order.
+ */
 export function levelLabels(level: LevelDef): Record<string, number> {
   const board = parseBoard(level.board);
   const labels: Record<string, number> = {};
   let led = 0;
   let sw = 0;
+  let m = 0;
   board.cells.forEach((t, cell) => {
     if (t?.kind === 'led') labels[String.fromCharCode(65 + led++)] = cell;
-    if (t?.kind === 'switch') labels[`S${++sw}`] = cell;
+    if (t?.kind === 'switch' || t?.kind === 'changeover') labels[`S${++sw}`] = cell;
+    if (t?.kind === 'meter') labels[`M${++m}`] = cell;
   });
   if (level.labels) {
-    for (const key of Object.keys(labels)) if (!key.startsWith('S')) delete labels[key];
+    for (const key of Object.keys(labels)) if (isLedLabel(key)) delete labels[key];
     for (const [name, [x, y]] of Object.entries(level.labels)) labels[name] = y * board.width + x;
   }
   return labels;
@@ -148,10 +156,11 @@ function withSwitches(
   when: SwitchStates,
 ): BoardState {
   const cells = state.cells.map((placed, cell) => {
-    if (placed?.tile.kind !== 'switch') return placed;
+    const t = placed?.tile;
+    if (t?.kind !== 'switch' && t?.kind !== 'changeover') return placed;
     const name = Object.keys(labels).find((k) => labels[k] === cell);
-    const closed = name ? (when[name] ?? false) : placed.tile.closed;
-    return { ...placed, tile: { ...placed.tile, closed } };
+    if (t.kind === 'changeover') return { ...placed!, tile: { ...t, up: name ? (when[name] ?? false) : t.up } };
+    return { ...placed!, tile: { ...t, closed: name ? (when[name] ?? false) : t.closed } };
   });
   return { ...state, cells };
 }
@@ -160,12 +169,18 @@ const isLit = (led: TileResult | null | undefined): led is TileResult =>
   led?.kind === 'led' && led.status === 'OK';
 const isDark = (led: TileResult | null | undefined) =>
   led?.kind === 'led' && led.status !== 'OK' && led.status !== 'BURNED_OUT';
+/** What a meter shows: milliamps for an ammeter, volts for a voltmeter. */
+export function meterReading(t: TileResult | null | undefined, mode: 'A' | 'V'): number {
+  if (t?.kind !== 'meter') return 0;
+  return mode === 'A' ? Math.abs(t.current) * 1000 : Math.abs(t.voltage);
+}
+
 const inBand = (led: TileResult, brightness: keyof typeof BRIGHTNESS = 'any') =>
   led.brightness >= BRIGHTNESS[brightness].min && led.brightness <= BRIGHTNESS[brightness].max;
 
 export function evaluateLevel(level: LevelDef, state: BoardState): Evaluation {
   const labels = levelLabels(level);
-  const ledLabels = Object.keys(labels).filter((k) => !k.startsWith('S'));
+  const ledLabels = Object.keys(labels).filter(isLedLabel);
   const cache = new Map<string, SimulationResult>();
   const solve = (when?: SwitchStates): SimulationResult => {
     const key = when ? JSON.stringify(Object.entries(when).sort()) : 'current';
@@ -185,6 +200,12 @@ export function evaluateLevel(level: LevelDef, state: BoardState): Evaluation {
     if (goal.kind === 'lit') {
       const led = at(goal.led);
       return { goal, met: isLit(led) && inBand(led, goal.brightness) };
+    }
+    if (goal.kind === 'meter') {
+      const cell = labels[goal.meter] ?? -1;
+      const tile = state.cells[cell]?.tile;
+      const value = meterReading(at(goal.meter), tile?.kind === 'meter' ? tile.mode : 'A');
+      return { goal, met: value >= goal.min && value <= goal.max };
     }
     if (goal.kind === 'all') {
       const leds = tiles.filter((t) => t?.kind === 'led');
@@ -224,7 +245,7 @@ export function evaluateLevel(level: LevelDef, state: BoardState): Evaluation {
  */
 export function ledNamesFor(level: LevelDef): Record<string, string> {
   const board = parseBoard(level.board);
-  const leds = Object.entries(levelLabels(level)).filter(([k]) => !k.startsWith('S'));
+  const leds = Object.entries(levelLabels(level)).filter(([k]) => isLedLabel(k));
   const colorOf = (cell: number) => {
     const t = board.cells[cell];
     return t?.kind === 'led' ? t.color : null;
@@ -246,20 +267,49 @@ function list(items: string[]): string {
   return `${items.slice(0, -1).join(', ')} and ${items.at(-1)}`;
 }
 
+export interface GoalWords {
+  /** The level's switches are changeovers: say UP / DOWN, and name every switch's position. */
+  twoWay?: boolean;
+  /** Each meter's kind, by label. */
+  meters?: Record<string, 'A' | 'V'>;
+}
+
+/** What a level's goals need to know to be put into words. */
+export function goalWordsFor(level: LevelDef): GoalWords {
+  const board = parseBoard(level.board);
+  const meters: Record<string, 'A' | 'V'> = {};
+  let twoWay = false;
+  for (const [k, cell] of Object.entries(levelLabels(level))) {
+    const t = board.cells[cell];
+    if (t?.kind === 'meter') meters[k] = t.mode;
+    if (t?.kind === 'changeover') twoWay = true;
+  }
+  return { twoWay, meters };
+}
+
+/** A reading for people: whole numbers as they are, others to one decimal place. */
+export const formatReading = (n: number) => (Number.isInteger(n) ? String(n) : n.toFixed(1));
+
 /** Plain-English goal, e.g. "Light A brightly when S1 and S2 are ON". */
 export function describeGoal(
   goal: Goal,
   names: Record<string, string>,
   switchCount: number,
+  words: GoalWords = {},
 ): string {
   const name = (led: string) => names[led] ?? led;
   const how =
-    goal.kind !== 'dark' && goal.brightness && goal.brightness !== 'any'
+    goal.kind !== 'dark' && goal.kind !== 'meter' && goal.brightness && goal.brightness !== 'any'
       ? ` ${BRIGHTNESS[goal.brightness].word}`
       : '';
   const ledCount = Object.keys(names).length;
   let verb: string;
-  if (goal.kind === 'lit') verb = `Light ${name(goal.led)}${how}`;
+  if (goal.kind === 'meter') {
+    const meters = words.meters ?? {};
+    const which = Object.keys(meters).length > 1 ? goal.meter : 'the meter';
+    const unit = (meters[goal.meter] ?? 'A') === 'A' ? 'mA' : 'V';
+    verb = `Make ${which} read ${formatReading(goal.min)}–${formatReading(goal.max)} ${unit}`;
+  } else if (goal.kind === 'lit') verb = `Light ${name(goal.led)}${how}`;
   else if (goal.kind === 'dark') verb = `Keep ${name(goal.led)} dark`;
   else if (goal.kind === 'all')
     verb = goal.count === 2 ? `Light both LEDs${how}` : `Light all ${goal.count} LEDs${how}`;
@@ -268,7 +318,13 @@ export function describeGoal(
     verb = `Light ${ledCount === 1 ? 'the LED' : ledCount === 2 ? 'both LEDs' : 'every LED'}${how}`;
   else verb = `Light only ${list(goal.leds.map(name))}${how}`;
   if (!goal.when) return verb;
-  const on = Object.entries(goal.when)
+  if (words.twoWay) {
+    const pos = (k: string) => (goal.when![k] ? 'UP' : 'DOWN');
+    if (switchCount === 1) return `${verb} when the switch is ${pos('S1')}`;
+    const all = Array.from({ length: switchCount }, (_, i) => `S${i + 1} is ${pos(`S${i + 1}`)}`);
+    return `${verb} when ${list(all)}`;
+  }
+  const on =Object.entries(goal.when)
     .filter(([, v]) => v)
     .map(([k]) => k);
   if (switchCount === 1) return `${verb} when the switch is ${on.length ? 'ON' : 'OFF'}`;
@@ -279,7 +335,7 @@ export function describeGoal(
 /** Cells of LEDs that some goal wants dark (in some switch position). */
 export function cellsMeantDark(level: LevelDef): Set<number> {
   const labels = levelLabels(level);
-  const leds = Object.keys(labels).filter((k) => !k.startsWith('S'));
+  const leds = Object.keys(labels).filter(isLedLabel);
   const dark = new Set<number>();
   for (const goal of level.goals) {
     if (goal.kind === 'dark') dark.add(labels[goal.led]!);

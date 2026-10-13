@@ -98,7 +98,6 @@ export function Shop() {
           {TABS.map((t) => (
             <PixelButton key={t.kind} label={t.label} size={13} tone={tab === t.kind ? 'gold' : 'teal'} onPress={() => setTab(t.kind)} />
           ))}
-          <PixelButton label="Outfits (soon)" size={13} tone="teal" disabled onPress={() => {}} />
         </View>
         <PixelText size={12} color="#c9c3e6" shadow style={styles.blurb}>
           {current.blurb}

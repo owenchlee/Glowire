@@ -154,6 +154,7 @@ function willowBrook(b: MapBuilder) {
   b.path('dirt', [{ x: 63, y: 17 }, { x: 63, y: 21 }], 2);
 
   houseJob(b, 4, 'theo', 'round', 54, 15);
+  b.sighting({ id: 'window-lantern', who: 'glimmer', x: 57, y: 16, after: 'job:4' });
   houseJob(b, 5, 'twins', 'green', 59, 26);
   houseJob(b, 6, 'arjun', 'shop', 62, 14);
   b.prop(65, 17, 'crate');
@@ -206,6 +207,9 @@ function schoolhouseHill(b: MapBuilder) {
   b.tree(69, 31, 'bigPink');
   b.tree(87, 19, 'cherry');
   b.prop(74, 19, 'bench');
+  // Ms. Ito's blackboard in the schoolyard: the Colour Code game.
+  b.prop(81, 22, 'sign');
+  b.spots.push({ kind: 'game', x: 81, y: 22, game: 'colours' });
   b.prop(78, 19, 'bin');
   for (const x of [71, 72, 76, 77]) b.flowers(x, 28);
   b.lamp(69, 19, 'area:school', 'twin');
@@ -262,6 +266,9 @@ function whisperWoods(b: MapBuilder) {
   for (const [x, y] of [[95, 22], [101, 23], [107, 25], [113, 26], [97, 30]] as const) b.prop(x, y, 'mushroom');
   for (const [x, y] of [[94, 21], [103, 24], [108, 24], [112, 19]] as const) b.prop(x, y, 'fern');
   b.prop(105, 23, 'stump');
+  b.secret({ id: 'hollow-stump', x: 105, y: 23 });
+  // Someone with a lantern, in the middle of the mushroom ring.
+  b.sighting({ id: 'woods-lantern', who: 'glimmer', x: 104, y: 30 });
   b.prop(93, 28, 'log');
   b.lamp(96, 24, 'area:woods', 'park');
   b.lamp(107, 24, 'area:woods', 'park');
@@ -296,8 +303,8 @@ function marketSquare(b: MapBuilder) {
   houseJob(b, 15, 'iris', 'red', 131, 26);
 
   // The fountain in the middle, ringed by benches and planters.
-  b.fill(125, 18, 4, 4, [170, 171, 172, 197, 198, 199, 224, 225, 226].map((i) => b.cityTile(i)));
-  b.block(125, 18, 4, 4);
+  b.fountain(125, 18, 'area:market');
+  b.secret({ id: 'fountain-coin', x: 127, y: 21 });
   b.glow(127, 20, 'area:market', 3.2, '#8fd8ff');
   for (const [x, y] of [[124, 17], [129, 17], [124, 22], [129, 22]] as const) b.prop(x, y, 'planter');
   b.prop(126, 23, 'bench');
@@ -385,11 +392,20 @@ function clockPlaza(b: MapBuilder) {
   b.wall(161, 21, 23, 'fence');
   b.gate(6, [{ x: 161, y: 21 }, { x: 161, y: 22 }, { x: 161, y: 23 }]);
   b.plaza(161, 12, 19, 20, true);
-  b.skyline(161, 165, 11, 'area:clock');
-  b.skyline(174, W, 11, 'area:clock');
-  cityJob(b, 33, 'dot', { x: 165, y: 9, w: 9, doorAt: 4, roofStyle: 'slate', wall: 'red', door: 'double', window: 'tall', roof: 3 });
-  b.plaza(166, 15, 7, 6, false);
-  for (const x of [165, 173]) b.tree(x, 19, 'teal');
+  b.skyline(161, 166, 11, 'area:clock');
+  b.skyline(173, W, 11, 'area:clock');
+  // The Market Clock: a real clocktower, stopped at 8 minutes to midnight until it's fixed.
+  b.group('job:33', [33]);
+  const clock = b.clocktower(167, 5, 'town', 'job:33');
+  b.spots.push({ kind: 'job', x: clock.x, y: clock.y - 1, job: 33 });
+  b.doorLight(clock, 'job:33');
+  b.glow(169.5, 8.2, 'job:33', 4.5, '#fff1b0');
+  b.resident('dot', clock.x + 1, clock.y, 'down', { job: 33 });
+  b.secret({ id: 'clock-marks', x: 171, y: 14 });
+  // A warm square in front of it, with a sun set into the cobbles.
+  b.plaza(165, 16, 9, 6, false);
+  b.mosaic(167, 17, 'sun');
+  for (const x of [165, 173]) b.tree(x, 15, 'teal');
 
   // The night bus out of town, to the harbour.
   b.asphalt(161, 27, W - 161, 3);
