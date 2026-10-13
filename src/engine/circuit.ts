@@ -12,7 +12,7 @@
 //   switch          + ──R── −   (wire resistance when closed, 1 GΩ when open)
 //   block           nothing
 
-import {
+import { DIODE_MODEL,
   BATTERY_INTERNAL_RESISTANCE,
   LED_MODELS,
   OPEN_SWITCH_RESISTANCE,
@@ -56,6 +56,13 @@ export interface Circuit {
  */
 export function ledDiodeModel(color: keyof typeof LED_MODELS): DiodeModel {
   const m = LED_MODELS[color];
+  const nVt = m.emissionCoefficient * THERMAL_VOLTAGE;
+  const junctionVoltage = m.ratedVoltage - m.ratedCurrent * m.seriesResistance;
+  return { nVt, is: m.ratedCurrent / Math.expm1(junctionVoltage / nVt) };
+}
+
+export function diodeModel(): DiodeModel {
+  const m = DIODE_MODEL;
   const nVt = m.emissionCoefficient * THERMAL_VOLTAGE;
   const junctionVoltage = m.ratedVoltage - m.ratedCurrent * m.seriesResistance;
   return { nVt, is: m.ratedCurrent / Math.expm1(junctionVoltage / nVt) };
@@ -142,16 +149,17 @@ export function buildCircuit(board: Board): Circuit {
       const e = add({ type: 'R', a: p, b: m, ohms, cell });
       port(cell, plus, e, 'a');
       port(cell, minus, e, 'b');
-    } else if (tile.kind === 'led') {
+    } else if (tile.kind === 'led' || tile.kind === 'diode') {
       const x = nodeCount++;
       const rs = add({
         type: 'R',
         a: p,
         b: x,
-        ohms: LED_MODELS[tile.color].seriesResistance,
+        ohms: tile.kind === 'led' ? LED_MODELS[tile.color].seriesResistance : DIODE_MODEL.seriesResistance,
         cell,
       });
-      const d = add({ type: 'D', a: x, b: m, model: ledDiodeModel(tile.color), cell });
+      const model = tile.kind === 'led' ? ledDiodeModel(tile.color) : diodeModel();
+      const d = add({ type: 'D', a: x, b: m, model, cell });
       port(cell, plus, rs, 'a');
       port(cell, minus, d, 'b');
     } else {

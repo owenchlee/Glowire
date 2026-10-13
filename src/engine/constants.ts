@@ -30,6 +30,16 @@ export const GMIN = 1e-12;
 /** Currents below this count as "no current" when deciding statuses. */
 export const CURRENT_EPSILON = 1e-6;
 
+/** A small silicon diode (1N4148-ish): about 0.7 V forward at 10 mA. */
+export const DIODE_MODEL = {
+  ratedVoltage: 0.7,
+  ratedCurrent: 0.01,
+  emissionCoefficient: 1.8,
+  seriesResistance: 1,
+  /** A reverse voltage larger than this marks it as blocking (REVERSED). */
+  reverseVoltage: 0.3,
+};
+
 export interface LedModel {
   /** Rated forward voltage at the rated current (datasheet Vf). */
   ratedVoltage: number;

@@ -257,6 +257,11 @@ So v0.6 turns the world into a route with a story, and brings the 3D board back.
   their house lights up behind the board.
 - **Tools:** a terrain autotiler that reads the art pack's edge tiles, and
   `npm run map-preview` to draw a whole world as one picture.
+- **Hero outfits** in the shop: the same kid in five more colours (Ember hoodie, Harbour
+  blue, Explorer, Stargazer, Night shift), worn around town.
+- **A new part, the diode:** a one-way street for current. Two new harbour jobs teach it:
+  Sal's bilge lamp ("One Way") and Bolt the warehouse robot's doors ("Doorbell"), where a
+  plain wire lights both lamps and only a diode keeps the side switch to one.
 
 ### What it looked like
 

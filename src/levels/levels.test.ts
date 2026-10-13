@@ -425,3 +425,21 @@ describe('goal text', () => {
     expect(describeGoal(getLevel(24)!.goals[0]!, {}, 0)).toBe('Light all 4 LEDs brightly');
   });
 });
+
+describe('diodes', () => {
+  it('conduct one way and block the other', () => {
+    const forward = simulate(parseBoard(['┌  D>   ┐', 'B^ .    Lv', '└  R100 ┘']));
+    const backward = simulate(parseBoard(['┌  D<   ┐', 'B^ .    Lv', '└  R100 ┘']));
+    expect(forward.tiles[5]!.status).toBe('OK');
+    expect(forward.tiles[5]!.brightness).toBeGreaterThan(0.05);
+    expect(backward.tiles[1]!.status).toBe('REVERSED');
+    expect(backward.tiles[5]!.status).toBe('OFF');
+  });
+
+  it('are the only way to solve the Doorbell: a plain wire lights both lamps from S2', () => {
+    const level = getLevel(37)!;
+    const withWire = level.solution!.map((row) => row.replace('Dv', '│ '));
+    expect(check(37, level.solution!).complete).toBe(true);
+    expect(check(37, withWire).complete).toBe(false);
+  });
+});

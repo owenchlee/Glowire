@@ -58,6 +58,17 @@ export function TileModel({ tile, result, ghost = false }: Props) {
           ))}
         </>
       )}
+      {tile.kind === 'diode' && (
+        <>
+          {/* Black body, silver stripe at the cathode (−, east) end. */}
+          <Arm dir={W} length={0.26} material={wireMat} />
+          <Arm dir={E} length={0.26} material={wireMat} />
+          <mesh geometry={g.resistorBody} material={pick(m.diodeBody)} position-y={TOP + 0.12} scale={[0.85, 0.9, 0.9]} />
+          <mesh geometry={g.resistorBand} material={pick(m.diodeBand)} position={[0.1, TOP + 0.12, 0]} scale={[1.6, 0.9, 0.9]} />
+          <Plus position={[-0.3, TOP + 0.03, 0.27]} material={pick(m.marking)} />
+          <Minus position={[0.3, TOP + 0.03, 0.27]} material={pick(m.marking)} />
+        </>
+      )}
       {tile.kind === 'battery' && (
         <>
           <Arm dir={W} length={0.18} material={wireMat} />

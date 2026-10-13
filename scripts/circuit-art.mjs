@@ -5,7 +5,7 @@
 //   row 0: wires, column = arm mask (N=1, E=2, S=4, W=8)
 //   row 1: battery, LED red/green/blue/burned, resistors 100/220/470/1000 Ω,
 //          switch open/closed, rivets, spark, hover frame, bench A, bench B
-//   row 2: bushes (from the village pack)
+//   row 2: bushes (from the village pack), then the diode at column 4
 //
 // Pixels that light up (copper cores, LED domes, sparks) get alpha 254; the shader makes
 // them glow when current flows.
@@ -191,6 +191,24 @@ function resistor(ohms) {
   return s;
 }
 
+/** A diode: a little black body, silver stripe at the cathode (− end, on the right). */
+function diode() {
+  const s = new Sprite();
+  leads(s, 3, 12);
+  s.rect(4, 5, 8, 6, C.burnedDark);
+  s.rect(4, 5, 8, 1, C.rimDark);
+  s.rect(9, 5, 2, 6, C.greyLight);
+  s.rect(9, 10, 2, 1, C.grey);
+  // A small arrow on the body, pointing the way current may go.
+  s.set(5, 7, C.grey);
+  s.set(6, 7, C.grey);
+  s.set(7, 7, C.greyLight);
+  s.set(6, 6, C.grey);
+  s.set(6, 8, C.grey);
+  s.outline();
+  return s;
+}
+
 function toggle(closed) {
   const s = new Sprite();
   leads(s, 3, 12);
@@ -306,6 +324,7 @@ export function circuitSheet(bushes) {
     bench(true),
   ];
   row1.forEach((s, i) => stamp(png, s, i, 1));
+  stamp(png, diode(), 4, 2);
   bushes.forEach((tile, i) => {
     for (let y = 0; y < 16; y++)
       for (let x = 0; x < 16; x++) {

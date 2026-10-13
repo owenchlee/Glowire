@@ -247,6 +247,7 @@ const CAST_SPRITES = {
   pip: 'RobotGreen',
   grumble: 'Spirit',
   wren: 'Villager5',
+  bolt: 'RobotGrey',
   marigold: 'EggGirl',
 };
 

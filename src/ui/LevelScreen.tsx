@@ -32,6 +32,7 @@ import {
   type SimulationResult,
   type Tile,
   battery,
+  diode,
   isTwoTerminal,
   led,
   parseToken,
@@ -106,6 +107,7 @@ const PART_ORDER: PartKey[] = [
   'r220',
   'r470',
   'r1000',
+  'diode',
 ];
 
 function tileForPart(key: PartKey): Tile {
@@ -113,6 +115,7 @@ function tileForPart(key: PartKey): Tile {
   if (key === 'led') return led(0);
   if (key === 'ledGreen') return led(0, 'green');
   if (key === 'ledBlue') return led(0, 'blue');
+  if (key === 'diode') return diode(0);
   return resistor(Number(key.slice(1)), 0);
 }
 
@@ -121,6 +124,7 @@ function partLabel(key: PartKey): string {
   if (key === 'led') return 'Red';
   if (key === 'ledGreen') return 'Green';
   if (key === 'ledBlue') return 'Blue';
+  if (key === 'diode') return 'Diode';
   return formatOhms(Number(key.slice(1)));
 }
 

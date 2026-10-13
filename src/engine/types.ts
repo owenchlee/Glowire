@@ -63,9 +63,14 @@ export interface SwitchTile extends TileBase {
   closed: boolean;
 }
 
-export type Tile = WireTile | BlockTile | ResistorTile | LedTile | BatteryTile | SwitchTile;
+/** A diode: current flows anode (+, W at rotation 0) → cathode only. Like an LED that doesn't glow. */
+export interface DiodeTile extends TileBase {
+  kind: 'diode';
+}
+
+export type Tile = WireTile | BlockTile | ResistorTile | LedTile | BatteryTile | SwitchTile | DiodeTile;
 /** Parts with a + and a − terminal on opposite sides. */
-export type TwoTerminalTile = ResistorTile | LedTile | BatteryTile | SwitchTile;
+export type TwoTerminalTile = ResistorTile | LedTile | BatteryTile | SwitchTile | DiodeTile;
 export type TileKind = Tile['kind'];
 
 /** A rectangular grid. Cell (x, y) lives at index y * width + x; y grows towards S. */

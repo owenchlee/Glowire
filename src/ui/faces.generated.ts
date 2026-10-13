@@ -27,6 +27,7 @@ export const FACES: Record<string, number> = {
   "pip": require('../../assets/art/faces/pip.png'),
   "grumble": require('../../assets/art/faces/grumble.png'),
   "wren": require('../../assets/art/faces/wren.png'),
+  "bolt": require('../../assets/art/faces/bolt.png'),
   "marigold": require('../../assets/art/faces/marigold.png'),
   "hero-ember": require('../../assets/art/faces/hero-ember.png'),
   "hero-tide": require('../../assets/art/faces/hero-tide.png'),

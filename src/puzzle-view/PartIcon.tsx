@@ -27,6 +27,8 @@ export function spriteCell(tile: Tile): [number, number] {
       return [tile.closed ? 10 : 9, 1];
     case 'block':
       return [0, 2];
+    case 'diode':
+      return [4, 2];
   }
 }
 

@@ -1,6 +1,7 @@
 import {
   type BatteryTile,
   type BlockTile,
+  type DiodeTile,
   type Board,
   type Direction,
   type LedColor,
@@ -109,6 +110,8 @@ export const wire = (shape: WireShape, rotation: Rotation = 0): WireTile =>
   );
 
 export const block = (): BlockTile => ({ kind: 'block', rotation: 0, locked: true });
+
+export const diode = (rotation: Rotation = 0): DiodeTile => ({ kind: 'diode', rotation });
 
 export const switchTile = (closed = false, rotation: Rotation = 0): SwitchTile => ({
   kind: 'switch',

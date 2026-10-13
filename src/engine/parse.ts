@@ -1,5 +1,5 @@
 // Build boards from little text pictures. Used by tests and by level definitions.
-import { battery, block, led, resistor, switchTile, wire } from './tiles';
+import { battery, block, diode, led, resistor, switchTile, wire } from './tiles';
 import type { Board, LedColor, Rotation, Tile } from './types';
 
 /**
@@ -10,6 +10,7 @@ import type { Board, LedColor, Rotation, Tile } from './types';
  *   B6^ B9>        battery of another voltage
  *   L> L< Lv L^    red LED; the arrow points anode → cathode (L> has anode on W)
  *   Lg> Lb^        green / blue LED
+ *   D> D< Dv D^    diode; the arrow points anode → cathode, the way current may flow
  *   R100 R100v     resistor, horizontal / vertical
  *   S0 S1 S0v S1v  switch open (0) / closed (1), horizontal / vertical
  */
@@ -65,6 +66,8 @@ export function parseToken(token: string): Tile | null {
     // (rotation 0), the opposite arrow convention to an LED.
     return battery(((rot + 2) % 4) as Rotation, head.length > 1 ? Number(head.slice(1)) : 3);
   }
+  const dm = /^D([<>v^])$/.exec(token);
+  if (dm) return diode(ARROW_ROTATION[dm[1] as keyof typeof ARROW_ROTATION]);
   const sw = /^S([01])(v?)$/.exec(token);
   if (sw) return switchTile(sw[1] === '1', sw[2] ? 1 : 0);
   const r = /^R(\d+)(v?)$/.exec(token);

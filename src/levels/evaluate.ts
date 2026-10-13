@@ -20,6 +20,7 @@ export function partKey(tile: Tile): PartKey | null {
   if (tile.kind === 'led') return LED_PART[tile.color];
   if (tile.kind === 'resistor') return `r${tile.ohms}` as PartKey;
   if (tile.kind === 'battery' && tile.volts === 3) return 'battery';
+  if (tile.kind === 'diode') return 'diode';
   return null;
 }
 

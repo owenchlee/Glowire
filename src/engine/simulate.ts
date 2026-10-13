@@ -1,7 +1,7 @@
 // Board in, per-tile physics results out.
 
 import { buildCircuit } from './circuit';
-import { CURRENT_EPSILON, LED_MODELS, SHORT_CIRCUIT_CURRENT } from './constants';
+import { DIODE_MODEL, CURRENT_EPSILON, LED_MODELS, SHORT_CIRCUIT_CURRENT } from './constants';
 import { solveNetlist } from './mna';
 import { getTerminals } from './tiles';
 import type { Board, ComponentStatus, Direction, SimulationResult, TileResult } from './types';
@@ -91,6 +91,11 @@ export function simulate(board: Board): SimulationResult {
     } else if (tile.kind === 'switch') {
       current = intoPlus;
       status = tile.closed && Math.abs(current) > CURRENT_EPSILON ? 'OK' : 'OFF';
+    } else if (tile.kind === 'diode') {
+      current = intoPlus;
+      if (bypassed) status = 'BYPASSED';
+      else if (powered && voltage < -DIODE_MODEL.reverseVoltage) status = 'REVERSED';
+      else status = current > CURRENT_EPSILON ? 'OK' : 'OFF';
     } else if (tile.kind === 'resistor') {
       current = intoPlus;
       status = bypassed ? 'BYPASSED' : Math.abs(current) > CURRENT_EPSILON ? 'OK' : 'OFF';

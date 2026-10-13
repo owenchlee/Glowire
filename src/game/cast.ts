@@ -218,6 +218,12 @@ export const CAST: Record<string, Person> = {
       hatColor: '#3a3048',
     },
   },
+  bolt: {
+    id: 'bolt',
+    name: 'Bolt',
+    role: 'The harbour’s old warehouse robot. Loves rules.',
+    look: { skin: '#9aa3ad', hair: '#5a6470', hairStyle: 'bald', shirt: '#7b8794' },
+  },
   wren: {
     id: 'wren',
     name: 'Wren',

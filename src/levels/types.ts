@@ -1,5 +1,5 @@
 export type PartKey =
-  'led' | 'ledGreen' | 'ledBlue' | 'battery' | 'r100' | 'r220' | 'r470' | 'r1000';
+  'led' | 'ledGreen' | 'ledBlue' | 'battery' | 'r100' | 'r220' | 'r470' | 'r1000' | 'diode';
 
 /** Brightness bands, as fractions of full (20 mA) LED brightness. */
 export const BRIGHTNESS = {

@@ -267,6 +267,8 @@ export function tileToken(t: Tile | null): string {
       return `R${t.ohms}${t.rotation % 2 ? 'v' : ''}`;
     case 'switch':
       return `S${t.closed ? 1 : 0}${t.rotation % 2 ? 'v' : ''}`;
+    case 'diode':
+      return `D${ARROWS[t.rotation]}`;
   }
 }
 

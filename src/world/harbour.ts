@@ -144,7 +144,7 @@ function ferryPier(b: MapBuilder) {
     {
       id: 'pier',
       name: 'Ferry Pier',
-      jobs: [22, 24],
+      jobs: [22, 24, 36],
       intro: 'pier-intro',
       outro: 'pier-outro',
       entry: { x: 64, y: 25, facing: 'right' },
@@ -167,6 +167,11 @@ function ferryPier(b: MapBuilder) {
   rocks(b, [[75, 37], [82, 35], [63, 34]]);
   b.lamp(67, 26, 'area:pier', 'hook');
   b.lamp(80, 26, 'area:pier', 'hook');
+  // Sal's bilge lamp, on the little jetty.
+  b.group('job:36', [36]);
+  b.lamp(76, 26, 'job:36', 'post');
+  b.spots.push({ kind: 'job', x: 76, y: 26, job: 36 });
+  b.resident('sal', 75, 26, 'right', { job: 36 });
 }
 
 // ── H4: Warehouse Row ────────────────────────────────────────────────────────
@@ -175,7 +180,7 @@ function warehouses(b: MapBuilder) {
     {
       id: 'warehouses',
       name: 'Warehouse Row',
-      jobs: [25, 34],
+      jobs: [25, 37, 34],
       intro: 'warehouse-intro',
       outro: 'warehouse-outro',
       entry: { x: 86, y: 25, facing: 'right' },
@@ -185,21 +190,22 @@ function warehouses(b: MapBuilder) {
   );
   b.wall(84, 24, 26, 'fence');
   b.gate(3, [{ x: 84, y: 24 }, { x: 84, y: 25 }, { x: 84, y: 26 }]);
-  b.plaza(85, 20, 20, 7, true);
-  b.skyline(85, 105, 16, 'area:warehouses');
-  cityJob(b, 25, 'rosa', 86, 15, 6, 3);
+  b.plaza(85, 19, 20, 8, true);
+  cityJob(b, 25, 'rosa', 85, 14, 6, 3);
+  // Bolt's warehouse: the doors that need the diode trick.
+  cityJob(b, 37, 'bolt', 92, 14, 5, 3);
   // The harbour power station: where Grumble has dug in.
   b.group('job:34', [34]);
-  const door = b.building({ x: 95, y: 13, w: 8, roof: 3, roofStyle: 'slate', wall: 'red', door: 'double', window: 'wide', group: 'job:34' });
+  const door = b.building({ x: 98, y: 14, w: 7, roof: 3, roofStyle: 'slate', wall: 'red', door: 'double', window: 'wide', group: 'job:34' });
   b.spots.push({ kind: 'job', x: door.x, y: door.y - 1, job: 34 });
   b.doorLight(door, 'job:34');
   b.resident('rosa', door.x + 1, door.y, 'down', { job: 34 });
   b.resident('grumble', door.x - 2, door.y, 'right', { until: 'job:34', after: 'job:25' });
   for (const x of [88, 89, 101, 102]) b.prop(x, 23, 'crate');
   b.prop(90, 23, 'barrel');
-  b.prop(98, 26, 'cone');
-  b.prop(99, 26, 'cone');
-  b.lamp(92, 26, 'area:warehouses', 'twin');
+  b.prop(97, 25, 'cone');
+  b.prop(98, 25, 'cone');
+  b.lamp(91, 26, 'area:warehouses', 'twin');
   b.lamp(104, 22, 'area:warehouses', 'twin');
   b.treeLine(84, 106, 'top', 9, ['pine', 'round']);
   rocks(b, [[90, 36], [100, 34]]);

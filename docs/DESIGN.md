@@ -196,6 +196,7 @@ around the switch, a cup that bypasses the resistor.
   Every level can be replayed with this alone.
 - **Daily circuit:** generate a goal and a board from a seed, check it with a solver search,
   and give everyone the same puzzle each day.
-- **Changeover switch, diodes, meters:** new two- and three-terminal tiles; the solver
-  already handles any resistor/diode/source network.
+- **Diodes:** done (v0.6), jobs 36 and 37 in Driftwood Harbour.
+- **Changeover switch, meters:** new three-terminal tiles; the solver already handles any
+  resistor/diode/source network.
 - **Capacitors and transistors:** need a time-stepping solver and a 3-terminal model.
