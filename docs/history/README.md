@@ -10,6 +10,7 @@ Each version is a git tag you can play again (see [Play an old version](#play-an
 | `v0.3-campaign`    | Day 1 | Oct 8, 2026 | A campaign: 4 chapters, 31 levels, coloured LEDs, twist puzzles |
 | `v0.4-glowtown`    | Day 1 | Oct 8, 2026 | A game layer: town map, story, stars, shop, pets, daily, bosses |
 | `v0.5-open-world`  | Day 2 | Oct 9, 2026 | Landscape pixel-art town you walk around as one hero            |
+| `v0.6-route`       | Day 3 | Oct 13, 2026 | One road with lore, dark gates, World 2, the 3D board is back  |
 
 ---
 
@@ -217,6 +218,59 @@ And on the puzzle board:
 > old look with the 3D floating tiles, that was really cool."
 
 So v0.6 turns the world into a route with a story, and brings the 3D board back.
+
+---
+
+## v0.6 The Route
+
+**Night of Day 3 (Oct 12–13, 2026, overnight)** · tag `v0.6-route`
+
+### What I decided
+
+- **A set path, not a field.** Each world is one road through a row of areas, and each
+  area is its own kind of place. You meet new people in order along the way.
+- **The road ahead stays dark.** A barrier blocks the way out of each area until every job
+  in it is done. Then the darkness lifts off the next stretch.
+- **Actual lore.** The road is the Glowire, the wire that carries light to every lamp in
+  town. Gran's grandmother Marigold joined it up a hundred years ago. The night she switched
+  it on, lightning hit it and left a little cloud behind: Grumble.
+- **No more square blocks.** Paths wind, brooks curve, and every area has its own trees,
+  ground and buildings.
+- **The 3D floating tiles come back**, but themed: the board floats at night in front of
+  the street where the job is.
+
+### What got built
+
+- **Glowtown as a route** of eight areas: Gran's Workshop, Maple Lane (gardens and
+  cottages), Willow Brook (a stream with one bridge), Schoolhouse Hill (cherry trees), Whisper
+  Woods (dead trees, mushrooms, Grumble's nest), Market Square (fountain and stalls), the
+  Crossroads (traffic lights) and Clock Plaza (the night bus to the harbour).
+- **Driftwood Harbour** (World 2) as a route too: the bus stop, the fish market docks,
+  Lighthouse Point, the ferry pier, Warehouse Row, then up Clocktower Hill to the hilltop
+  where the Glowire begins.
+- **Story scenes** when you walk into each area and when you finish it, **Wren** (a kid
+  mapping the Glowire), and **8 pages of Marigold's notebook** to find. Each page is a bit
+  of the mystery plus a real electronics fact. The ending: Grumble only wanted it dark
+  sometimes, so people would look up at the stars. The town agrees to a Star Night.
+- **Travel:** tap the area name to jump back to any area you've reached.
+- **The 3D board** at night, with the client and their house beside it. Solve the job and
+  their house lights up behind the board.
+- **Tools:** a terrain autotiler that reads the art pack's edge tiles, and
+  `npm run map-preview` to draw a whole world as one picture.
+
+### What it looked like
+
+![Walking into Maple Lane](v0.6/route-maple-intro.png)
+![The 3D board on Mrs. Pell's porch](v0.6/board-3d-burnout.png)
+![Solved: her house lights up](v0.6/board-3d-solved.png)
+
+The whole of Glowtown, west to east:
+
+![Glowtown map](v0.6/map-glowtown.png)
+
+Driftwood Harbour:
+
+![Driftwood Harbour map](v0.6/map-harbour.png)
 
 ---
 

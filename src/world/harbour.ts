@@ -113,7 +113,7 @@ function lighthouse(b: MapBuilder) {
     },
     [{ x: 38, y: 0, w: 24, h: H }],
   );
-  b.wall(38, 22, 29);
+  b.wall(38, 24, 26);
   b.gate(1, [{ x: 38, y: 24 }, { x: 38, y: 25 }, { x: 38, y: 26 }]);
   // A sandy point running out into the sea, with the lighthouse at its tip.
   b.blob('sand', 50, 31, 5, 5, 0.1);
@@ -152,7 +152,7 @@ function ferryPier(b: MapBuilder) {
     },
     [{ x: 62, y: 0, w: 22, h: H }],
   );
-  b.wall(62, 22, 29);
+  b.wall(62, 24, 26);
   b.gate(2, [{ x: 62, y: 24 }, { x: 62, y: 25 }, { x: 62, y: 26 }]);
   // A long pier out to the ferry, and a shorter one for Sal's party boat.
   b.boards(68, 27, 3, 9, 'v', true);
@@ -183,7 +183,7 @@ function warehouses(b: MapBuilder) {
     },
     [{ x: 84, y: 0, w: 22, h: H }],
   );
-  b.wall(84, 22, 29, 'fence');
+  b.wall(84, 24, 26, 'fence');
   b.gate(3, [{ x: 84, y: 24 }, { x: 84, y: 25 }, { x: 84, y: 26 }]);
   b.plaza(85, 20, 20, 7, true);
   b.skyline(85, 105, 16, 'area:warehouses');
@@ -218,7 +218,7 @@ function clockHill(b: MapBuilder) {
     },
     [{ x: 106, y: 0, w: 22, h: H }],
   );
-  b.wall(106, 22, 28, 'fence');
+  b.wall(106, 24, 26, 'fence');
   b.gate(4, [{ x: 106, y: 24 }, { x: 106, y: 25 }, { x: 106, y: 26 }]);
   b.rect('meadow', 107, 0, 21, 30);
   // The path climbs the hill in zig-zags.

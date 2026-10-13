@@ -12,8 +12,6 @@ export interface WorldInfo {
   chapters: number[];
   /** Null while the world is still being built. */
   build: (() => WorldMap) | null;
-  /** A world still being built: playable from code, not from the menu. */
-  draft?: () => WorldMap;
 }
 
 export const WORLDS: WorldInfo[] = [
@@ -29,9 +27,7 @@ export const WORLDS: WorldInfo[] = [
     name: 'Driftwood Harbour',
     tagline: 'Fishing boats, a lighthouse, and the old clock on the hill where the Glowire begins.',
     chapters: [3, 4],
-    // Draft: the beach still leaks round the lighthouse gate (see world.test.ts).
-    build: null as (() => WorldMap) | null,
-    draft: buildHarbour,
+    build: buildHarbour,
   },
 ];
 

@@ -556,6 +556,8 @@ export class MapBuilder {
     for (let y = 0; y < this.height; y++) {
       if (y >= gapFrom && y <= gapTo) continue;
       const i = y * this.width + x;
+      const g = this.groundAt(x, y);
+      if (g === 'sea' || g === 'pond') continue; // water stops you already
       if (!this.solid[i] && !this.taken.has(i)) {
         if (kind === 'bush') this.object(x, y, 1, 1, [BUSHES[Math.floor(hash(x, y) * BUSHES.length)]!]);
         else this.object(x, y, 1, 1, [FENCE_POST]);
