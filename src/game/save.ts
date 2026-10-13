@@ -91,7 +91,7 @@ export function sparksForStars(before: number, after: number, boss = false): num
   return boss ? total * 2 : total;
 }
 
-/** Penny the Magpie's bonus. */
+/** Penny the Raccoon's bonus. */
 export function withPetBonus(save: SaveData, sparks: number): number {
   return save.equipped.pet === 'penny' ? Math.round(sparks * 1.5) : sparks;
 }

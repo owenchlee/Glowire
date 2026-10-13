@@ -11,7 +11,7 @@ module.exports = defineConfig([
   },
   {
     // R3F JSX props (position, intensity, args...) are three.js props, not DOM attributes.
-    files: ['app/**/*.tsx', 'src/render/**/*.tsx'],
+    files: ['app/**/*.tsx', 'src/render/**/*.tsx', 'src/world-view/**/*.tsx', 'src/puzzle-view/**/*.tsx'],
     rules: { 'react/no-unknown-property': 'off' },
   },
   {
@@ -23,8 +23,8 @@ module.exports = defineConfig([
     rules: { 'react-hooks/refs': 'off', 'react-hooks/immutability': 'off' },
   },
   {
-    // The engine must stay pure TypeScript: no React or React Native.
-    files: ['src/engine/**/*.ts'],
+    // The engine and the world rules must stay pure TypeScript: no React or React Native.
+    files: ['src/engine/**/*.ts', 'src/world/**/*.ts'],
     rules: {
       'no-restricted-imports': [
         'error',

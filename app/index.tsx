@@ -1,3 +1,3 @@
-import { TownMap } from '../src/ui/town/TownMap';
+import { WorldSelect } from '../src/ui/WorldSelect';
 
-export default TownMap;
+export default WorldSelect;

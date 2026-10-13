@@ -8,7 +8,7 @@ import {
   useRef,
   useState,
 } from 'react';
-import { Animated, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Animated, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -47,10 +47,8 @@ import {
   levelLabels,
   remainingParts,
 } from '../levels/evaluate';
-import { person } from '../game/cast';
-import { isUnlocked } from '../game/save';
 import { item } from '../game/shop';
-import { chapterOf, levelNumber, nextLevel as levelAfter } from '../levels/levels';
+import { levelNumber } from '../levels/levels';
 import { phaseCount, phaseLevel, sabotage } from '../levels/boss';
 import { dig, unneededParts } from '../levels/solution';
 import {
@@ -62,18 +60,30 @@ import {
   starGoalsFor,
 } from '../levels/stars';
 import type { LevelDef, PartKey } from '../levels/types';
-import { BoardCanvas, type GhostPreview, type ScenePicker } from '../render/BoardScene';
-import { currentSkin } from '../render/assets';
-import { COLORS, LED_PALETTE, formatCurrent, formatOhms } from '../render/theme';
-import { Grumble } from './characters/Grumble';
-import { Pet } from './characters/Pets';
-import { type Mood, Pip } from './characters/Pip';
-import { Portrait } from './characters/Portrait';
-import { JOB_ORDER, useGame } from './game';
+import type { GhostPreview, ScenePicker } from '../puzzle-view/types';
+import { PixelBoard } from '../puzzle-view/PixelBoard';
+import { LED_PALETTE, formatCurrent, formatOhms } from '../render/theme';
+import { useGame } from './game';
 import { buzz } from './haptics';
 import { type Hint, HINTS, pickHint } from './hints';
-import { Stars } from './kit';
-import { TileIcon } from './TileIcon';
+import {
+  CREAM,
+  CREAM_SHADE,
+  GOLD,
+  GOLD_DARK,
+  GREEN,
+  INK,
+  NIGHT,
+  NIGHT_DEEP,
+  Panel,
+  PixelButton,
+  PixelText,
+  Portrait,
+  RED,
+  TEXT,
+  TEXT_SOFT,
+} from './pixel';
+import { PartIcon } from '../puzzle-view/PartIcon';
 
 type Drag =
   { source: 'tray'; tile: Tile } | { source: 'board'; tile: Tile; from: number; id: number };
@@ -111,15 +121,6 @@ function partLabel(key: PartKey): string {
   return formatOhms(Number(key.slice(1)));
 }
 
-/** Pip's face for a hint. */
-function moodFor(hint: Hint): Mood {
-  if (hint.tone === 'success') return 'cheer';
-  if (hint.text === HINTS.short || hint.text === HINTS.burned) return 'shocked';
-  if (hint.tone === 'warning') return 'worried';
-  if (hint.text === HINTS.faint) return 'thinking';
-  return 'happy';
-}
-
 interface Payday {
   stars: number;
   earned: number;
@@ -155,6 +156,22 @@ export function LevelScreen({ level, day }: { level: LevelDef; day?: string }) {
   const labels = useMemo(() => levelLabels(level), [level]);
   const remaining = remainingParts(active, board);
 
+  // Dev only, in the browser: `__solve()` in the console builds the known solution, for
+  // checking how solved boards and payday look without drawing every wire by hand.
+  useEffect(() => {
+    if (!__DEV__ || Platform.OS !== 'web') return;
+    (globalThis as Record<string, unknown>).__solve = () =>
+      edit((b) => {
+        let next = b;
+        for (let i = 0; i < 80; i++) {
+          const found = dig(active, next);
+          if (!found) break;
+          next = found.board;
+        }
+        return next;
+      });
+  }, [active, edit]);
+
   const [drag, setDrag] = useState<Drag | null>(null);
   const [hover, setHover] = useState<Hover>(null);
   const [shake, setShake] = useState({ id: 0, key: 0 });
@@ -175,7 +192,7 @@ export function LevelScreen({ level, day }: { level: LevelDef; day?: string }) {
   const picker = useRef<ScenePicker | null>(null);
   const canvasOrigin = useRef({ x: 0, y: 0 });
   const canvasView = useRef<View>(null);
-  const trayTop = useRef(Infinity);
+  const trayLeft = useRef(Infinity);
   const trayView = useRef<View>(null);
   const [dragPos] = useState(() => new Animated.ValueXY());
 
@@ -214,10 +231,11 @@ export function LevelScreen({ level, day }: { level: LevelDef; day?: string }) {
     said && said.board === history.board && problemHint.tone !== 'success'
       ? { text: said.text, tone: 'info' }
       : problemHint;
-  const mood = moodFor(problemHint);
+  // A buzz when something goes bang (a short circuit, a burned-out LED).
+  const shocked = problemHint.text === HINTS.short || problemHint.text === HINTS.burned;
   useEffect(() => {
-    if (mood === 'shocked') buzz.oops();
-  }, [mood]);
+    if (shocked) buzz.oops();
+  }, [shocked]);
 
   const pet = save.equipped.pet ? item(save.equipped.pet) : undefined;
   const petName = pet?.name.split(' ')[0] ?? '';
@@ -253,7 +271,7 @@ export function LevelScreen({ level, day }: { level: LevelDef; day?: string }) {
       setCrossed(spare);
       say(
         Object.keys(spare).length
-          ? 'Hoot crossed out the parts you won’t need. Hoo hoo!'
+          ? 'Hoot crossed out the parts you won’t need. Squawk!'
           : 'Hoot looked very closely: you’ll need every part in the tray.',
       );
     } else {
@@ -271,14 +289,14 @@ export function LevelScreen({ level, day }: { level: LevelDef; day?: string }) {
 
   const measure = useCallback(() => {
     canvasView.current?.measureInWindow((x, y) => (canvasOrigin.current = { x, y }));
-    trayView.current?.measureInWindow((_x, y) => (trayTop.current = y));
+    trayView.current?.measureInWindow((x) => (trayLeft.current = x));
   }, []);
 
   // ---- Dragging parts (from the tray, or around the board) ----
 
   const hoverAt = useCallback((absX: number, absY: number): Hover => {
     const { drag: d } = live.current;
-    if (d?.source === 'board' && absY >= trayTop.current) return { kind: 'trash' };
+    if (d?.source === 'board' && absX >= trayLeft.current) return { kind: 'trash' };
     const cell = picker.current?.cellAt(
       absX - canvasOrigin.current.x,
       absY - LIFT - canvasOrigin.current.y,
@@ -455,72 +473,57 @@ export function LevelScreen({ level, day }: { level: LevelDef; day?: string }) {
       : Math.floor(board.cells.length / 2);
   const ledNames = useMemo(() => ledNamesFor(level), [level]);
   const trayKeys = PART_ORDER.filter((k) => (active.inventory[k] ?? 0) > 0);
-  const next = day ? undefined : levelAfter(level.id);
-  const nextOpen = !!next && isUnlocked(save, JOB_ORDER, next.id);
-  const lastInDistrict = !!next && chapterOf(next.id) !== chapterOf(level.id);
   const budget = active.wireBudget;
   const starGoals = starGoalsFor(level);
-  const backdrop = currentSkin().board.backdrop;
   const goBack = () => (router.canGoBack() ? router.back() : router.replace('/'));
 
+
   return (
-    <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
-      <View style={styles.toolbar}>
-        <ToolButton label="‹" onPress={goBack} />
-        <View style={styles.titleWrap}>
-          <Text style={styles.levelTitle} numberOfLines={1}>
-            {day ? level.title : `${levelNumber(level.id)} ${level.title}`}
-          </Text>
-          {level.job && (
-            <Text style={styles.levelPlace} numberOfLines={1}>
-              {level.phases ? `BOSS · Round ${phase + 1} of ${phaseCount(level)} · ` : ''}
-              {level.job.place}
-            </Text>
-          )}
+    <SafeAreaView style={styles.screen} edges={['left', 'right']}>
+      {/* Left: the job, Pip's advice, and what counts as done. */}
+      <View style={styles.side}>
+        <View style={styles.titleRow}>
+          <PixelButton label="‹" tone="cream" size={16} onPress={goBack} />
+          <View style={styles.titleWrap}>
+            <PixelText size={15} color={GOLD} shadow numberOfLines={1}>
+              {day ? level.title : `${levelNumber(level.id)} ${level.title}`}
+            </PixelText>
+            {level.job && (
+              <PixelText size={11} color={MUTED} shadow numberOfLines={1}>
+                {level.phases ? `BOSS · round ${phase + 1}/${phaseCount(level)} · ` : ''}
+                {level.job.place}
+              </PixelText>
+            )}
+          </View>
         </View>
-        <ToolButton
-          label="Undo"
-          disabled={history.past.length === 0}
-          onPress={() => dispatch({ type: 'undo' })}
-        />
-        <ToolButton
-          label="Reset"
-          onPress={() => {
-            dispatch({ type: 'reset', board: phaseStart ?? createLevelBoard(level) });
-            // A fresh attempt: burnouts and turns start over (help already given stays given).
-            setRecord((r) => ({ ...FRESH_RECORD, helped: r.helped }));
-          }}
-        />
-      </View>
 
-      <View style={[styles.hint, hint.tone !== 'info' && styles[hint.tone]]}>
-        <Pressable onPress={showTip} hitSlop={6} style={styles.pip}>
-          <Pip size={58} mood={mood} hat={save.equipped.hat} />
-          {level.tip && !said && <Text style={styles.tipBadge}>tip</Text>}
-        </Pressable>
-        <Text style={styles.hintText}>{hint.text}</Text>
-        {pet?.kind === 'pet' && (
-          <Pressable onPress={callPet} hitSlop={6} style={[styles.pet, petUsed && styles.petUsed]}>
-            <Pet id={pet.id} size={44} hopKey={petHop} />
-            <Text style={styles.petLabel}>
-              {pet.ability === 'shiny' ? '+50%' : petUsed ? 'resting' : pet.ability}
-            </Text>
+        <View style={[styles.hint, hint.tone === 'warning' && styles.hintWarning, hint.tone === 'success' && styles.hintSuccess]}>
+          <Pressable onPress={showTip} hitSlop={6} style={styles.pip}>
+            <Portrait who="pip" size={36} />
+            {level.tip && !said && (
+              <View style={styles.tipBadge}>
+                <PixelText size={9} color={TEXT}>
+                  tip
+                </PixelText>
+              </View>
+            )}
           </Pressable>
-        )}
-      </View>
+          <PixelText size={12} style={styles.flex}>
+            {hint.text}
+          </PixelText>
+        </View>
 
-      <View style={styles.goals}>
-        {evaluation.goals.map(({ goal, met }, i) => (
-          <Text key={i} style={[styles.goal, met && styles.goalMet]}>
-            {met ? '✓' : '○'} {describeGoal(goal, ledNames, switchCount)}
-          </Text>
-        ))}
-        {budget !== null && (
-          <Text style={[styles.goal, evaluation.wires >= budget && styles.goalLimit]}>
-            ⚡ Wire used: {evaluation.wires} / {budget}
-          </Text>
-        )}
-        <View style={styles.starGoals}>
+        <ScrollView style={styles.flex} contentContainerStyle={styles.goals}>
+          {evaluation.goals.map(({ goal, met }, i) => (
+            <PixelText key={i} size={12} color={met ? GREEN : CREAM} shadow>
+              {met ? '✓' : '○'} {describeGoal(goal, ledNames, switchCount)}
+            </PixelText>
+          ))}
+          {budget !== null && (
+            <PixelText size={12} color={evaluation.wires >= budget ? RED : CREAM} shadow>
+              ⚡ Wire: {evaluation.wires} / {budget}
+            </PixelText>
+          )}
           {starGoals.map((g, i) => {
             // Open while you work, earned once solved, lost as soon as it can't be had.
             const lost =
@@ -531,28 +534,52 @@ export function LevelScreen({ level, day }: { level: LevelDef; day?: string }) {
             const earned = done && !lost && starGoalMet(g, active, board, record);
             const missed = lost || (done && !earned);
             return (
-              <Text
-                key={i}
-                style={[
-                  styles.starGoal,
-                  earned && styles.starGoalMet,
-                  missed && styles.starGoalLost,
-                ]}
+              <PixelText
+                key={`s${i}`}
+                size={11}
+                color={earned ? GOLD : missed ? '#6b6585' : MUTED}
+                shadow
+                style={missed ? styles.lost : undefined}
               >
                 {earned ? '★' : '☆'} {describeStar(g, ledNames, switchCount)}
                 {g.kind === 'turns' ? ` (${record.turns})` : ''}
-              </Text>
+              </PixelText>
             );
           })}
+        </ScrollView>
+
+        <View style={styles.tools}>
+          <PixelButton
+            label="Undo"
+            tone="cream"
+            size={12}
+            disabled={history.past.length === 0}
+            onPress={() => dispatch({ type: 'undo' })}
+          />
+          <PixelButton
+            label="Reset"
+            tone="cream"
+            size={12}
+            onPress={() => {
+              dispatch({ type: 'reset', board: phaseStart ?? createLevelBoard(level) });
+              // A fresh attempt: burnouts and turns start over (help already given stays given).
+              setRecord((r) => ({ ...FRESH_RECORD, helped: r.helped }));
+            }}
+          />
+          {pet?.kind === 'pet' && (
+            <Pressable onPress={callPet} hitSlop={6} style={[styles.pet, petUsed && styles.petUsed]}>
+              <PetFace id={pet.id} hopKey={petHop} />
+              <PixelText size={9} color={MUTED} shadow>
+                {pet.ability === 'shiny' ? '+50%' : petUsed ? 'resting' : pet.ability}
+              </PixelText>
+            </Pressable>
+          )}
         </View>
       </View>
 
-      <View
-        ref={canvasView}
-        style={[styles.canvasWrap, { backgroundColor: backdrop }]}
-        onLayout={measure}
-      >
-        <BoardCanvas
+      {/* Middle: the workbench. */}
+      <View ref={canvasView} style={styles.bench} onLayout={measure}>
+        <PixelBoard
           board={board}
           result={result}
           ghost={ghost}
@@ -576,19 +603,32 @@ export function LevelScreen({ level, day }: { level: LevelDef; day?: string }) {
         <GestureDetector gesture={boardGesture}>
           <View style={StyleSheet.absoluteFill} collapsable={false} />
         </GestureDetector>
+        <View style={styles.howTo} pointerEvents="none">
+          <PixelText size={10} color={MUTED} shadow>
+            {level.twist
+              ? 'Tap a piece to turn it · Tap a switch to flip it'
+              : 'Drag to draw wire · Tap wire to erase · Tap a part to turn it'}
+          </PixelText>
+        </View>
       </View>
 
-      <View ref={trayView} onLayout={measure} style={styles.trayWrap}>
+      {/* Right: the parts. Drag one in; drag a part back here to put it away. */}
+      <View ref={trayView} onLayout={measure} style={styles.tray}>
         {drag?.source === 'board' ? (
           <View style={[styles.trash, hover?.kind === 'trash' && styles.trashActive]}>
-            <Text style={styles.trashText}>Drop here to remove</Text>
+            <PixelText size={12} color={CREAM} shadow style={styles.center}>
+              Drop here to put it away
+            </PixelText>
           </View>
-        ) : trayKeys.length === 0 ? null : (
-          <View style={[styles.tray, trayKeys.length > 4 && styles.trayCompact]}>
+        ) : (
+          <ScrollView contentContainerStyle={styles.trayList} showsVerticalScrollIndicator={false}>
+            <PixelText size={11} color={MUTED} shadow>
+              PARTS
+            </PixelText>
             {trayKeys.map((key) => (
               <TraySlot
                 key={key}
-                size={trayKeys.length > 5 ? 44 : ICON}
+                size={trayKeys.length > 3 ? 38 : 46}
                 tile={tileForPart(key)}
                 label={partLabel(key)}
                 count={remaining[key] ?? 0}
@@ -600,21 +640,18 @@ export function LevelScreen({ level, day }: { level: LevelDef; day?: string }) {
                 onCancel={cancelDrag}
               />
             ))}
-          </View>
+            {trayKeys.length === 0 && (
+              <PixelText size={11} color={MUTED} shadow style={styles.center}>
+                Everything’s on the board
+              </PixelText>
+            )}
+          </ScrollView>
         )}
-        <Text style={styles.howTo}>
-          {level.twist
-            ? 'Tap a piece to turn it · Tap a switch to flip it'
-            : 'Drag across the board to draw wire · Tap a wire to erase it\nTap a part to turn it · Drag a part off the board to remove it'}
-        </Text>
       </View>
 
       {showFloating && (
-        <Animated.View
-          pointerEvents="none"
-          style={[styles.floating, { transform: dragPos.getTranslateTransform() }]}
-        >
-          <TileIcon tile={drag.tile} size={ICON} />
+        <Animated.View pointerEvents="none" style={[styles.floating, { transform: dragPos.getTranslateTransform() }]}>
+          <PartIcon tile={drag.tile} size={ICON} />
         </Animated.View>
       )}
 
@@ -627,34 +664,47 @@ export function LevelScreen({ level, day }: { level: LevelDef; day?: string }) {
         />
       )}
 
-      {showWin && payday && (
-        <WinCard
-          level={level}
-          payday={payday}
-          onKeepPlaying={() => setShowWin(false)}
-          primary={
-            nextOpen && next && !lastInDistrict
-              ? { label: 'Next job ›', onPress: () => router.replace(`/level/${next.id}`) }
-              : { label: 'Back to town ›', onPress: goBack }
-          }
-          secondary={
-            nextOpen && next && !lastInDistrict ? { label: 'Town', onPress: goBack } : null
-          }
-        />
-      )}
+      {showWin && payday && <WinCard level={level} payday={payday} onKeepPlaying={() => setShowWin(false)} onDone={goBack} day={day} />}
 
       {showIntro && level.newPart && (
-        <View style={styles.modalBackdrop}>
-          <View style={styles.modal}>
-            <Text style={styles.modalKicker}>New part</Text>
-            <TileIcon tile={parseToken(level.newPart.token) ?? resistor(220)} size={72} />
-            <Text style={styles.modalTitle}>{level.newPart.name}</Text>
-            <Text style={styles.modalText}>{level.newPart.text}</Text>
-            <ToolButton label="Got it!" primary onPress={() => setShowIntro(false)} />
-          </View>
+        <View style={styles.cover}>
+          <Panel style={styles.modal}>
+            <PixelText size={11} color={TEXT_SOFT}>
+              NEW PART
+            </PixelText>
+            <View style={styles.introRow}>
+              <View style={styles.partFrame}>
+                <PartIcon tile={parseToken(level.newPart.token) ?? resistor(220)} size={64} />
+              </View>
+              <View style={styles.flex}>
+                <PixelText size={20}>{level.newPart.name}</PixelText>
+                <PixelText size={13}>{level.newPart.text}</PixelText>
+              </View>
+            </View>
+            <View style={styles.modalButtons}>
+              <PixelButton label="Got it!" onPress={() => setShowIntro(false)} />
+            </View>
+          </Panel>
         </View>
       )}
     </SafeAreaView>
+  );
+}
+
+/** The pet's portrait; it hops when it does its trick. */
+function PetFace({ id, hopKey }: { id: string; hopKey: number }) {
+  const hop = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    if (!hopKey) return;
+    Animated.sequence([
+      Animated.timing(hop, { toValue: -10, duration: 120, useNativeDriver: true }),
+      Animated.spring(hop, { toValue: 0, friction: 4, useNativeDriver: true }),
+    ]).start();
+  }, [hopKey, hop]);
+  return (
+    <Animated.View style={{ transform: [{ translateY: hop }] }}>
+      <Portrait who={id} size={30} />
+    </Animated.View>
   );
 }
 
@@ -674,26 +724,36 @@ function GrumbleStrike({
   useEffect(() => {
     buzz.oops();
     Animated.sequence(
-      [8, -8, 6, -6, 3, 0].map((x) =>
-        Animated.timing(shake, { toValue: x, duration: 60, useNativeDriver: true }),
-      ),
+      [8, -8, 6, -6, 3, 0].map((x) => Animated.timing(shake, { toValue: x, duration: 60, useNativeDriver: true })),
     ).start();
   }, [shake]);
   return (
-    <View style={styles.modalBackdrop}>
-      <Animated.View style={[styles.strike, { transform: [{ translateX: shake }] }]}>
-        <Text style={styles.strikeKicker}>
-          ROUND {round} CLEARED · {rounds - round} TO GO
-        </Text>
-        <View style={styles.hearts}>
-          {Array.from({ length: rounds }, (_, i) => (
-            <View key={i} style={[styles.heart, i < round && styles.heartGone]} />
-          ))}
-        </View>
-        <Grumble size={120} />
-        <Text style={styles.strikeName}>Grumble</Text>
-        <Text style={styles.strikeLine}>“{line}”</Text>
-        <ToolButton label="Bring it on! ⚡" primary onPress={onFight} />
+    <View style={styles.cover}>
+      <Animated.View style={{ transform: [{ translateX: shake }] }}>
+        <Panel style={styles.modal} tone="night">
+          <View style={styles.introRow}>
+            <Portrait who="grumble" size={84} />
+            <View style={styles.flex}>
+              <PixelText size={11} color={MUTED} shadow>
+                ROUND {round} CLEARED · {rounds - round} TO GO
+              </PixelText>
+              <View style={styles.hearts}>
+                {Array.from({ length: rounds }, (_, i) => (
+                  <View key={i} style={[styles.heart, i < round && styles.heartGone]} />
+                ))}
+              </View>
+              <PixelText size={13} color={GOLD} shadow>
+                Grumble
+              </PixelText>
+              <PixelText size={15} color={CREAM} shadow>
+                “{line}”
+              </PixelText>
+            </View>
+          </View>
+          <View style={styles.modalButtons}>
+            <PixelButton label="Bring it on! ⚡" onPress={onFight} />
+          </View>
+        </Panel>
       </Animated.View>
     </View>
   );
@@ -704,14 +764,14 @@ function WinCard({
   level,
   payday,
   onKeepPlaying,
-  primary,
-  secondary,
+  onDone,
+  day,
 }: {
   level: LevelDef;
   payday: Payday;
   onKeepPlaying: () => void;
-  primary: { label: string; onPress: () => void };
-  secondary: { label: string; onPress: () => void } | null;
+  onDone: () => void;
+  day?: string;
 }) {
   const [shownStars, setShownStars] = useState(0);
   const [sparks, setSparks] = useState(0);
@@ -741,59 +801,50 @@ function WinCard({
       clearInterval(counter);
     };
   }, [payday, rise]);
-  const client = level.job ? person(level.job.client) : null;
   const translateY = rise.interpolate({ inputRange: [0, 1], outputRange: [300, 0] });
   return (
-    <Animated.View style={[styles.winCard, { transform: [{ translateY }] }]}>
-      <Text style={styles.winTitle}>
-        {payday.firstClear ? (level.boss ? 'Boss beaten!' : 'Job done!') : 'New best!'}
-      </Text>
-      <Stars earned={shownStars} size={40} />
-      {client && level.job && (
-        <View style={styles.thanks}>
-          <Portrait look={client.look} size={52} />
-          <Text style={styles.thanksText}>“{level.job.thanks}”</Text>
-        </View>
-      )}
-      <Text style={styles.paid}>
-        {payday.earned > 0 ? `+⚡ ${sparks}` : 'No new stars this time'}
-      </Text>
-      {payday.stars < 3 && (
-        <Text style={styles.winHint}>Missing a star? Check the ☆ goals and try again.</Text>
-      )}
-      <View style={styles.winButtons}>
-        <ToolButton label="Keep playing" onPress={onKeepPlaying} />
-        {secondary && <ToolButton label={secondary.label} onPress={secondary.onPress} />}
-        <ToolButton label={primary.label} primary onPress={primary.onPress} />
-      </View>
-    </Animated.View>
-  );
-}
-
-function ToolButton({
-  label,
-  onPress,
-  disabled = false,
-  primary = false,
-}: {
-  label: string;
-  onPress: () => void;
-  disabled?: boolean;
-  primary?: boolean;
-}) {
-  return (
-    <Pressable
-      onPress={onPress}
-      disabled={disabled}
-      style={({ pressed }) => [
-        styles.toolButton,
-        primary && styles.toolPrimary,
-        pressed && styles.toolPressed,
-        disabled && styles.toolDisabled,
-      ]}
-    >
-      <Text style={[styles.toolText, primary && styles.toolPrimaryText]}>{label}</Text>
-    </Pressable>
+    <View style={styles.cover}>
+      <Animated.View style={[styles.winWrap, { transform: [{ translateY }] }]}>
+        <Panel style={styles.modal}>
+          <View style={styles.winTop}>
+            <PixelText size={22}>
+              {payday.firstClear ? (level.boss ? 'Boss beaten!' : 'Job done!') : 'New best!'}
+            </PixelText>
+            <View style={styles.flex} />
+            <View style={styles.starsRow}>
+              {[1, 2, 3].map((s) => (
+                <PixelText key={s} size={30} color={s <= shownStars ? GOLD : CREAM_SHADE} shadow={s <= shownStars}>
+                  ★
+                </PixelText>
+              ))}
+            </View>
+          </View>
+          {level.job && !day && (
+            <View style={styles.introRow}>
+              <Portrait who={level.job.client} size={52} />
+              <PixelText size={13} style={styles.flex}>
+                “{level.job.thanks}”
+              </PixelText>
+            </View>
+          )}
+          <View style={styles.winTop}>
+            <PixelText size={18} color={payday.earned > 0 ? GOLD_DARK : TEXT_SOFT}>
+              {payday.earned > 0 ? `+⚡ ${sparks} sparks` : 'No new stars this time'}
+            </PixelText>
+            <View style={styles.flex} />
+            {payday.stars < 3 && (
+              <PixelText size={11} color={TEXT_SOFT}>
+                Missing a star? Check the ☆ goals.
+              </PixelText>
+            )}
+          </View>
+          <View style={styles.modalButtons}>
+            <PixelButton label="Keep playing" tone="cream" onPress={onKeepPlaying} />
+            <PixelButton label={day ? 'Back to town' : 'Back outside ›'} onPress={onDone} />
+          </View>
+        </Panel>
+      </Animated.View>
+    </View>
   );
 }
 
@@ -845,15 +896,25 @@ function TraySlot({
   return (
     <GestureDetector gesture={gesture}>
       <View style={[styles.slot, (count <= 0 || spare >= all) && styles.slotEmpty]}>
-        <TileIcon tile={tile} size={size} />
-        <Text style={styles.slotLabel}>{label}</Text>
+        <View style={styles.partFrame}>
+          <PartIcon tile={tile} size={size} />
+        </View>
+        <PixelText size={10} color={CREAM} shadow>
+          {label}
+        </PixelText>
         {spare > 0 && (
           <View style={styles.crossed} pointerEvents="none">
-            <Text style={styles.crossedText}>{spare >= all ? '✕' : `need ${all - spare}`}</Text>
+            <View style={styles.crossedTag}>
+              <PixelText size={10} color={CREAM} shadow>
+                {spare >= all ? '✕' : `need ${all - spare}`}
+              </PixelText>
+            </View>
           </View>
         )}
         <View style={styles.countBadge}>
-          <Text style={styles.countText}>×{Math.max(0, count)}</Text>
+          <PixelText size={10} color={CREAM}>
+            ×{Math.max(0, count)}
+          </PixelText>
         </View>
       </View>
     </GestureDetector>
@@ -894,14 +955,12 @@ function Labels({
     else if (t.kind === 'battery') text = `${t.volts} V`;
     else if (t.kind === 'switch') {
       text = `${switchCount > 1 && name ? `${name} ` : ''}${t.closed ? 'ON' : 'OFF'}`;
-      tone = t.closed ? 'rgba(91,191,143,0.95)' : undefined;
+      tone = t.closed ? '#3f7a52' : undefined;
     } else if (t.kind === 'led') {
       // Show the current even when it is too faint to glow: that is how hogging shows up.
       const flowing = r && r.current > 1e-4 && r.status !== 'BURNED_OUT';
       const prefix = ledCount > 1 && name ? name : '';
-      text = flowing
-        ? `${prefix ? `${prefix} · ` : ''}${formatCurrent(r.current)}`
-        : prefix || null;
+      text = flowing ? `${prefix ? `${prefix} · ` : ''}${formatCurrent(r.current)}` : prefix || null;
       tone = r?.status === 'OK' ? LED_PALETTE[t.color].tag : undefined;
     }
     if (!text) return;
@@ -913,241 +972,117 @@ function Labels({
       {tags.map((tag) => (
         <View
           key={tag.key}
-          style={[
-            styles.tag,
-            tag.tone ? { backgroundColor: tag.tone } : null,
-            { left: tag.x - 36, top: tag.y - 30 },
-          ]}
+          style={[styles.tag, tag.tone ? { backgroundColor: tag.tone } : null, { left: tag.x - 38, top: tag.y - 30 }]}
         >
-          <Text style={[styles.tagText, tag.tone && styles.tagToneText]}>{tag.text}</Text>
+          <PixelText size={10} color={CREAM} shadow>
+            {tag.text}
+          </PixelText>
         </View>
       ))}
     </View>
   );
 }
 
-const shadow = {
-  shadowColor: '#6e5f8a',
-  shadowOpacity: 0.12,
-  shadowRadius: 10,
-  shadowOffset: { width: 0, height: 4 },
-};
+const MUTED = '#b9b2db';
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: COLORS.background },
-  toolbar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginHorizontal: 12,
-    marginTop: 4,
-  },
+  screen: { flex: 1, flexDirection: 'row', backgroundColor: NIGHT_DEEP },
+  flex: { flex: 1 },
+  center: { textAlign: 'center' },
+  side: { width: 236, padding: 10, gap: 8, backgroundColor: NIGHT, borderRightWidth: 2, borderColor: INK },
+  titleRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   titleWrap: { flex: 1 },
-  levelTitle: { fontSize: 17, fontWeight: '900', color: COLORS.text },
-  levelPlace: { fontSize: 12, fontWeight: '700', color: COLORS.textSoft },
-  toolButton: {
-    paddingVertical: 8,
-    paddingHorizontal: 14,
-    borderRadius: 999,
-    backgroundColor: COLORS.card,
-    ...shadow,
-  },
-  toolPrimary: { backgroundColor: COLORS.success },
-  toolPressed: { transform: [{ scale: 0.95 }] },
-  toolDisabled: { opacity: 0.4 },
-  toolText: { fontSize: 14, fontWeight: '800', color: COLORS.text },
-  toolPrimaryText: { color: '#fff' },
   hint: {
-    marginHorizontal: 12,
-    marginTop: 8,
-    paddingVertical: 6,
-    paddingHorizontal: 8,
-    borderRadius: 20,
-    backgroundColor: COLORS.card,
-    minHeight: 70,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    ...shadow,
+    padding: 6,
+    backgroundColor: CREAM,
+    borderWidth: 2,
+    borderColor: INK,
+    borderRadius: 5,
+    minHeight: 64,
   },
+  hintWarning: { backgroundColor: '#f6d6c8' },
+  hintSuccess: { backgroundColor: '#dcefc4' },
   pip: { alignItems: 'center' },
   tipBadge: {
     marginTop: -8,
-    paddingHorizontal: 6,
-    borderRadius: 8,
-    overflow: 'hidden',
-    backgroundColor: '#ffd56b',
-    fontSize: 10,
-    fontWeight: '900',
-    color: COLORS.text,
+    paddingHorizontal: 5,
+    backgroundColor: GOLD,
+    borderWidth: 1.5,
+    borderColor: INK,
+    borderRadius: 3,
   },
-  pet: { alignItems: 'center' },
-  petUsed: { opacity: 0.5 },
-  petLabel: { fontSize: 10, fontWeight: '900', color: COLORS.textSoft, marginTop: -4 },
-  warning: { backgroundColor: '#ffe9e4' },
-  success: { backgroundColor: '#e3f6ea' },
-  info: {},
-  hintText: {
-    fontSize: 15,
-    lineHeight: 20,
-    fontWeight: '700',
-    color: COLORS.text,
-    flex: 1,
-  },
-  goals: { marginHorizontal: 18, marginTop: 8, gap: 2 },
-  goal: { fontSize: 13, fontWeight: '700', color: COLORS.textSoft },
-  goalMet: { color: COLORS.success },
-  goalLimit: { color: COLORS.danger },
-  starGoals: { marginTop: 2 },
-  starGoal: { fontSize: 12, fontWeight: '700', color: '#b3a6c4' },
-  starGoalMet: { color: '#e0a91f' },
-  starGoalLost: { color: '#c9bfd3', textDecorationLine: 'line-through' },
-  crossed: {
-    position: 'absolute',
-    top: 0,
-    left: -6,
-    right: -6,
-    bottom: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  crossedText: {
-    fontSize: 12,
-    fontWeight: '900',
-    color: '#fff',
-    backgroundColor: COLORS.danger,
-    paddingHorizontal: 6,
-    borderRadius: 8,
-    overflow: 'hidden',
-  },
-  canvasWrap: { flex: 1 },
-  trayWrap: { paddingHorizontal: 12, paddingBottom: 6, minHeight: 112 },
-  tray: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: 18,
-    flexWrap: 'wrap',
-    backgroundColor: COLORS.card,
-    borderRadius: 24,
-    paddingVertical: 10,
-    paddingHorizontal: 10,
-    ...shadow,
-  },
-  trayCompact: { gap: 10, paddingHorizontal: 6 },
-  slot: { alignItems: 'center', gap: 4 },
+  goals: { gap: 3, paddingVertical: 2 },
+  lost: { textDecorationLine: 'line-through' },
+  tools: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  pet: { alignItems: 'center', marginLeft: 'auto' },
+  petUsed: { opacity: 0.45 },
+  bench: { flex: 1 },
+  howTo: { position: 'absolute', left: 8, right: 8, bottom: 6, alignItems: 'center' },
+  tray: { width: 104, backgroundColor: NIGHT, borderLeftWidth: 2, borderColor: INK, paddingVertical: 8 },
+  trayList: { alignItems: 'center', gap: 10, paddingBottom: 10 },
+  slot: { alignItems: 'center', gap: 2 },
   slotEmpty: { opacity: 0.35 },
-  slotLabel: { fontSize: 12, fontWeight: '700', color: COLORS.textSoft },
+  partFrame: {
+    padding: 4,
+    backgroundColor: CREAM,
+    borderWidth: 2,
+    borderColor: INK,
+    borderRadius: 5,
+    borderBottomWidth: 4,
+    borderBottomColor: CREAM_SHADE,
+  },
   countBadge: {
     position: 'absolute',
     top: -6,
-    right: -10,
-    minWidth: 26,
-    paddingHorizontal: 5,
-    paddingVertical: 1,
-    borderRadius: 999,
-    backgroundColor: COLORS.text,
-    alignItems: 'center',
+    right: -12,
+    paddingHorizontal: 4,
+    backgroundColor: INK,
+    borderRadius: 3,
   },
-  countText: { fontSize: 11, fontWeight: '800', color: '#fff' },
-  howTo: {
-    textAlign: 'center',
-    fontSize: 11,
-    lineHeight: 15,
-    fontWeight: '600',
-    color: COLORS.textSoft,
-    marginTop: 6,
-  },
+  crossed: { position: 'absolute', top: 0, left: -8, right: -8, bottom: 14, alignItems: 'center', justifyContent: 'center' },
+  crossedTag: { paddingHorizontal: 5, backgroundColor: RED, borderWidth: 1.5, borderColor: INK, borderRadius: 3 },
   trash: {
-    height: 92,
-    borderRadius: 24,
-    borderWidth: 3,
+    flex: 1,
+    margin: 8,
+    borderWidth: 2,
     borderStyle: 'dashed',
-    borderColor: COLORS.danger,
-    backgroundColor: '#fff1ee',
+    borderColor: RED,
+    borderRadius: 6,
     alignItems: 'center',
     justifyContent: 'center',
+    padding: 6,
   },
-  trashActive: { backgroundColor: '#ffd9d2' },
-  trashText: { fontSize: 16, fontWeight: '800', color: COLORS.danger },
+  trashActive: { backgroundColor: 'rgba(209,75,52,0.35)' },
   floating: { position: 'absolute', left: 0, top: 0, opacity: 0.9 },
   tag: {
     position: 'absolute',
-    width: 72,
-    paddingVertical: 2,
-    borderRadius: 10,
-    backgroundColor: 'rgba(255,250,244,0.92)',
+    width: 76,
+    paddingVertical: 1,
+    backgroundColor: 'rgba(20,27,27,0.86)',
+    borderRadius: 3,
     alignItems: 'center',
   },
-  tagText: { fontSize: 12, fontWeight: '800', color: COLORS.text },
-  tagToneText: { color: '#fff' },
-  winCard: {
-    position: 'absolute',
-    left: 16,
-    right: 16,
-    bottom: 40,
-    padding: 18,
-    borderRadius: 24,
-    backgroundColor: COLORS.card,
-    alignItems: 'center',
-    gap: 12,
-    ...shadow,
-    shadowOpacity: 0.25,
-  },
-  strike: {
-    width: '100%',
-    maxWidth: 380,
-    borderRadius: 28,
-    padding: 22,
-    backgroundColor: '#ece9f6',
-    alignItems: 'center',
-    gap: 8,
-  },
-  strikeKicker: { fontSize: 12, fontWeight: '900', color: '#6d6890', letterSpacing: 1 },
-  hearts: { flexDirection: 'row', gap: 6 },
-  heart: { width: 34, height: 10, borderRadius: 5, backgroundColor: '#7d7a9c' },
-  heartGone: { backgroundColor: '#d9d5e8' },
-  strikeName: { fontSize: 14, fontWeight: '900', color: '#6d6890' },
-  strikeLine: {
-    fontSize: 17,
-    lineHeight: 23,
-    fontWeight: '800',
-    color: COLORS.text,
-    textAlign: 'center',
-    marginBottom: 6,
-  },
-  winTitle: { fontSize: 26, fontWeight: '900', color: COLORS.text },
-  thanks: { flexDirection: 'row', alignItems: 'center', gap: 10, alignSelf: 'stretch' },
-  thanksText: { flex: 1, fontSize: 15, lineHeight: 20, fontWeight: '700', color: COLORS.text },
-  paid: { fontSize: 24, fontWeight: '900', color: '#e0a91f' },
-  winHint: { fontSize: 12, fontWeight: '700', color: COLORS.textSoft },
-  winButtons: { flexDirection: 'row', gap: 10, flexWrap: 'wrap', justifyContent: 'center' },
-  modalBackdrop: {
+  cover: {
     position: 'absolute',
     top: 0,
     right: 0,
     bottom: 0,
     left: 0,
-    backgroundColor: 'rgba(74,64,88,0.35)',
+    backgroundColor: 'rgba(13,15,30,0.55)',
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 24,
+    padding: 16,
   },
-  modal: {
-    width: '100%',
-    maxWidth: 360,
-    borderRadius: 28,
-    padding: 24,
-    backgroundColor: COLORS.card,
-    alignItems: 'center',
-    gap: 12,
-  },
-  modalKicker: { fontSize: 13, fontWeight: '800', color: COLORS.textSoft, letterSpacing: 1 },
-  modalTitle: { fontSize: 26, fontWeight: '900', color: COLORS.text },
-  modalText: {
-    fontSize: 16,
-    lineHeight: 22,
-    fontWeight: '600',
-    color: COLORS.text,
-    textAlign: 'center',
-  },
+  modal: { width: 460, maxWidth: '100%' },
+  introRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginVertical: 6 },
+  modalButtons: { flexDirection: 'row', justifyContent: 'flex-end', gap: 10, marginTop: 8 },
+  hearts: { flexDirection: 'row', gap: 6, marginVertical: 4 },
+  heart: { width: 30, height: 9, backgroundColor: RED, borderWidth: 1.5, borderColor: INK, borderRadius: 2 },
+  heartGone: { backgroundColor: '#3a3656' },
+  winWrap: { width: 460, maxWidth: '100%' },
+  winTop: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  starsRow: { flexDirection: 'row', gap: 2 },
 });

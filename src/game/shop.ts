@@ -44,9 +44,9 @@ export const PETS: PetItem[] = [
   {
     id: 'scout',
     kind: 'pet',
-    name: 'Scout the Mole',
+    name: 'Scout the Dog',
     price: 200,
-    blurb: 'Digs where nobody else would think to look.',
+    blurb: 'Digs where nobody else would think to look. Good dog.',
     ability: 'dig',
     power: 'Dig: fixes one piece of your board. Once per job.',
     body: '#8a7a92',
@@ -55,9 +55,9 @@ export const PETS: PetItem[] = [
   {
     id: 'hoot',
     kind: 'pet',
-    name: 'Hoot the Owl',
+    name: 'Hoot the Parrot',
     price: 250,
-    blurb: 'Very wise. Slightly smug about it.',
+    blurb: 'Very sharp eyes. Repeats everything you say.',
     ability: 'wise',
     power: 'Wise Eye: crosses out parts you won’t need. Once per job.',
     body: '#c49a6c',
@@ -66,7 +66,7 @@ export const PETS: PetItem[] = [
   {
     id: 'penny',
     kind: 'pet',
-    name: 'Penny the Magpie',
+    name: 'Penny the Raccoon',
     price: 400,
     blurb: 'Loves anything shiny. Especially sparks.',
     ability: 'shiny',

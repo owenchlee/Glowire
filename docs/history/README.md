@@ -9,7 +9,7 @@ Each version is a git tag you can play again (see [Play an old version](#play-an
 | `v0.2-puzzles`     | Day 1 | Oct 8, 2026 | Puzzles: draw wires, levels 1–10, walls, wire limits, switches  |
 | `v0.3-campaign`    | Day 1 | Oct 8, 2026 | A campaign: 4 chapters, 31 levels, coloured LEDs, twist puzzles |
 | `v0.4-glowtown`    | Day 1 | Oct 8, 2026 | A game layer: town map, story, stars, shop, pets, daily, bosses |
-| `v0.5-open-world`  | Day 2 | Oct 9, 2026 | _In progress:_ walk around pixel-art worlds as one hero         |
+| `v0.5-open-world`  | Day 2 | Oct 9, 2026 | Landscape pixel-art town you walk around as one hero            |
 
 ---
 
@@ -169,6 +169,54 @@ Then, after seeing it running:
 > to look professional … each world is like different map or like a different city."
 
 So the v0.4 map is replaced in v0.5. The puzzles, stars, shop, pets and story carry over.
+
+---
+
+## v0.5 Open World
+
+**Day 2 (Oct 9, 2026)** · tag `v0.5-open-world`
+
+### What I decided
+
+- **Play it sideways.** Landscape on the phone, like a real handheld game.
+- **A hero you actually walk around** with the keyboard, mouse, or by tapping. You talk to
+  townspeople, and they give you jobs. The circuit puzzles open from those jobs.
+- **Each world is its own city.** World 1 is Glowtown (chapters 1–2). World 2 is Driftwood
+  Harbour (chapters 3–4), marked "coming soon".
+- **Real art, not shapes.** Use free CC0 art packs, but mesh them together so they share
+  one look.
+- **One hero in every world.** Outfits come later.
+
+### What got built
+
+- **Two art packs merged into one style:** Kenney's RPG Urban city tiles and Pixel-boy's
+  Ninja Adventure characters. A script (`scripts/art.mjs`) recolours both into one shared
+  palette, and a night-lighting shader adds glowing lamps and windows on top.
+- **Pixel UI:** dialog boxes and buttons from the Ninja pack, with its pixel font, and
+  talking portraits for every character.
+- **A pixel-art puzzle board.** The circuit parts are hand-drawn sprites (drawn by a script,
+  `scripts/circuit-art.mjs`) so the puzzle matches the town.
+- **A map builder** (`src/world`) for laying out new worlds from code.
+
+### What it looked like
+
+![v0.5 world select](v0.5/index.png)
+![v0.5 Glowtown](v0.5/world.png)
+
+### What I thought
+
+> "the open world works. But it's not that good because it seems like you just walk
+> anywhere and there isn't really like a set path … I'd rather have a set path and then
+> many different challenges along the way where you meet new people and there's actually
+> lore … the map design. It's like a square grid blocks. And everywhere looks the same."
+
+And on the puzzle board:
+
+> "the look of the circuits is very different than what we decided at the start … I think
+> it looked better before. So maybe figure out a way to incorporate the theme but keep the
+> old look with the 3D floating tiles, that was really cool."
+
+So v0.6 turns the world into a route with a story, and brings the 3D board back.
 
 ---
 

@@ -1,0 +1,118 @@
+// Pixel-art textures and the night-lighting material every world sprite is drawn with.
+//
+// The whole town is lit the same way, whichever art pack a tile came from: a dark blue
+// night, warm pools of light around lamps and fixed buildings, and window glass that
+// glows once its building is lit. Glowing pixels are marked in the art with alpha 254
+// (see scripts/art.mjs).
+
+import { Asset } from 'expo-asset';
+import { Platform } from 'react-native';
+import {
+  Color,
+  NearestFilter,
+  ShaderMaterial,
+  type Texture,
+  TextureLoader,
+  Vector3,
+  Vector4,
+} from 'three';
+
+export const MAX_LIGHTS = 24;
+
+/** Load a bundled PNG (a `require(...)`) as a crisp, unfiltered texture. */
+export async function loadPixelTexture(module: number): Promise<Texture> {
+  // On web the loader needs a URL; on iOS/Android R3F's loader takes the module itself.
+  const source = Platform.OS === 'web' ? Asset.fromModule(module).uri : module;
+  const texture = await new TextureLoader().loadAsync(source as string);
+  texture.magFilter = NearestFilter;
+  texture.minFilter = NearestFilter;
+  texture.generateMipmaps = false;
+  texture.premultiplyAlpha = false;
+  texture.needsUpdate = true;
+  return texture;
+}
+
+/**
+ * The light in one scene, shared by all its materials so one update relights everything.
+ * Each scene has its own (the town keeps running under a puzzle).
+ */
+export function createLighting(ambient: string) {
+  return {
+    uAmbient: { value: new Color(ambient) },
+    uLights: { value: Array.from({ length: MAX_LIGHTS }, () => new Vector4()) },
+    uLightColors: { value: Array.from({ length: MAX_LIGHTS }, () => new Vector3()) },
+    uLightCount: { value: 0 },
+    uTime: { value: 0 },
+  };
+}
+export type Lighting = ReturnType<typeof createLighting>;
+
+const vertex = /* glsl */ `
+  attribute float aLit;
+  attribute vec3 aTint;
+  varying vec2 vUv;
+  varying vec2 vWorld;
+  varying float vLit;
+  varying vec3 vTint;
+  void main() {
+    vUv = uv;
+    vLit = aLit;
+    vTint = aTint;
+    vec4 world = modelMatrix * vec4(position, 1.0);
+    vWorld = world.xy;
+    gl_Position = projectionMatrix * viewMatrix * world;
+  }
+`;
+
+const fragment = /* glsl */ `
+  uniform sampler2D uMap;
+  uniform vec3 uAmbient;
+  uniform vec4 uLights[${MAX_LIGHTS}];
+  uniform vec3 uLightColors[${MAX_LIGHTS}];
+  uniform int uLightCount;
+  uniform float uTime;
+  uniform float uLitAll;
+  varying vec2 vUv;
+  varying vec2 vWorld;
+  varying float vLit;
+  varying vec3 vTint;
+
+  void main() {
+    vec4 c = texture2D(uMap, vUv);
+    if (c.a < 0.5) discard;
+
+    // Light falls on whole art pixels (1/16 of a tile) and in soft steps, like hand-drawn light.
+    vec2 p = floor(vWorld * 16.0) / 16.0;
+    vec3 light = uAmbient;
+    for (int i = 0; i < ${MAX_LIGHTS}; i++) {
+      if (i >= uLightCount) break;
+      vec4 l = uLights[i];
+      float f = 1.0 - clamp(distance(p, l.xy) / l.z, 0.0, 1.0);
+      f = floor(f * f * 10.0 + 0.5) / 10.0;
+      light += uLightColors[i] * f * l.w * 0.85;
+    }
+    vec3 col = c.rgb * light;
+
+    // Glass, bulbs, copper and LEDs: dark until lit, then glowing at full strength (warm,
+    // or the quad's tint).
+    if (c.a < 0.999) {
+      float lit = max(vLit, uLitAll);
+      float lum = dot(c.rgb, vec3(0.299, 0.587, 0.114));
+      vec3 warm = vTint.r + vTint.g + vTint.b > 0.0
+        ? mix(vTint, vec3(1.0), lum * 0.55)
+        : mix(vec3(1.0, 0.62, 0.25), vec3(1.0, 0.95, 0.7), lum);
+      float flicker = 0.94 + 0.06 * sin(uTime * 3.0 + vWorld.x * 1.7 + vWorld.y);
+      col = mix(c.rgb * uAmbient * 0.55, warm * (0.7 + 0.3 * lum) * flicker, lit);
+    }
+    gl_FragColor = vec4(col, 1.0);
+  }
+`;
+
+/** A lit material for one texture. `litAll` lights every glowing pixel (used for people). */
+export function worldMaterial(map: Texture, lighting: Lighting, litAll = 0): ShaderMaterial {
+  return new ShaderMaterial({
+    uniforms: { ...lighting, uMap: { value: map }, uLitAll: { value: litAll } },
+    vertexShader: vertex,
+    fragmentShader: fragment,
+  });
+}
