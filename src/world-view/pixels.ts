@@ -78,7 +78,11 @@ const vertex = /* glsl */ `
     vLit = aLit;
     vTint = aTint;
     vec4 world = modelMatrix * vec4(position, 1.0);
-    vWorld = world.xy;
+    #ifdef LOCAL_LIGHT
+      vWorld = position.xy;
+    #else
+      vWorld = world.xy;
+    #endif
     gl_Position = projectionMatrix * viewMatrix * world;
   }
 `;
@@ -134,11 +138,16 @@ const fragment = /* glsl */ `
   }
 `;
 
-/** A lit material for one texture. `litAll` lights every glowing pixel (used for people). */
-export function worldMaterial(map: Texture, lighting: Lighting, litAll = 0): ShaderMaterial {
+/**
+ * A lit material for one texture. `litAll` lights every glowing pixel (used for people).
+ * With `local`, lights are placed in the mesh's own coordinates (map cells) rather than the
+ * scene's, so a map can be drawn moved, turned or scaled (the backdrop behind a puzzle).
+ */
+export function worldMaterial(map: Texture, lighting: Lighting, litAll = 0, local = false): ShaderMaterial {
   return new ShaderMaterial({
     uniforms: { ...lighting, uMap: { value: map }, uLitAll: { value: litAll } },
     vertexShader: vertex,
     fragmentShader: fragment,
+    defines: local ? { LOCAL_LIGHT: 1 } : {},
   });
 }

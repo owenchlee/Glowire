@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { CHAPTERS, LEVELS } from '../levels/levels';
+import { LEVELS } from '../levels/levels';
 import { CAST } from './cast';
 import {
   NEW_SAVE,

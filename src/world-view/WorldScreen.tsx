@@ -56,10 +56,7 @@ const levelById = (id: number) => LEVELS.find((l) => l.id === id)!;
 const solvedIn = (save: SaveData) => (id: number) => starsFor(save, id) > 0;
 const noteKey = (id: string) => `note:${id}`;
 
-function startingWalker(worldId: string, map: WorldMap): Walker {
-  const at = lastPlace.get(worldId) ?? map.spawn;
-  return newWalker(at.x, at.y, at.facing);
-}
+const startingPlace = (worldId: string, map: WorldMap) => lastPlace.get(worldId) ?? map.spawn;
 
 /**
  * The story scene to play now, if any: an area's ending once its last job is done, else
@@ -96,7 +93,8 @@ export function WorldScreen({ map, worldId }: { map: WorldMap; worldId: string }
   const notes = useMemo(() => map.spots.flatMap((s) => (s.kind === 'note' ? [s.note] : [])), [map]);
   const notesFound = notes.filter((n) => save.seen.includes(noteKey(n))).length;
 
-  const walker = useRef<Walker>(startingWalker(worldId, map));
+  const [start] = useState(() => startingPlace(worldId, map));
+  const walker = useRef<Walker>(newWalker(start.x, start.y, start.facing));
   const blockedNow = useRef(blocked);
   useEffect(() => {
     blockedNow.current = blocked;
@@ -109,7 +107,7 @@ export function WorldScreen({ map, worldId }: { map: WorldMap; worldId: string }
 
   // Which area the hero is standing in (changes only when they cross into another).
   const areaAt = useCallback((x: number, y: number) => map.areaOf[y * map.width + x] ?? 255, [map]);
-  const [here, setHere] = useState(() => areaAt(walker.current.x, walker.current.y));
+  const [here, setHere] = useState(() => map.areaOf[start.y * map.width + start.x] ?? 255);
   const area = map.areas[here === 255 ? 0 : here]!;
 
   // A story scene waiting to be seen takes over until it's done.

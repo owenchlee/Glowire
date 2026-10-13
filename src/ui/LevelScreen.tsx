@@ -61,7 +61,10 @@ import {
 } from '../levels/stars';
 import type { LevelDef, PartKey } from '../levels/types';
 import type { GhostPreview, ScenePicker } from '../puzzle-view/types';
-import { PixelBoard } from '../puzzle-view/PixelBoard';
+import { BoardCanvas } from '../render/BoardScene';
+import type { BackdropSpec } from '../render/Backdrop';
+import { litGroups, presentResidents } from '../world/logic';
+import { jobPlace, worldMap } from '../world/worlds';
 import { LED_PALETTE, formatCurrent, formatOhms } from '../render/theme';
 import { useGame } from './game';
 import { buzz } from './haptics';
@@ -121,6 +124,20 @@ function partLabel(key: PartKey): string {
   return formatOhms(Number(key.slice(1)));
 }
 
+/**
+ * The street behind the board: where the job is (the daily job happens outside Gran's
+ * workshop, where Pip takes the call).
+ */
+function backdropFor(id: number, day: string | undefined, save: { stars: Record<string, number> }): BackdropSpec | null {
+  const solved = (j: number) => (save.stars[String(j)] ?? 0) > 0;
+  const place = day ? null : jobPlace(id);
+  const map = place?.map ?? worldMap('glowtown');
+  if (!map) return null;
+  const at = place ?? map.spots.find((s) => s.kind === 'daily') ?? map.spawn;
+  const lit = litGroups(map, solved);
+  return { map, x: at.x, y: at.y, lit, residents: presentResidents(map, solved, lit) };
+}
+
 interface Payday {
   stars: number;
   earned: number;
@@ -133,6 +150,7 @@ interface Payday {
  */
 export function LevelScreen({ level, day }: { level: LevelDef; day?: string }) {
   const { save, finishJob, finishDaily } = useGame();
+  const backdrop = useMemo(() => backdropFor(level.id, day, save), [level.id, day, save]);
   const [history, dispatch] = useReducer(historyReducer, level, (l) => ({
     board: createLevelBoard(l),
     past: [],
@@ -579,7 +597,8 @@ export function LevelScreen({ level, day }: { level: LevelDef; day?: string }) {
 
       {/* Middle: the workbench. */}
       <View ref={canvasView} style={styles.bench} onLayout={measure}>
-        <PixelBoard
+        <BoardCanvas
+          backdrop={backdrop}
           board={board}
           result={result}
           ghost={ghost}

@@ -32,6 +32,17 @@ export const WORLDS: WorldInfo[] = [
 
 const cache = new Map<string, WorldMap>();
 
+/** Where a job happens: its world and the door (or signal, or tree) you knock on. */
+export function jobPlace(job: number): { world: WorldInfo; map: WorldMap; x: number; y: number } | null {
+  for (const world of WORLDS) {
+    if (!world.build) continue;
+    const map = worldMap(world.id)!;
+    const spot = map.spots.find((s) => s.kind === 'job' && s.job === job);
+    if (spot) return { world, map, x: spot.x, y: spot.y };
+  }
+  return null;
+}
+
 export function worldMap(id: string): WorldMap | null {
   const info = WORLDS.find((w) => w.id === id);
   if (!info?.build) return null;

@@ -23,6 +23,7 @@ import {
 import { itemOf } from '../game/shop';
 import { LEVELS } from '../levels/levels';
 import { wearSkin as setSkin } from '../puzzle-view/skin';
+import { applySkin } from '../render/assets';
 import { loadSave, writeSave } from './storage';
 
 export const JOB_ORDER = LEVELS.map((l) => l.id);
@@ -43,7 +44,10 @@ const GameContext = createContext<Game | null>(null);
 function wearSkin(wireId: string, boardId: string) {
   const w = itemOf('wire', wireId);
   const b = itemOf('board', boardId);
-  if (w && b) setSkin(w, b);
+  if (w && b) {
+    setSkin(w, b);
+    applySkin(w, b);
+  }
 }
 
 export function GameProvider({ children }: { children: ReactNode }) {
