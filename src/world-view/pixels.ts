@@ -9,10 +9,14 @@ import { Asset } from 'expo-asset';
 import { Platform } from 'react-native';
 import {
   Color,
+  DataTexture,
+  LinearFilter,
   NearestFilter,
+  RedFormat,
   ShaderMaterial,
   type Texture,
   TextureLoader,
+  Vector2,
   Vector3,
   Vector4,
 } from 'three';
@@ -33,16 +37,31 @@ export async function loadPixelTexture(module: number): Promise<Texture> {
 }
 
 /**
+ * Darkness over the parts of a map you can't reach yet: one value per cell (0 clear, 255
+ * black), blurred between cells by the GPU so its edge is soft.
+ */
+export function createFog(width: number, height: number): DataTexture {
+  const t = new DataTexture(new Uint8Array(width * height), width, height, RedFormat);
+  t.magFilter = LinearFilter;
+  t.minFilter = LinearFilter;
+  t.needsUpdate = true;
+  return t;
+}
+
+/**
  * The light in one scene, shared by all its materials so one update relights everything.
  * Each scene has its own (the town keeps running under a puzzle).
  */
-export function createLighting(ambient: string) {
+export function createLighting(ambient: string, fog: DataTexture = createFog(1, 1)) {
+  const img = fog.image as { width: number; height: number };
   return {
     uAmbient: { value: new Color(ambient) },
     uLights: { value: Array.from({ length: MAX_LIGHTS }, () => new Vector4()) },
     uLightColors: { value: Array.from({ length: MAX_LIGHTS }, () => new Vector3()) },
     uLightCount: { value: 0 },
     uTime: { value: 0 },
+    uFog: { value: fog },
+    uFogSize: { value: new Vector2(img.width, img.height) },
   };
 }
 export type Lighting = ReturnType<typeof createLighting>;
@@ -72,6 +91,8 @@ const fragment = /* glsl */ `
   uniform int uLightCount;
   uniform float uTime;
   uniform float uLitAll;
+  uniform sampler2D uFog;
+  uniform vec2 uFogSize;
   varying vec2 vUv;
   varying vec2 vWorld;
   varying float vLit;
@@ -104,6 +125,11 @@ const fragment = /* glsl */ `
       float flicker = 0.94 + 0.06 * sin(uTime * 3.0 + vWorld.x * 1.7 + vWorld.y);
       col = mix(c.rgb * uAmbient * 0.55, warm * (0.7 + 0.3 * lum) * flicker, lit);
     }
+
+    // Beyond the open part of the route: near-black, in a few hand-drawn-looking steps.
+    float fog = texture2D(uFog, vec2(p.x / uFogSize.x, -p.y / uFogSize.y)).r;
+    fog = floor(fog * 6.0 + 0.5) / 6.0;
+    col = mix(col, c.rgb * vec3(0.05, 0.06, 0.12), fog * 0.92);
     gl_FragColor = vec4(col, 1.0);
   }
 `;

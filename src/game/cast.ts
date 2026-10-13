@@ -218,6 +218,18 @@ export const CAST: Record<string, Person> = {
       hatColor: '#3a3048',
     },
   },
+  wren: {
+    id: 'wren',
+    name: 'Wren',
+    role: 'Explorer. Mapping the Glowire, bend by bend.',
+    look: { skin: SKIN[2], hair: '#5a3a2a', hairStyle: 'ponytail', shirt: '#4fa86e', kid: true },
+  },
+  marigold: {
+    id: 'marigold',
+    name: 'Marigold’s notebook',
+    role: 'Gran’s grandmother. She joined up the Glowire.',
+    look: { skin: SKIN[0], hair: '#e3b04b', hairStyle: 'bun', shirt: '#d07a4a' },
+  },
 };
 
 export function person(id: string): Person {

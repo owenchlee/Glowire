@@ -16,7 +16,7 @@ import {
   sparksForStars,
 } from './save';
 import { CATALOGUE } from './shop';
-import { DISTRICTS, PROLOGUE } from './story';
+import { NOTES, SCENES } from './story';
 
 const fresh = () => structuredClone(NEW_SAVE);
 const ORDER = LEVELS.map((l) => l.id);
@@ -140,17 +140,17 @@ describe('unlocking', () => {
 });
 
 describe('story', () => {
-  it('every job’s client exists, and every chapter has a district', () => {
+  it('every job’s client exists', () => {
     for (const level of LEVELS) expect(CAST[level.job!.client], `level ${level.id}`).toBeDefined();
-    expect(DISTRICTS.map((d) => d.chapter)).toEqual(CHAPTERS.map((c) => c.id));
   });
 
-  it('every speaker in every scene exists', () => {
-    const scenes = [PROLOGUE, ...DISTRICTS.flatMap((d) => [d.intro, d.outro])];
-    for (const scene of scenes)
-      for (const line of scene.lines)
-        expect(line.who === 'pip' || line.who === 'grumble' || !!CAST[line.who], line.who).toBe(
-          true,
-        );
+  it('every speaker in every scene and note exists', () => {
+    const lines = [...Object.values(SCENES), ...Object.values(NOTES)].flatMap((s) => s.lines);
+    for (const line of lines) expect(line.who === 'pip' || line.who === 'grumble' || !!CAST[line.who], line.who).toBe(true);
+  });
+
+  it('numbers the notebook pages 1, 2, 3… with no gaps', () => {
+    const pages = Object.values(NOTES).map((n) => n.page).sort((a, b) => a - b);
+    expect(pages).toEqual(pages.map((_, i) => i + 1));
   });
 });

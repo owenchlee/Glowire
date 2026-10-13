@@ -45,7 +45,8 @@
     "lint": "expo lint",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "play-version": "node scripts/play-version.mjs"
+    "play-version": "node scripts/play-version.mjs",
+    "map-preview": "vitest run --config scripts/map-preview.config.ts"
   },
   "private": true
 }

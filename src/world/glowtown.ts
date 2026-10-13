@@ -1,195 +1,426 @@
-// World 1: Glowtown, a city gone dark. Maple Street (chapter 1) runs down the west side,
-// Market Square (chapter 2) the east, and Gran's workshop sits in the middle of town.
+// World 1: Glowtown. One road, the Glowire, runs from Gran's workshop in the west to the
+// Market Clock in the east, and every stretch of it is a different part of town. Each
+// stretch stays dark until the one before it is fixed.
 //
-//          col 0          20  23            41  44            59
-//   row 0  ┌ A1 Maple N ┐ ║  ┌ B1 Park    ┐ ║  ┌ C1 Market N ┐
-//      12  ═════════════════════════════════════════════════════
-//      15  ┌ A2 Maple   ┐ ║  ┌ B2 Workshop┐ ║  ┌ C2 Market   ┐
-//      25  ═════════════════════════════════════════════════════
-//      28  └ A3 Maple S ┘ ║  └ B3 Café    ┘ ║  └ C3 Clock    ┘
+//   x:  0      18          45         67          91          115        139        161    180
+//       Workshop │ Maple Lane │ Willow    │ Schoolhouse│ Whisper    │ Market   │ Cross-   │ Clock
+//       yard     │ (1–3)      │ Brook 4–6 │ Hill (7–9) │ Woods 10,B │ Sq 11–15 │ roads    │ Plaza B
+//                                                                               16–18
 
-import { CITY, MapBuilder } from './builder';
-import type { WorldMap } from './types';
+import { MapBuilder, type BuildingSpec, type HouseStyle } from './builder';
+import type { Point, WorldMap } from './types';
+
+const W = 180;
+const H = 40;
 
 export function buildGlowtown(): WorldMap {
-  const b = new MapBuilder(60, 36);
+  const b = new MapBuilder(W, H, 'grass');
 
-  // Streets.
-  b.road('h', 12);
-  b.road('h', 25);
-  b.road('v', 20);
-  b.road('v', 41);
-  for (const x of [20, 41]) for (const y of [12, 25]) b.junction(x, y);
+  workshop(b);
+  mapleLane(b);
+  willowBrook(b);
+  schoolhouseHill(b);
+  whisperWoods(b);
+  marketSquare(b);
+  crossroads(b);
+  clockPlaza(b);
 
-  // Blocks of pavement between the streets.
-  const cols = [
-    [0, 20],
-    [23, 18],
-    [44, 16],
-  ] as const;
-  const rows = [
-    [0, 12],
-    [15, 10],
-    [28, 8],
-  ] as const;
-  for (const [x, w] of cols) for (const [y, h] of rows) b.sidewalk(x, y, w, h);
-
-  // Gran's workshop and the gadget shop glow from the start: home base.
-  b.group('home', []);
-
-  // ── A1: Maple Street north ──────────────────────────────────────────────
-  job(b, 1, 'pell', { x: 2, y: 2, w: 5, roofStyle: 'tan', wall: 'red', door: 'wood' });
-  job(b, 2, 'okoro', { x: 8, y: 2, w: 4, roofStyle: 'slate', wall: 'orange', door: 'wood' });
-  job(b, 3, 'rafi', { x: 13, y: 2, w: 5, roofStyle: 'tan', wall: 'orange', door: 'double' });
-  b.park(1, 8, 18, 3);
-  b.group('lamp:a1', [1, 2, 3]);
-  b.lamp(1, 7, 'lamp:a1');
-  b.lamp(9, 7, 'lamp:a1');
-  b.lamp(18, 7, 'lamp:a1');
-  b.tree(2, 10, 'oak');
-  b.tree(15, 10, 'lime');
-  b.bush(7, 8);
-  b.bush(12, 8);
-  for (const x of [3, 4, 5]) b.flowers(x, 7);
-  b.prop(11, 10, 'bench');
-  for (const x of [1, 7, 12, 18]) b.bush(x, 1);
-
-  // ── A2: Maple Street ───────────────────────────────────────────────────
-  job(b, 4, 'theo', { x: 2, y: 16, w: 5, roofStyle: 'slate', wall: 'red', door: 'wood' });
-  job(b, 5, 'twins', { x: 8, y: 16, w: 5, roofStyle: 'tan', wall: 'red', door: 'double' });
-  job(b, 6, 'arjun', {
-    x: 13,
-    y: 16,
-    w: 6,
-    doorAt: 4,
-    roofStyle: 'slate',
-    wall: 'orange',
-    door: 'shop',
-    storefront: true,
-  });
-  b.park(1, 22, 18, 2);
-  b.group('lamp:a2', [4, 5, 6]);
-  b.lamp(1, 21, 'lamp:a2');
-  b.lamp(13, 21, 'lamp:a2');
-  b.tree(7, 23, 'cherry');
-  b.bush(3, 23);
-  b.prop(16, 23, 'bench');
-  b.prop(19, 21, 'hydrant');
-  for (const x of [10, 11]) b.flowers(x, 22);
-
-  // ── A3: Maple Street south (school and library) ─────────────────────────
-  job(b, 7, 'nadia', { x: 2, y: 29, w: 4, roofStyle: 'tan', wall: 'orange', door: 'wood' });
-  job(b, 8, 'ito', { x: 7, y: 29, w: 6, doorAt: 3, roofStyle: 'slate', wall: 'orange', door: 'double', window: 'tall' });
-  job(b, 9, 'finch', { x: 13, y: 29, w: 5, roofStyle: 'slate', wall: 'red', door: 'glass', window: 'tall' });
-  b.park(1, 34, 18, 1);
-  b.group('lamp:a3', [7, 8, 9]);
-  b.lamp(1, 34, 'lamp:a3');
-  b.lamp(12, 34, 'lamp:a3');
-  // The school crossing light on the corner (job 16 belongs to Market Square's story).
-  signal(b, 16, 'dot', 19, 28, 'left');
-
-  // ── B1: the park, with the twins' secret treehouse ───────────────────────
-  b.park(24, 1, 16, 10);
-  b.pond(27, 3, 7, 4);
-  b.group('job:10', [10]);
-  b.object(36, 3, 2, 2, [...CITY.trees.oak], 'job:10');
-  b.block(36, 4, 2, 1);
-  b.spots.push({ kind: 'job', x: 36, y: 4, job: 10 });
-  b.spots.push({ kind: 'job', x: 37, y: 4, job: 10 });
-  b.resident('twins', 38, 5, 'left', { job: 10 });
-  b.lights.push({ x: 37, y: 3.5, radius: 3.6, color: '#ffcf7a', group: 'job:10' });
-  b.group('lamp:park', [10]);
-  b.lamp(28, 9, 'lamp:park', 'park');
-  b.lamp(36, 9, 'lamp:park', 'park');
-  b.tree(24, 3, 'pine');
-  b.tree(24, 10, 'lime');
-  b.tree(33, 10, 'round');
-  b.bush(27, 8);
-  b.bush(34, 7);
-  b.prop(31, 8, 'bench', false);
-  for (const [x, y] of [[30, 1], [31, 1], [35, 1], [39, 7], [26, 7]]) b.flowers(x!, y!);
-
-  // ── B2: Gran's workshop, the gadget shop and Pip ───────────────────────
-  job(b, 32, 'gran', { x: 24, y: 16, w: 7, roofStyle: 'tan', wall: 'orange', door: 'double' }, 'home');
-  const shop = b.building({
-    x: 33,
-    y: 16,
-    w: 6,
-    doorAt: 4,
-    roofStyle: 'slate',
-    wall: 'red',
-    door: 'shop',
-    storefront: true,
-    group: 'home',
-  });
-  b.spots.push({ kind: 'shop', x: shop.x, y: shop.y - 1 });
-  b.doorLight(shop, 'home');
-  b.resident('pip', 31, 22, 'down');
-  b.spots.push({ kind: 'daily', x: 31, y: 22 });
-  b.tree(31, 19, 'round');
-  b.group('lamp:b2', [32]);
-  b.lamp(24, 23, 'lamp:b2');
-  b.lamp(38, 23, 'lamp:b2');
-  for (const x of [33, 34]) b.flowers(x, 22);
-  b.prop(35, 23, 'bench');
-  // The crossroads light by the market (job 18).
-  signal(b, 18, 'dot', 40, 21, 'down');
-
-  // ── C1: Market Square north ─────────────────────────────────────────────
-  job(b, 11, 'benny', { x: 45, y: 2, w: 6, doorAt: 4, roofStyle: 'slate', wall: 'red', door: 'shop', storefront: true });
-  job(b, 12, 'coral', { x: 52, y: 2, w: 6, doorAt: 3, roofStyle: 'tan', wall: 'orange', door: 'glass', window: 'wide' });
-  b.park(45, 8, 14, 3);
-  b.group('lamp:c1', [11, 12]);
-  b.lamp(44, 7, 'lamp:c1', 'twin');
-  b.lamp(58, 7, 'lamp:c1', 'twin');
-  b.tree(51, 10, 'cherry');
-  b.prop(47, 7, 'mailbox');
-  b.bush(46, 9);
-  b.bush(56, 9);
-  for (const x of [45, 59]) b.bush(x, 1);
-
-  // ── C2: Market Square ──────────────────────────────────────────────────
-  job(b, 13, 'luca', { x: 45, y: 16, w: 4, roofStyle: 'tan', wall: 'red', door: 'double' });
-  job(b, 14, 'sunny', { x: 50, y: 16, w: 4, roofStyle: 'slate', wall: 'orange', door: 'glass' });
-  job(b, 15, 'iris', { x: 55, y: 16, w: 4, roofStyle: 'tan', wall: 'orange', door: 'wood' });
-  b.park(45, 22, 14, 2);
-  b.group('lamp:c2', [13, 14, 15]);
-  b.lamp(44, 21, 'lamp:c2');
-  b.lamp(58, 22, 'lamp:c2');
-  for (const x of [54, 55, 56, 57]) b.flowers(x, 22);
-  b.prop(50, 23, 'bench');
-  b.bush(47, 23);
-
-  // ── B3: Café Moonbeam and the bus stop ──────────────────────────────────
-  job(b, 17, 'mei', { x: 25, y: 29, w: 6, doorAt: 2, roofStyle: 'tan', wall: 'red', door: 'glass', window: 'wide' });
-  b.group('lamp:b3', [17]);
-  b.lamp(32, 34, 'lamp:b3');
-  b.object(38, 32, 1, 2, [167, 194]);
-  b.block(38, 33, 1, 1);
-  b.spots.push({ kind: 'exit', x: 38, y: 33, to: 'harbour' });
-  b.prop(37, 33, 'bench');
-  b.tree(34, 31, 'pine');
-  b.bush(24, 34);
-
-  // ── C3: the Market Clock (Market Square's boss) ──────────────────────────
-  job(b, 33, 'dot', { x: 48, y: 29, w: 8, roofStyle: 'slate', wall: 'red', door: 'double', window: 'tall' });
-  b.group('lamp:c3', [33]);
-  b.lamp(45, 34, 'lamp:c3', 'twin');
-  b.lamp(58, 34, 'lamp:c3', 'twin');
-  b.tree(45, 31, 'oak');
-
-  return b.finish({ id: 'glowtown', name: 'Glowtown', spawn: { x: 28, y: 22, facing: 'down' } });
+  return b.finish({ id: 'glowtown', name: 'Glowtown', spawn: { x: 9, y: 25, facing: 'right' } });
 }
 
-/** A job building: its windows glow once the job is solved; the client waits by the door. */
-function job(
-  b: MapBuilder,
-  id: number,
-  who: string,
-  spec: Parameters<MapBuilder['building']>[0],
-  group = `job:${id}`,
-) {
-  if (group === `job:${id}`) b.group(group, [id]);
+// ── A0: Gran's workshop ──────────────────────────────────────────────────────
+function workshop(b: MapBuilder) {
+  b.area(
+    { id: 'workshop', name: 'Gran’s Workshop', jobs: [], intro: 'prologue', entry: { x: 9, y: 25, facing: 'right' } },
+    [{ x: 0, y: 0, w: 18, h: H }],
+  );
+  b.group('home', []);
+  // A dirt yard in front of the workshop, worn into a path out of the gate.
+  b.blob('dirt', 9.5, 24.5, 7.5, 4, 0.12);
+  b.path('dirt', [{ x: 12, y: 25 }, { x: 19, y: 25 }], 3);
+
+  const door = b.building({ x: 3, y: 15, w: 7, roofStyle: 'tan', wall: 'orange', door: 'double', group: 'home' });
+  b.doorLight(door, 'home');
+  const shop = b.house('shop', 12, 17, 'home');
+  b.spots.push({ kind: 'shop', x: shop.x, y: shop.y - 1 });
+  b.doorLight(shop, 'home');
+
+  b.resident('gran', door.x + 1, door.y, 'down', { chat: 'gran-home', until: 'area:maple' });
+  b.resident('pip', 10, 24, 'down');
+  b.spots.push({ kind: 'daily', x: 10, y: 24 });
+  b.spots.push({ kind: 'note', x: 2, y: 22, note: 'glowire' });
+  b.prop(2, 22, 'sign');
+
+  b.lamp(2, 28, 'home', 'hook');
+  b.lamp(16, 21, 'home', 'hook');
+  b.prop(5, 22, 'barrel');
+  b.prop(6, 22, 'crate');
+  b.prop(11, 21, 'bench');
+  b.fence(2, 29, 15);
+  for (const x of [11, 15]) b.flowers(x, 20);
+  b.tree(1, 19, 'oak');
+  b.treeLine(0, 18, 'top', 13, ['oak', 'round', 'pine']);
+  b.treeLine(0, 18, 'bottom', 31, ['oak', 'round', 'pine']);
+}
+
+// ── A1: Maple Lane ───────────────────────────────────────────────────────────
+function mapleLane(b: MapBuilder) {
+  b.area(
+    {
+      id: 'maple',
+      name: 'Maple Lane',
+      jobs: [1, 2, 3],
+      intro: 'maple-intro',
+      outro: 'maple-outro',
+      entry: { x: 19, y: 25, facing: 'right' },
+      gate: 'The bridge over Willow Brook is pitch black. We can’t cross until Maple Lane’s lights are back on.',
+    },
+    [{ x: 18, y: 0, w: 27, h: H }],
+  );
+  const lane = [
+    { x: 18, y: 25 },
+    { x: 22, y: 21 },
+    { x: 28, y: 20 },
+    { x: 33, y: 23 },
+    { x: 39, y: 22 },
+    { x: 46, y: 24 },
+  ];
+  b.path('dirt', lane, 3);
+  // Little paths up to each front door.
+  b.path('dirt', [{ x: 23, y: 18 }, { x: 23, y: 21 }], 2);
+  b.path('dirt', [{ x: 32, y: 28 }, { x: 32, y: 24 }], 2);
+  b.path('dirt', [{ x: 40, y: 18 }, { x: 40, y: 22 }], 2);
+
+  houseJob(b, 1, 'pell', 'orange', 22, 15);
+  b.bed(27, 15, 4, 3, 'soil'); // her tomatoes
+  b.fence(26, 19, 6);
+  for (const x of [20, 21]) b.flowers(x, 19);
+
+  houseJob(b, 2, 'okoro', 'tan', 31, 25);
+  // Mr. Okoro's famous stone wall.
+  for (const x of [27, 28, 29, 35, 36]) b.prop(x, 27, 'rock');
+  b.prop(36, 26, 'rock');
+  b.bed(26, 29, 3, 2, 'grass');
+
+  houseJob(b, 3, 'rafi', 'red', 39, 15);
+  b.prop(43, 17, 'pot');
+  b.prop(38, 17, 'barrel');
+
+  b.lamp(20, 23, 'area:maple');
+  b.lamp(30, 19, 'area:maple');
+  b.lamp(37, 25, 'area:maple');
+  b.tree(25, 24, 'cherry');
+  b.tree(43, 27, 'cherry');
+  b.tree(19, 17, 'round');
+  b.prop(34, 19, 'mailbox');
+  for (const [x, y] of [[24, 25], [26, 25], [41, 25], [35, 18], [36, 18]] as const) b.flowers(x, y);
+  b.treeLine(18, 45, 'top', 12, ['round', 'oak', 'cherry', 'lime']);
+  b.treeLine(18, 45, 'bottom', 31, ['round', 'oak', 'lime', 'bigGreen']);
+  for (const [x, y] of [[20, 28], [29, 13], [42, 13], [24, 29], [39, 29]] as const) b.bush(x, y);
+  for (const [x, y] of [[21, 14], [33, 14], [34, 14], [19, 29], [41, 30]] as const) b.flowers(x, y);
+  b.spots.push({ kind: 'note', x: 44, y: 20, note: 'circle' });
+  b.prop(44, 20, 'sign');
+}
+
+// ── A2: Willow Brook ─────────────────────────────────────────────────────────
+function willowBrook(b: MapBuilder) {
+  b.area(
+    {
+      id: 'brook',
+      name: 'Willow Brook',
+      jobs: [4, 5, 6],
+      intro: 'brook-intro',
+      outro: 'brook-outro',
+      entry: { x: 53, y: 24, facing: 'right' },
+      gate: 'The steps up Schoolhouse Hill are too dark to climb. Let’s finish the jobs by the brook first.',
+    },
+    [{ x: 45, y: 0, w: 22, h: H }],
+  );
+  // The brook winds down from the hills; one bridge crosses it.
+  const brook = [
+    { x: 50, y: -1 },
+    { x: 48, y: 8 },
+    { x: 49, y: 16 },
+    { x: 48, y: 24 },
+    { x: 50, y: 32 },
+    { x: 48, y: 41 },
+  ];
+  b.path('pond', brook, 4);
+  b.boards(45, 23, 8, 3, 'h', true);
+  b.gate(1, [{ x: 45, y: 23 }, { x: 45, y: 24 }, { x: 45, y: 25 }]);
+  b.path('dirt', [{ x: 52, y: 24 }, { x: 56, y: 21 }, { x: 61, y: 22 }, { x: 68, y: 24 }], 3);
+  b.path('dirt', [{ x: 55, y: 18 }, { x: 55, y: 21 }], 2);
+  b.path('dirt', [{ x: 61, y: 26 }, { x: 61, y: 23 }], 2);
+  b.path('dirt', [{ x: 63, y: 17 }, { x: 63, y: 21 }], 2);
+
+  houseJob(b, 4, 'theo', 'round', 54, 15);
+  houseJob(b, 5, 'twins', 'green', 59, 26);
+  houseJob(b, 6, 'arjun', 'shop', 62, 14);
+  b.prop(65, 17, 'crate');
+
+  for (const [x, y] of [[47, 12], [51, 19], [47, 30], [51, 28]] as const) b.prop(x, y, 'reeds');
+  for (const [x, y] of [[49, 6], [48, 34]] as const) b.prop(x, y, 'lily');
+  b.tree(52, 11, 'bigGreen');
+  b.tree(52, 31, 'bigGreen');
+  b.tree(44, 31, 'bigGreen');
+  b.lamp(53, 22, 'area:brook', 'park');
+  b.lamp(59, 20, 'area:brook', 'park');
+  b.lamp(65, 26, 'area:brook', 'park');
+  b.prop(57, 24, 'bench');
+  for (const [x, y] of [[57, 19], [58, 19], [64, 27], [55, 27]] as const) b.flowers(x, y);
+  b.treeLine(45, 67, 'top', 11, ['bigGreen', 'lime', 'round']);
+  b.treeLine(45, 67, 'bottom', 32, ['bigGreen', 'lime', 'round']);
+  b.spots.push({ kind: 'note', x: 52, y: 27, note: 'storm' });
+  b.prop(52, 27, 'sign');
+}
+
+// ── A3: Schoolhouse Hill ─────────────────────────────────────────────────────
+function schoolhouseHill(b: MapBuilder) {
+  b.area(
+    {
+      id: 'school',
+      name: 'Schoolhouse Hill',
+      jobs: [7, 8, 9],
+      intro: 'school-intro',
+      outro: 'school-outro',
+      entry: { x: 69, y: 24, facing: 'right' },
+      gate: 'Whisper Woods is completely dark in there. Nobody goes in without the hill lit up behind them.',
+    },
+    [{ x: 67, y: 0, w: 24, h: H }],
+  );
+  b.wall(67, 23, 25);
+  b.gate(2, [{ x: 67, y: 23 }, { x: 67, y: 24 }, { x: 67, y: 25 }]);
+  b.blob('dirt', 79, 23.5, 12, 5.2, 0.1);
+  b.path('dirt', [{ x: 66, y: 24 }, { x: 92, y: 24 }], 3);
+  b.plaza(69, 19, 18, 3, true);
+
+  cityJob(b, 8, 'ito', { x: 70, y: 13, w: 8, doorAt: 4, roofStyle: 'slate', wall: 'orange', door: 'double', window: 'tall' });
+  cityJob(b, 9, 'finch', { x: 80, y: 13, w: 6, doorAt: 2, roofStyle: 'slate', wall: 'red', door: 'glass', window: 'tall' });
+  houseJob(b, 7, 'nadia', 'orangeB', 82, 29);
+  b.path('dirt', [{ x: 83, y: 27 }, { x: 83, y: 31 }], 2);
+
+  // The schoolyard: flower beds and a bench under the cherry trees.
+  b.bed(70, 26, 3, 2, 'grass');
+  b.bed(75, 26, 3, 2, 'grass');
+  b.tree(79, 30, 'bigPink');
+  b.tree(69, 31, 'bigPink');
+  b.tree(87, 19, 'cherry');
+  b.prop(74, 19, 'bench');
+  b.prop(78, 19, 'bin');
+  for (const x of [71, 72, 76, 77]) b.flowers(x, 28);
+  b.lamp(69, 19, 'area:school', 'twin');
+  b.lamp(79, 22, 'area:school', 'twin');
+  b.lamp(89, 27, 'area:school', 'twin');
+  b.treeLine(67, 91, 'top', 11, ['cherry', 'bigPink', 'round']);
+  b.treeLine(67, 91, 'bottom', 33, ['cherry', 'round', 'bigPink']);
+  b.spots.push({ kind: 'note', x: 86, y: 19, note: 'hides' });
+  b.prop(86, 19, 'sign');
+}
+
+// ── A4: Whisper Woods ────────────────────────────────────────────────────────
+function whisperWoods(b: MapBuilder) {
+  b.area(
+    {
+      id: 'woods',
+      name: 'Whisper Woods',
+      jobs: [10, 32],
+      intro: 'woods-intro',
+      outro: 'woods-outro',
+      entry: { x: 93, y: 24, facing: 'right' },
+      gate: 'The Market Gate is shut tight, and Grumble’s still loose in the woods. Not yet!',
+    },
+    [{ x: 91, y: 0, w: 24, h: H }],
+  );
+  b.wall(91, 23, 25);
+  b.gate(3, [{ x: 91, y: 23 }, { x: 91, y: 24 }, { x: 91, y: 25 }]);
+  b.rect('meadow', 91, 0, 24, H);
+  b.path('darkDirt', [{ x: 90, y: 24 }, { x: 96, y: 27 }, { x: 102, y: 26 }, { x: 106, y: 21 }, { x: 116, y: 22 }], 3);
+  b.path('darkDirt', [{ x: 99, y: 26 }, { x: 99, y: 18 }], 2);
+  // A ring of mushrooms in a clearing, and fireflies once the woods are safe again.
+  for (const [x, y] of [[102, 29], [103, 28], [105, 28], [106, 29], [105, 31], [103, 31], [101, 30], [107, 30]] as const)
+    b.prop(x, y, 'mushroom');
+  for (const [x, y] of [[95, 19], [103, 18], [109, 27], [97, 29], [112, 16], [100, 22]] as const)
+    b.glow(x, y, 'area:woods', 1.6, '#c6ff7a');
+
+  // The twins' secret treehouse, deep in the trees.
+  b.group('job:10', [10]);
+  b.tree(98, 16, 'bigGreen');
+  b.glow(99.5, 14.5, 'job:10', 3.6);
+  b.spots.push({ kind: 'job', x: 99, y: 16, job: 10 });
+  b.resident('twins', 101, 17, 'left', { job: 10 });
+
+  // The old Glowire junction box, where Grumble has made his nest.
+  b.group('job:32', [32]);
+  b.object(110, 19, 2, 2, [-1, -1, -1, -1]);
+  b.lamp(110, 20, 'job:32', 'hook');
+  b.spots.push({ kind: 'job', x: 110, y: 20, job: 32 });
+  b.resident('gran', 111, 21, 'left', { job: 32, after: 'area:maple' });
+  b.resident('grumble', 110, 18, 'down', { until: 'job:32', after: 'job:10' });
+
+  b.treeLine(91, 115, 'top', 14, ['pine', 'pine', 'dead', 'round']);
+  b.treeLine(91, 115, 'bottom', 33, ['pine', 'dead', 'pine']);
+  for (const [x, y] of [[95, 22], [101, 23], [107, 25], [113, 26], [97, 30]] as const) b.prop(x, y, 'mushroom');
+  for (const [x, y] of [[94, 21], [103, 24], [108, 24], [112, 19]] as const) b.prop(x, y, 'fern');
+  b.prop(105, 23, 'stump');
+  b.prop(93, 28, 'log');
+  b.lamp(96, 24, 'area:woods', 'park');
+  b.lamp(107, 24, 'area:woods', 'park');
+  b.spots.push({ kind: 'note', x: 113, y: 20, note: 'sea' });
+  b.prop(113, 20, 'sign');
+}
+
+// ── A5: Market Square ────────────────────────────────────────────────────────
+function marketSquare(b: MapBuilder) {
+  b.area(
+    {
+      id: 'market',
+      name: 'Market Square',
+      jobs: [11, 12, 13, 14, 15],
+      intro: 'market-intro',
+      outro: 'market-outro',
+      entry: { x: 117, y: 22, facing: 'right' },
+      gate: 'The crossroads are a mess: no lights, no signals. Finish the market first.',
+    },
+    [{ x: 115, y: 0, w: 24, h: H }],
+  );
+  b.wall(115, 21, 23, 'fence');
+  b.gate(4, [{ x: 115, y: 21 }, { x: 115, y: 22 }, { x: 115, y: 23 }]);
+  b.path('darkDirt', [{ x: 112, y: 22 }, { x: 116, y: 22 }], 3);
+  b.plaza(115, 12, 24, 19);
+  b.skyline(115, 139, 7, 'area:market');
+
+  cityJob(b, 11, 'benny', { x: 116, y: 8, w: 6, doorAt: 4, roofStyle: 'slate', wall: 'red', door: 'shop', storefront: true });
+  cityJob(b, 12, 'coral', { x: 123, y: 8, w: 7, doorAt: 3, roofStyle: 'tan', wall: 'orange', door: 'glass', window: 'wide' });
+  cityJob(b, 13, 'luca', { x: 131, y: 8, w: 7, doorAt: 3, roofStyle: 'slate', wall: 'red', door: 'double' });
+  houseJob(b, 14, 'sunny', 'shop', 119, 26);
+  houseJob(b, 15, 'iris', 'red', 131, 26);
+
+  // The fountain in the middle, ringed by benches and planters.
+  b.fill(125, 18, 4, 4, [170, 171, 172, 197, 198, 199, 224, 225, 226].map((i) => b.cityTile(i)));
+  b.block(125, 18, 4, 4);
+  b.glow(127, 20, 'area:market', 3.2, '#8fd8ff');
+  for (const [x, y] of [[124, 17], [129, 17], [124, 22], [129, 22]] as const) b.prop(x, y, 'planter');
+  b.prop(126, 23, 'bench');
+  // Market stalls: fruit and crates on both sides.
+  for (const x of [117, 118, 119]) b.prop(x, 15, 'fruit');
+  for (const x of [134, 135, 136]) b.prop(x, 15, 'fruit');
+  b.prop(120, 15, 'crate');
+  b.prop(133, 15, 'crate');
+  b.prop(117, 19, 'barrel');
+  b.prop(136, 19, 'barrel');
+  // Iris's flowers spill out of her shop.
+  for (const x of [135, 136, 137]) for (const y of [28, 29]) b.flowers(x, y);
+  for (const x of [116, 117]) b.prop(x, 28, 'planter');
+  b.tree(123, 29, 'cherry');
+  b.tree(128, 29, 'cherry');
+  b.lamp(116, 17, 'area:market', 'twin');
+  b.lamp(137, 17, 'area:market', 'twin');
+  b.lamp(122, 25, 'area:market', 'twin');
+  b.lamp(131, 24, 'area:market', 'twin');
+  b.fence(115, 31, 24, 'hedge');
+  b.treeLine(115, 139, 'bottom', 33, ['round', 'cherry', 'oak']);
+  b.spots.push({ kind: 'note', x: 138, y: 26, note: 'colours' });
+  b.prop(138, 26, 'sign');
+}
+
+// ── A6: The crossroads ───────────────────────────────────────────────────────
+function crossroads(b: MapBuilder) {
+  b.area(
+    {
+      id: 'crossroads',
+      name: 'The Crossroads',
+      jobs: [16, 17, 18],
+      intro: 'crossroads-intro',
+      outro: 'crossroads-outro',
+      entry: { x: 141, y: 22, facing: 'right' },
+      gate: 'Clock Plaza is dark, and the traffic’s all tangled. Let’s get it moving first.',
+    },
+    [{ x: 139, y: 0, w: 22, h: H }],
+  );
+  b.wall(139, 21, 23, 'fence');
+  b.gate(5, [{ x: 139, y: 21 }, { x: 139, y: 22 }, { x: 139, y: 23 }]);
+  b.plaza(139, 12, 22, 21, true);
+  b.skyline(139, 161, 11, 'area:crossroads');
+  b.road('h', 21, 139, 161);
+  b.road('v', 148, 12, 33);
+  b.junction(148, 21);
+  b.zebra('h', 146, 21);
+  b.zebra('h', 152, 21);
+  b.zebra('v', 148, 19);
+  b.zebra('v', 148, 25);
+
+  signal(b, 16, 'dot', 146, 20, 'left');
+  cityJob(b, 17, 'mei', { x: 152, y: 13, w: 6, doorAt: 2, roofStyle: 'tan', wall: 'red', door: 'glass', window: 'wide' });
+  signal(b, 18, 'dot', 152, 25, 'down');
+  b.prop(155, 18, 'planter');
+  b.prop(156, 18, 'bench');
+  b.prop(142, 27, 'hydrant');
+  b.prop(157, 19, 'bin');
+  b.prop(144, 19, 'mailbox');
+  b.tree(141, 30, 'autumn');
+  b.tree(144, 30, 'autumn');
+  b.tree(153, 30, 'autumn');
+  b.tree(157, 30, 'autumn');
+  b.tree(141, 17, 'teal');
+  b.lamp(145, 27, 'area:crossroads', 'post');
+  b.lamp(156, 27, 'area:crossroads', 'post');
+  b.fence(139, 33, 9, 'hedge');
+  b.fence(151, 33, 10, 'hedge');
+  b.treeLine(139, 161, 'bottom', 35, ['round', 'oak']);
+}
+
+// ── A7: Clock Plaza ──────────────────────────────────────────────────────────
+function clockPlaza(b: MapBuilder) {
+  b.area(
+    {
+      id: 'clock',
+      name: 'Clock Plaza',
+      jobs: [33],
+      intro: 'clock-intro',
+      outro: 'clock-outro',
+      entry: { x: 163, y: 22, facing: 'right' },
+    },
+    [{ x: 161, y: 0, w: W - 161, h: H }],
+  );
+  b.wall(161, 21, 23, 'fence');
+  b.gate(6, [{ x: 161, y: 21 }, { x: 161, y: 22 }, { x: 161, y: 23 }]);
+  b.plaza(161, 12, 19, 20, true);
+  b.skyline(161, 165, 11, 'area:clock');
+  b.skyline(174, W, 11, 'area:clock');
+  cityJob(b, 33, 'dot', { x: 165, y: 9, w: 9, doorAt: 4, roofStyle: 'slate', wall: 'red', door: 'double', window: 'tall', roof: 3 });
+  b.plaza(166, 15, 7, 6, false);
+  for (const x of [165, 173]) b.tree(x, 19, 'teal');
+
+  // The night bus out of town, to the harbour.
+  b.asphalt(161, 27, W - 161, 3);
+  for (let x = 162; x < W; x += 2) b.setDecal(x, 28, b.cityTile(433));
+  b.object(172, 25, 1, 2, [b.cityTile(167), b.cityTile(194)]);
+  b.block(172, 26, 1, 1);
+  b.spots.push({ kind: 'exit', x: 172, y: 26, to: 'harbour' });
+  b.prop(171, 26, 'bench');
+  b.prop(173, 26, 'bin');
+  b.lamp(163, 20, 'area:clock', 'twin');
+  b.lamp(177, 20, 'area:clock', 'twin');
+  b.fence(161, 31, W - 161, 'hedge');
+  b.treeLine(161, W, 'bottom', 33, ['round', 'oak']);
+}
+
+// ── Helpers ──────────────────────────────────────────────────────────────────
+
+/** A village house with a job: its doorway glows once solved; the client waits by the door. */
+function houseJob(b: MapBuilder, id: number, who: string, style: HouseStyle, x: number, y: number) {
+  const group = `job:${id}`;
+  b.group(group, [id]);
+  const door = b.house(style, x, y, group);
+  b.spots.push({ kind: 'job', x: door.x, y: door.y - 1, job: id });
+  b.doorLight(door, group);
+  b.resident(who, door.x + 1, door.y, 'down', { job: id });
+}
+
+/** A city building with a job. */
+function cityJob(b: MapBuilder, id: number, who: string, spec: BuildingSpec) {
+  const group = `job:${id}`;
+  b.group(group, [id]);
   const door = b.building({ ...spec, group });
   b.spots.push({ kind: 'job', x: door.x, y: door.y - 1, job: id });
   b.doorLight(door, group);
@@ -200,10 +431,10 @@ function job(
 function signal(b: MapBuilder, id: number, who: string, x: number, y: number, side: 'left' | 'down') {
   const group = `job:${id}`;
   b.group(group, [id]);
-  b.object(x, y - 1, 1, 2, [166, 193], group);
+  b.object(x, y - 1, 1, 2, [b.cityTile(166), b.cityTile(193)], group);
   b.block(x, y, 1, 1);
   b.spots.push({ kind: 'job', x, y, job: id });
-  b.lights.push({ x: x + 0.5, y: y - 0.5, radius: 3, color: '#9dffb0', group });
-  if (side === 'left') b.resident(who, x - 1, y, 'right', { job: id });
-  else b.resident(who, x, y + 1, 'up', { job: id });
+  b.glow(x + 0.5, y - 0.5, group, 3, '#9dffb0');
+  const p: Point = side === 'left' ? { x: x - 1, y } : { x, y: y + 1 };
+  b.resident(who, p.x, p.y, side === 'left' ? 'right' : 'up', { job: id });
 }

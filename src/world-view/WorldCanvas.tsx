@@ -10,10 +10,10 @@ import { EXTRAS, PEOPLE } from '../world/people.generated';
 import type { Resident, WorldMap } from '../world/types';
 import { type Walker, walkFrame, walkerPosition } from '../world/walker';
 import { Canvas, useFrame } from '../render/r3f';
-import { type Lighting, MAX_LIGHTS, createLighting, loadPixelTexture, worldMaterial } from './pixels';
+import { type Lighting, MAX_LIGHTS, createFog, createLighting, loadPixelTexture, worldMaterial } from './pixels';
 import { type Quad, type Sheet, quadGeometry, setQuadSource } from './quads';
 
-const CITY_SHEET = require('../../assets/art/city.png');
+const WORLD_SHEET = require('../../assets/art/world.png');
 const PEOPLE_SHEET = require('../../assets/art/people.png');
 
 const T = 16;
@@ -35,6 +35,8 @@ interface Props {
   /** Stop drawing while another screen (a puzzle, the shop) is on top. */
   paused?: boolean;
   lit: Set<string>;
+  /** Darkness per cell over the route not reached yet (0–255); fades when it changes. */
+  fog: Uint8Array;
   residents: Resident[];
   /** Residents with a speech bubble over their head. */
   bubbles: { who: string; x: number; y: number; kind: (typeof EXTRAS)[number] }[];
@@ -50,7 +52,7 @@ export function WorldCanvas(props: Props) {
   const [sheets, setSheets] = useState<{ city: Texture; people: Texture } | null>(null);
   useEffect(() => {
     let alive = true;
-    Promise.all([loadPixelTexture(CITY_SHEET), loadPixelTexture(PEOPLE_SHEET)]).then(([city, people]) => {
+    Promise.all([loadPixelTexture(WORLD_SHEET), loadPixelTexture(PEOPLE_SHEET)]).then(([city, people]) => {
       if (alive) setSheets({ city, people });
     });
     return () => {
@@ -86,8 +88,14 @@ function Scene({
   onView,
   sheets,
   pet,
+  fog,
 }: Props & { sheets: { city: Texture; people: Texture } }) {
-  const lighting = useMemo(() => createLighting('#6a74ad'), []);
+  const fogTexture = useMemo(() => createFog(map.width, map.height), [map]);
+  const lighting = useMemo(() => createLighting('#6a74ad', fogTexture), [fogTexture]);
+  // The fog drifts toward its new shape instead of snapping, so a newly opened stretch of
+  // road brightens in front of you. It starts out already in place.
+  const fogNow = useRef<Float32Array | null>(null);
+  useEffect(() => () => fogTexture.dispose(), [fogTexture]);
   const city = useMemo(() => worldMaterial(sheets.city, lighting), [sheets.city, lighting]);
   const people = useMemo(() => worldMaterial(sheets.people, lighting, 1), [sheets.people, lighting]);
   const citySheet = useMemo(() => sheetOf(sheets.city), [sheets.city]);
@@ -124,7 +132,8 @@ function Scene({
   const objects = useMemo(() => {
     const quads: Quad[] = [];
     for (const o of map.objects) {
-      const z = depth(o.y + o.h);
+      if (o.until && lit.has(o.until)) continue;
+      const z = o.flat ? 0.02 : depth(o.y + o.h);
       const on = o.group && lit.has(o.group) ? 1 : 0;
       o.tiles.forEach((t, i) => {
         if (t >= 0) quads.push(tile(t, o.x + (i % o.w), o.y + Math.floor(i / o.w), z, on));
@@ -152,6 +161,7 @@ function Scene({
 
   useFrame((state, delta) => {
     onTick(Math.min(delta, 0.05));
+    driftFog(fogNow, fog, fogTexture, delta);
     onView(frame(state, walkerPosition(walker.current), map, lights, lighting));
   });
 
@@ -169,6 +179,29 @@ function Scene({
       ))}
     </>
   );
+}
+
+/** Move the fog a step toward its target, uploading it only while it's changing. */
+function driftFog(now: { current: Float32Array | null }, target: Uint8Array, texture: ReturnType<typeof createFog>, dt: number) {
+  const data = (texture.image as { data: Uint8Array }).data;
+  if (!now.current || now.current.length !== target.length) {
+    now.current = Float32Array.from(target);
+    data.set(target);
+    texture.needsUpdate = true;
+    return;
+  }
+  const cur = now.current;
+  let moved = false;
+  const step = dt * 170; // about 1.5 s from black to clear
+  for (let i = 0; i < cur.length; i++) {
+    const t = target[i]!;
+    const c = cur[i]!;
+    if (c === t) continue;
+    cur[i] = c < t ? Math.min(t, c + step) : Math.max(t, c - step);
+    data[i] = Math.round(cur[i]!);
+    moved = true;
+  }
+  if (moved) texture.needsUpdate = true;
 }
 
 type Lit = { x: number; y: number; r: number; color: readonly [number, number, number] };

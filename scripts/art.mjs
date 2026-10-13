@@ -12,6 +12,7 @@ import { copyFileSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSy
 import { join } from 'node:path';
 import { PNG } from 'pngjs';
 
+import { blobTable } from './autotile.mjs';
 import { circuitSheet } from './circuit-art.mjs';
 
 const SRC = 'art/source';
@@ -85,29 +86,42 @@ const GLASS_TILES = [
 const BULB_TILES = [162, 163, 164, 165, 168, 169];
 
 /**
- * Village-pack sheets added under the city tiles, so a city map can use them too (grass,
- * trees, flowers). Keep in sync with ATLAS in src/world/builder.ts.
+ * Every tile sheet a world can use, stacked into one texture (assets/art/world.png) so a
+ * whole map draws in one go. Rows are worked out here and written to
+ * src/world/atlas.generated.ts.
  */
-const EXTRA_SHEETS = [
-  { file: 'TilesetFloor.png', row: 18 },
-  { file: 'TilesetNature.png', row: 44 },
+const ATLAS_COLS = 33;
+const SHEETS = [
+  { id: 'city', file: null },
+  { id: 'floor', file: 'TilesetFloor.png' },
+  { id: 'nature', file: 'TilesetNature.png' },
+  { id: 'water', file: 'TilesetWater.png' },
+  { id: 'house', file: 'TilesetHouse.png' },
+  { id: 'element', file: 'TilesetElement.png' },
+  { id: 'detail', file: 'TilesetFloorDetail.png' },
+  { id: 'field', file: 'TilesetField.png' },
+  { id: 'abandoned', file: 'TilesetVillageAbandoned.png' },
+  { id: 'towers', file: 'TilesetTowers.png' },
 ];
-const ATLAS_ROWS = 65;
 
-function city(palette) {
+/** Doorways in the village houses: their dark openings glow warm once the house is lit. */
+const HOUSE_DOORS = [67, 71, 75, 79, 83, 87, 90, 93, 129, 108, 132, 133, 262, 298, 301, 456, 620, 713];
+
+/**
+ * Terrain blob sets (see autotile.mjs): a material drawn over a plain ground. `block` is the
+ * set's area in its sheet, in tiles.
+ */
+const TERRAINS = {
+  dirt: { sheet: 'floor', block: [0, 7, 11, 7], inside: 177, outside: 264, skip: [242, 243] },
+  darkDirt: { sheet: 'floor', block: [11, 7, 11, 7], inside: 188, outside: 275, skip: [253, 254] },
+  stone: { sheet: 'floor', block: [11, 14, 11, 7], inside: 342, outside: 429, skip: [407, 408] },
+  pond: { sheet: 'water', block: [0, 6, 10, 5], inside: 197, outside: 308, skip: [255] },
+  sea: { sheet: 'water', block: [0, 0, 10, 5], inside: 29, outside: 140, skip: [] },
+};
+
+function cityTiles(palette) {
   const src = read(join(SRC, 'kenney-urban', 'tilemap_packed.png'));
-  const out = new PNG({ width: src.width, height: ATLAS_ROWS * 16 });
-  for (const { file, row } of EXTRA_SHEETS) {
-    const sheet = read(join(NINJA, 'tilesets', file));
-    for (let y = 0; y < sheet.height; y++)
-      for (let x = 0; x < sheet.width; x++) {
-        const i = (y * sheet.width + x) * 4;
-        if (sheet.data[i + 3] < 128) continue;
-        const o = ((row * 16 + y) * out.width + x) * 4;
-        out.data.set(sheet.data.subarray(i, i + 3), o);
-        out.data[o + 3] = 255;
-      }
-  }
+  const out = new PNG({ width: src.width, height: src.height });
   const cache = new Map();
   const tileOf = (x, y) => Math.floor(y / 16) * CITY_COLS + Math.floor(x / 16);
   for (let y = 0; y < src.height; y++)
@@ -127,7 +141,83 @@ function city(palette) {
       const bulb = BULB_TILES.includes(t) && L > 0.78;
       out.data[i + 3] = glass || bulb ? 254 : 255;
     }
-  write(join(OUT, 'city.png'), out);
+  return out;
+}
+
+/** Mark the dark doorway pixels of the village houses as glowing. */
+function markDoors(house) {
+  const cols = house.width / 16;
+  for (const t of HOUSE_DOORS) {
+    const ox = (t % cols) * 16;
+    const oy = Math.floor(t / cols) * 16;
+    for (let y = 0; y < 16; y++)
+      for (let x = 0; x < 16; x++) {
+        const i = ((oy + y) * house.width + ox + x) * 4;
+        if (house.data[i + 3] < 128) continue;
+        const [L] = oklab(house.data[i], house.data[i + 1], house.data[i + 2]);
+        if (L < 0.25) house.data[i + 3] = 254;
+      }
+  }
+  return house;
+}
+
+function world(palette) {
+  const pngs = SHEETS.map((s) => {
+    if (!s.file) return cityTiles(palette);
+    const png = read(join(NINJA, 'tilesets', s.file));
+    return s.id === 'house' ? markDoors(png) : png;
+  });
+  const origins = {};
+  let row = 0;
+  SHEETS.forEach((s, k) => {
+    origins[s.id] = { row, cols: Math.floor(pngs[k].width / 16) };
+    row += Math.ceil(pngs[k].height / 16);
+  });
+  const out = new PNG({ width: ATLAS_COLS * 16, height: row * 16 });
+  SHEETS.forEach((s, k) => {
+    const src = pngs[k];
+    const oy = origins[s.id].row * 16;
+    for (let y = 0; y < src.height; y++)
+      for (let x = 0; x < src.width; x++) {
+        const i = (y * src.width + x) * 4;
+        if (src.data[i + 3] < 128) continue;
+        out.data.set(src.data.subarray(i, i + 4), ((oy + y) * out.width + x) * 4);
+      }
+  });
+  write(join(OUT, 'world.png'), out);
+
+  // Terrain tables, already turned into atlas tile numbers.
+  const at = (sheet, i) => {
+    const o = origins[sheet];
+    return (o.row + Math.floor(i / o.cols)) * ATLAS_COLS + (i % o.cols);
+  };
+  const terrains = {};
+  for (const [id, t] of Object.entries(TERRAINS)) {
+    const k = SHEETS.findIndex((s) => s.id === t.sheet);
+    const table = blobTable(pngs[k], { ...t, cols: origins[t.sheet].cols });
+    terrains[id] = table.map((tiles) => tiles.map((i) => at(t.sheet, i)));
+  }
+  writeFileSync(
+    'src/world/atlas.generated.ts',
+    `// Generated by scripts/art.mjs. Do not edit.
+
+/** Tiles across assets/art/world.png. */
+export const ATLAS_COLS = ${ATLAS_COLS};
+
+/** Where each source sheet sits in the atlas: its first row, and its width in tiles. */
+export const SHEETS = ${JSON.stringify(origins)} as const;
+
+export type SheetId = keyof typeof SHEETS;
+
+/**
+ * Terrain edges: for each neighbour mask (bits N, E, S, W, NE, SE, SW, NW = 1…128), the
+ * atlas tiles that fit.
+ */
+export const TERRAIN_TILES = ${JSON.stringify(terrains)} as const;
+
+export type TerrainId = keyof typeof TERRAIN_TILES;
+`,
+  );
 }
 
 // --- characters -------------------------------------------------------------------------
@@ -156,6 +246,8 @@ const CAST_SPRITES = {
   lumen: 'Master',
   pip: 'RobotGreen',
   grumble: 'Spirit',
+  wren: 'Villager5',
+  marigold: 'EggGirl',
 };
 
 /**
@@ -305,7 +397,7 @@ mkdirSync(OUT, { recursive: true });
 mkdirSync('assets/fonts', { recursive: true });
 const palette = ninjaPalette();
 console.log(`palette: ${palette.length} colours`);
-city(palette);
+world(palette);
 characters();
 circuit();
 copyFileSync(join(NINJA, 'ui', 'Font', 'NormalFont.ttf'), 'assets/fonts/PixelNormal.ttf');
