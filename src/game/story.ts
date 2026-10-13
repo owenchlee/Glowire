@@ -164,6 +164,9 @@ export const SCENES: Record<string, Scene> = Object.fromEntries(
       },
       { who: 'pip', text: 'Grumble. Of course it was.' },
     ]),
+    scene('gran-harbour', [
+      { who: 'gran', text: 'Sea air! Good for the knees. Off you go, kiddo. Captain Rosa needs you on the docks.' },
+    ]),
     scene('docks-intro', [
       {
         who: 'gran',
@@ -186,6 +189,28 @@ export const SCENES: Record<string, Scene> = Object.fromEntries(
     scene('lighthouse-outro', [
       { who: 'gus', text: 'The lighthouse is shining again. I’ve never seen it brighter.' },
       { who: 'grumble', text: 'NO! Fine! I’ll hide up the clocktower. Nobody can fix THAT.' },
+    ]),
+    scene('pier-intro', [
+      { who: 'rosa', text: 'The ferry’s stuck out at the end of the pier, and Sal’s party boat is bobbing about in the dark.' },
+      { who: 'sal', text: 'No lights, no party! And I’ve already blown up forty balloons.' },
+    ]),
+    scene('pier-outro', [
+      { who: 'sal', text: 'PARTY BOAT IS GO! Everyone aboard!' },
+      { who: 'wren', text: 'The Glowire turns inland here, past the warehouses. Grumble’s holed up in the power station.' },
+    ]),
+    scene('warehouse-intro', [
+      { who: 'rosa', text: 'Warehouse Row. Every crate in the harbour comes through here, and so does every wire.' },
+      { who: 'grumble', text: 'Go away! This power station is MINE. Nine whole volts of it!' },
+    ]),
+    scene('warehouse-outro', [
+      { who: 'rosa', text: 'Power station humming, every boat in safe. You’re a harbour hero now.' },
+      { who: 'grumble', text: 'Fine! I’ll go UP. Up the hill, into the clock. You can’t follow me up there!' },
+      { who: 'wren', text: 'Clocktower Hill. That’s where Marigold’s notes said the Glowire goes. We’re nearly at the start of it!' },
+    ]),
+    scene('top-intro', [
+      { who: 'lumen', text: 'The very top. The railway signal, the old gate, and the clock’s heart itself.' },
+      { who: 'wren', text: 'This is it. The Glowire starts right here. Under all these stars.' },
+      { who: 'grumble', text: 'Leave me alone up here. It’s the only dark place left.' },
     ]),
     scene('hill-intro', [
       {
