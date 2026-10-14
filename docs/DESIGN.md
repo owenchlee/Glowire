@@ -122,14 +122,17 @@ Why a campaign, not a collection of minigames:
 | --- | ----------- | ------------------------------------------------- | --------- |
 | 1   | First Light | Wire, resistor, brightness, parallel, switches    | 10 levels |
 | 2   | Colours     | Green and blue LEDs: forward voltage, hogging     | 8 levels  |
-| 3   | Power Up    | Batteries as parts: series voltage, LED strings   | 7 levels  |
+| 3   | Power Up    | Batteries as parts: series voltage, LED strings; diodes (4 jobs, 2 of them side jobs) | 11 levels |
 | 4   | Twist       | Rotate-only puzzles (new format)                  | 6 levels  |
 | 5   | Two Ways    | Changeover (two-way) switch: staircase light      | 4 levels  |
 | 6   | Meters      | Hit an exact current or voltage                   | 4 + boss  |
-| 7   | One Way     | Plain diodes: steering current, diode logic       | 2 jobs    |
-| 8   | Flicker     | Capacitors (needs a time-stepping solver)         | planned   |
-| 9   | Amplify     | Transistors as switches                           | planned   |
-| 10+ | …           | Light sensors, buzzers, motors, logic gates       | planned   |
+| 7   | Jars of Light | Capacitors: timed goals (hold after OFF, delay after ON) | 6 + boss |
+| 8   | Amplify     | Transistors as switches                           | planned   |
+| 9+  | …           | Light sensors, buzzers, motors, logic gates       | planned   |
+
+Each world brings one new mechanic: Glowtown (resistors, colours), Driftwood Harbour
+(batteries, twist puzzles, diodes), Mossbell Hollow (changeovers, meters), Brightwater Deep
+(capacitors, plus a lantern that runs down in the dark).
 
 ### Chapter 2: Colours (3 V only)
 
@@ -198,4 +201,6 @@ around the switch, a cup that bypasses the resistor.
   and give everyone the same puzzle each day.
 - **Diodes:** done (v0.6), jobs 36 and 37 in Driftwood Harbour.
 - **Changeover switch, meters:** done (v0.7), chapters 5 and 6 in Mossbell Hollow.
-- **Capacitors and transistors:** need a time-stepping solver and a 3-terminal model.
+- **Capacitors:** done (v0.8), chapter 7 in Brightwater Deep. The solver steps through time
+  (backward Euler), and the board runs live.
+- **Transistors:** need a 3-terminal model.

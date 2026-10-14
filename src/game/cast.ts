@@ -248,6 +248,36 @@ export const CAST: Record<string, Person> = {
     role: 'A spirit of light. Grumble’s twin.',
     look: { skin: '#ffe166', hair: '#f1ae41', hairStyle: 'bald', shirt: '#ffe166' },
   },
+  pearl: {
+    id: 'pearl',
+    name: 'Pearl',
+    role: 'Age 10. Collects lightning in jars.',
+    look: { skin: SKIN[2], hair: '#e3f1f5', hairStyle: 'ponytail', shirt: '#3da6bd', kid: true },
+  },
+  marlo: {
+    id: 'marlo',
+    name: 'Old Marlo',
+    role: 'Keeper of the Heart Jar. Remembers Marigold.',
+    look: { skin: SKIN[4], hair: '#d9d4e0', hairStyle: 'bald', shirt: '#34406e', beard: true },
+  },
+  tess: {
+    id: 'tess',
+    name: 'Tess',
+    role: 'Grows coral and minds the baby fish.',
+    look: { skin: SKIN[1], hair: '#e66a3a', hairStyle: 'long', shirt: '#74a334' },
+  },
+  echo: {
+    id: 'echo',
+    name: 'Echo',
+    role: 'A brass diving robot. Very old. Bolt’s sister.',
+    look: { skin: '#d2b37d', hair: '#a3754e', hairStyle: 'bald', shirt: '#d2b37d' },
+  },
+  hush: {
+    id: 'hush',
+    name: 'The Hush',
+    role: 'Something in the deep that eats the light.',
+    look: { skin: '#3b3643', hair: '#2e2b30', hairStyle: 'bald', shirt: '#9a6ad6' },
+  },
   wren: {
     id: 'wren',
     name: 'Wren',

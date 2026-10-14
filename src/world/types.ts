@@ -69,9 +69,13 @@ export type Spot =
   | { kind: 'note'; x: number; y: number; note: string }
   /** Something odd to look at closely: a story secret (game/lore.ts). It twinkles until found. */
   | { kind: 'secret'; x: number; y: number; secret: string }
-  | { kind: 'exit'; x: number; y: number; to: string }
+  /** The way to another world: the night bus, or Glimmer's bubble down the well and back. */
+  | { kind: 'exit'; x: number; y: number; to: string; via?: 'bus' | 'bubble' }
   /** A mini-game to play (game/games.ts). */
-  | { kind: 'game'; x: number; y: number; game: 'colours' | 'signal' };
+  | { kind: 'game'; x: number; y: number; game: GameSpot };
+
+/** Mini-games you can find in the world (see game/games.ts). */
+export type GameSpot = 'colours' | 'signal' | 'needle' | 'jars';
 
 /** One stretch of the route. */
 export interface Area {
@@ -79,6 +83,8 @@ export interface Area {
   name: string;
   /** Jobs to finish before the way on opens. */
   jobs: number[];
+  /** Side jobs here: there to do whenever you like, but they don't hold up the road. */
+  side?: number[];
   /** Story scene (game/lore.ts) the first time you walk in. */
   intro?: string;
   /** Story scene once its last job is done. */
@@ -109,6 +115,11 @@ export interface WorldMap {
   name: string;
   /** The colour of the night here (the shader's ambient light). */
   night?: string;
+  /**
+   * Under the sea: bubbles drift up, and it's so dark that your own lantern is a jar that
+   * runs down. Standing in the light of a lit lamp fills it again.
+   */
+  underwater?: boolean;
   sightings: Sighting[];
   width: number;
   height: number;

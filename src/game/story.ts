@@ -8,8 +8,10 @@
 // Marigold's pages hint that the Glowire is older than her, and runs in from the sea.
 //
 // After Star Night, one light stays on far up the valley, in Mossbell Hollow, where a
-// "Lantern Lady" walks at night. She is Glimmer, Grumble's twin. The mystery behind it
-// all, and the secrets that hint at it, live in lore.ts.
+// "Lantern Lady" walks at night. She is Glimmer, Grumble's twin. Below Mossbell's well
+// lies Brightwater Deep, where the Glowire really begins: the cracked Heart Jar, and the
+// Hush, the third cloud nobody saw. The mystery behind it all, and the secrets that hint
+// at it, live in lore.ts.
 
 /** Who speaks a line: Pip, Grumble, or a townsperson id from cast.ts. */
 export type Speaker = 'pip' | 'grumble' | string;
@@ -333,6 +335,104 @@ export const SCENES: Record<string, Scene> = Object.fromEntries(
       { who: 'wren', text: 'Then that’s the end of the Glowire. My map’s finished!' },
       { who: 'lumen', text: 'Is it? Read what’s written round the bell.' },
       { who: 'pip', text: '“Cast from the light under the sea.” …Under the SEA?!' },
+      { who: 'glimmer', text: 'That’s where the light comes from. I can feel it, deep down. The old well behind the tower goes all the way there.' },
+      { who: 'glimmer', text: 'Hold on to my bubble and I’ll take you. But it’s very dark down there. And something lives in the dark.' },
+    ]),
+
+    // ── Brightwater Deep ──
+    scene('deep-intro', [
+      { who: 'glimmer', text: 'Hold on to my bubble! Down, down, down…' },
+      { who: 'pip', text: 'Bzzt… we’re UNDER THE SEA. I’m a robot. Robots and seawater are NOT friends.' },
+      { who: 'glimmer', text: 'My bubble keeps the water out. But it’s darker down here than any night up top, and your lantern will run down.' },
+      { who: 'gran', text: 'Keep to the light, kiddo. Stand by a lit lamp and your lantern fills right back up. Let it run out and… well. Don’t let it run out.' },
+      { who: 'wren', text: 'Look, a street! Lamps in rows. Old Gus’s grandad was right: there’s a whole town down here.' },
+      { who: 'hush', text: 'Sssssshhhhhhh…' },
+      { who: 'pip', text: '…who said that?' },
+      { who: 'glimmer', text: 'Nobody. Stay in the light.' },
+    ]),
+    scene('gran-deep', [
+      { who: 'gran', text: 'My grandmother came down here once. She never told me how. Only that she left something behind, and she was sorry.' },
+    ]),
+    scene('wren-deep', [{ who: 'wren', text: 'My map’s never had a “down” before. I’m drawing it sideways. It looks like a jellyfish.' }]),
+    scene('glimmer-deep', [
+      { who: 'glimmer', text: 'I remember this place. Not with my eyes. With my sparks. It feels like where I was born.' },
+    ]),
+    scene('jars-intro', [
+      { who: 'pearl', text: 'Visitors! From UP? Nobody ever comes from up! I’m Pearl. Welcome to Brightwater!' },
+      {
+        who: 'pearl',
+        text: 'We keep lightning in jars down here. Every lamp has one. Fill it while the battery’s on, and it keeps glowing after the battery stops.',
+      },
+      { who: 'marlo', text: 'Pearl. Inside. It’s getting dark.' },
+      { who: 'pearl', text: 'That’s Grandpa Marlo. He’s grumpy because the lamps keep fading. Every year they’re dimmer, and the dark gets closer.' },
+    ]),
+    scene('jars-outro', [
+      { who: 'marlo', text: 'Hm. You’ve lit the whole street. I haven’t seen it like this since I was a boy.' },
+      { who: 'marlo', text: '…A girl came down here once, when I was a boy. From up top, with a lantern and a notebook. Her name was Marigold.' },
+      { who: 'gran', text: 'That was my grandmother!' },
+      { who: 'marlo', text: 'Then you’d better come and see what she did. Through the nursery. And mind the dark.' },
+    ]),
+    scene('nursery-intro', [
+      { who: 'tess', text: 'Shh! Slowly, slowly. The little ones scare easily since the dark started moving.' },
+      { who: 'pip', text: 'Since the dark started… MOVING?' },
+      { who: 'tess', text: 'A lamp goes out, then another, and something drifts past where it was. Something cold. We call it the Hush.' },
+    ]),
+    scene('nursery-outro', [
+      { who: 'tess', text: 'The nursery’s never been so bright. Look, the baby fish are following YOU.' },
+      { who: 'echo', text: 'PING. PING. Light detected. Unusual amount. Approaching.' },
+      { who: 'pip', text: 'A ROBOT! A brass one! Hello! Are you related to Bolt?' },
+      { who: 'echo', text: 'Bolt? …Bolt. My brother. Marigold built us both. He went up. Echo stayed down. To keep watch.' },
+    ]),
+    scene('wreck-intro', [
+      { who: 'echo', text: 'This is the Marigold. Her boat. She sailed it out past the lighthouse, one hundred years ago, to find where the Glowire began.' },
+      { who: 'wren', text: 'Marigold’s boat was called the Marigold?' },
+      { who: 'echo', text: 'She said that was a coincidence. Nobody believed her.' },
+      { who: 'grumble', text: '…I don’t like it here. It smells like the night I was made.' },
+    ]),
+    scene('wreck-outro', [
+      { who: 'echo', text: 'Playing memory file 0002.' },
+      {
+        who: 'marigold',
+        text: '“A storm’s coming, Echo. If lightning hits the line tonight, the Heart Jar will take all of it. Keep the lights on. For all THREE of them.”',
+      },
+      { who: 'pip', text: 'All three? THREE?' },
+      { who: 'echo', text: 'Memory ends. Echo has wondered about the third for ninety-nine years.' },
+      { who: 'glimmer', text: '…Grumble. Do you hear that? In the hall. Something’s crying.' },
+      { who: 'grumble', text: 'It’s not crying. It’s going “shhhh”.' },
+    ]),
+    scene('heart-intro', [
+      { who: 'marlo', text: 'The Heart Jar. It sent our light up the Glowire to the whole land, long before Marigold ever joined her town to it.' },
+      {
+        who: 'marlo',
+        text: 'The night she switched her town on, lightning hit the wire up on the hill. The whole storm ran down the line, into this jar. And it cracked. At eight minutes to midnight.',
+      },
+      { who: 'marlo', text: 'Light poured out of the crack: two little bright clouds, up the wire. And the dark poured in. It’s been feeding ever since.' },
+      { who: 'hush', text: 'Sssshhhhh. Mine. The light is MINE.' },
+      { who: 'pip', text: 'That’s the Hush?! It’s… a cloud! A dark little cloud!' },
+      { who: 'marlo', text: 'Fill the jar. Whatever it eats, fill it again.' },
+    ]),
+    scene('heart-outro', [
+      { who: 'marlo', text: 'Full. And the crack… look. It’s closing. The jar is mending itself.' },
+      { who: 'hush', text: '…warm. It’s… warm.' },
+      { who: 'glimmer', text: 'Grumble, look at her. She’s just like us. She came out of the crack the same night we did.' },
+      { who: 'grumble', text: 'A THIRD one? We have a little SISTER?' },
+      { who: 'hush', text: '…sssh. …hello.' },
+      {
+        who: 'glimmer',
+        text: 'She was born in the dark, where nobody could see her. So she ate the light to keep warm. All alone, for a hundred years.',
+      },
+      { who: 'grumble', text: 'Well, she’s not alone NOW. Hmph. She can sit with me. I like the dark too.' },
+      { who: 'gran', text: 'Two clouds from one storm, my grandmother told me. She never mentioned a third. Or maybe she tried to.' },
+      { who: 'pip', text: 'THREE clouds! Grumble, Glimmer and Hush! That’s a whole weather!' },
+      { who: 'marlo', text: 'The jar is full for now. But it was made to be filled by storms, and storms don’t reach this far down any more.' },
+      { who: 'marlo', text: 'They’re born up north, on Stormpeak, where the Glowire’s other end climbs right into the clouds.' },
+      { who: 'wren', text: 'The Glowire has ANOTHER end? My map isn’t finished at ALL!' },
+    ]),
+    scene('hush-before', [{ who: 'hush', text: 'Sssshhhhh. Go away. Go AWAY. It’s mine. All of it.' }]),
+    scene('hush-after', [{ who: 'hush', text: 'Sssh… thank you… light-fixer. The jar hums. Like a heartbeat.' }]),
+    scene('grumble-deep', [{ who: 'grumble', text: 'She snores. Clouds don’t snore. She SNORES. …I’m keeping her.' }]),
+    scene('glimmer-after', [
+      { who: 'glimmer', text: 'Marigold always set out three cups on Star Night. Gran thought she was being silly. Now I know why.' },
     ]),
   ].map((s) => [s.id, s]),
 );
@@ -385,6 +485,14 @@ export const NOTES: Record<string, Note> = Object.fromEntries(
     note('two', 10, 'Two of them', [
       'I never told anyone, because who would believe it? The lightning didn’t leave one little cloud. It left TWO.',
       'One sulked in the dark. One sang in the light. I named the dark one Grumble. The bright one named herself: Glimmer. She lit my kitchen for a week.',
+    ]),
+    note('jars', 11, 'Jars of light', [
+      'They keep lightning in JARS down here! A jar fills up while current flows into it, and pours it back out, slowly, once the current stops.',
+      'The bigger the jar, the longer it pours. Marlo calls it “capacity”. I call it magic with good manners.',
+    ]),
+    note('heart', 12, 'Three', [
+      'When the Heart Jar cracked, three things came out of it, not two. Two flew up the wire, glowing. The third hid in the crack and wouldn’t come to me.',
+      'I named it Hush, because that’s all it would say. I left a lantern burning by the jar for it. I hope that one day somebody finds it, and is kind to it.',
     ]),
   ].map((n) => [n.id, n]),
 );

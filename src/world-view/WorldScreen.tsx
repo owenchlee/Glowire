@@ -22,6 +22,7 @@ import { Counter, GOLD, Panel, PixelButton, PixelText } from '../ui/pixel';
 import {
   STEP,
   type Target,
+  allJobs,
   areaDone,
   blockedCells,
   canWalk,
@@ -58,6 +59,18 @@ const KEYS: Record<string, Facing> = {
 };
 
 const levelById = (id: number) => LEVELS.find((l) => l.id === id)!;
+
+/** Under the sea: seconds a full lantern lasts in the dark, and to fill it in the light. */
+const LANTERN_SECONDS = 26;
+const LANTERN_REFILL = 1.5;
+
+/** What Pip says when the lantern runs out and the dark sends you back to the light. */
+const DARK_LINES = [
+  'Bzzt! The lantern’s out and something BREATHED on me! Back to the light, back to the light!',
+  'It’s so dark… and there were EYES. Lots of eyes. We’re back by the lamp. We are STAYING by the lamp.',
+  'Something cold brushed past us in the dark. It went “sssshh”. I did not like it one bit.',
+  'Lantern’s empty! Remember: stand by a lit lamp to fill it up again. Robots are NOT built for the dark.',
+];
 const solvedIn = (save: SaveData) => (id: number) => starsFor(save, id) > 0;
 const noteKey = (id: string) => `note:${id}`;
 
@@ -92,7 +105,7 @@ export function WorldScreen({ map, worldId }: { map: WorldMap; worldId: string }
   const fog = useMemo(() => fogMask(map, solved), [map, solved]);
   const open = openAreas(map, solved);
 
-  const worldJobs = useMemo(() => map.areas.flatMap((a) => a.jobs), [map]);
+  const worldJobs = useMemo(() => map.areas.flatMap(allJobs), [map]);
   const litCount = worldJobs.filter(solved).length;
   const dailyDone = (save.daily.stars[dayKey(new Date())] ?? 0) > 0;
   const notes = useMemo(() => map.spots.flatMap((s) => (s.kind === 'note' ? [s.note] : [])), [map]);
@@ -121,6 +134,19 @@ export function WorldScreen({ map, worldId }: { map: WorldMap; worldId: string }
 
   const [start] = useState(() => startingPlace(worldId, map));
   const walker = useRef<Walker>(newWalker(start.x, start.y, start.facing));
+
+  // Under the sea, the hero's lantern runs down in the dark and fills up again in the light
+  // of a lit lamp. Let it run out and the dark closes in: you're sent back to the last light.
+  const lantern = useRef(1);
+  const [lanternShown, setLanternShown] = useState(1);
+  const lanternShownNow = useRef(1);
+  const darkCount = useRef(0);
+  const lastLight = useRef({ x: start.x, y: start.y });
+  const litLights = useMemo(() => map.lights.filter((l) => lit.has(l.group)), [map, lit]);
+  const litLightsNow = useRef(litLights);
+  useEffect(() => {
+    litLightsNow.current = litLights;
+  }, [litLights]);
   const blockedNow = useRef(blocked);
   useEffect(() => {
     blockedNow.current = blocked;
@@ -305,11 +331,14 @@ export function WorldScreen({ map, worldId }: { map: WorldMap; worldId: string }
         const to = WORLDS.find((w) => w.id === s.to);
         const exitArea = map.areas[map.areaOf[s.y * map.width + s.x]!];
         const ready = !exitArea || areaDone(exitArea, solved);
+        const bubble = s.via === 'bubble';
         if (to?.build && ready) {
           setChat({
-            lines: [{ who: 'pip', text: `The night bus to ${to.name}! Hop on?` }],
+            lines: bubble
+              ? [{ who: 'glimmer', text: to.id === 'deep' ? 'Down the well, all the way to the sea? Hold on tight to my bubble.' : `Back up the well to ${to.name}? Hold on tight!` }]
+              : [{ who: 'pip', text: `The night bus to ${to.name}! Hop on?` }],
             choices: [
-              { label: 'All aboard!', tone: 'orange', onPress: () => go(`/world/${to.id}`) },
+              { label: bubble ? 'Hold on!' : 'All aboard!', tone: 'orange', onPress: () => go(`/world/${to.id}`) },
               { label: 'Not yet', tone: 'cream', onPress: close },
             ],
           });
@@ -318,9 +347,11 @@ export function WorldScreen({ map, worldId }: { map: WorldMap; worldId: string }
             lines: [
               {
                 who: 'pip',
-                text: ready
-                  ? `The bus to ${to?.name ?? 'the next town'}… The road’s still being fixed. Coming soon!`
-                  : 'No buses while the Market Clock is broken. Nobody knows what time it is!',
+                text: bubble
+                  ? 'An old well. A cold breeze is coming up out of it… and a faint sound, like a bell. Not now.'
+                  : ready
+                    ? `The bus to ${to?.name ?? 'the next town'}… The road’s still being fixed. Coming soon!`
+                    : 'No buses while the Market Clock is broken. Nobody knows what time it is!',
               },
             ],
           });
@@ -394,8 +425,26 @@ export function WorldScreen({ map, worldId }: { map: WorldMap; worldId: string }
         lastArea.current = a;
         setHere(a);
       }
+      if (map.underwater && !talking.current) {
+        const inLight = litLightsNow.current.some((l) => Math.hypot(l.x - (w.x + 0.5), l.y - (w.y + 0.5)) < l.radius * 0.7);
+        if (inLight) {
+          lantern.current = Math.min(1, lantern.current + dt / LANTERN_REFILL);
+          lastLight.current = { x: w.x, y: w.y };
+        } else lantern.current = Math.max(0, lantern.current - dt / LANTERN_SECONDS);
+        const shown = Math.round(lantern.current * 20) / 20;
+        if (shown !== lanternShownNow.current) {
+          lanternShownNow.current = shown;
+          setLanternShown(shown);
+        }
+        if (lantern.current <= 0) {
+          // Out of light: something in the dark nudges you back to the last lamp.
+          lantern.current = 0.5;
+          walker.current = newWalker(lastLight.current.x, lastLight.current.y, w.facing);
+          setChat({ lines: [{ who: 'pip', text: DARK_LINES[darkCount.current++ % DARK_LINES.length]! }] });
+        }
+      }
     },
-    [facingTarget, interact, free, areaAt],
+    [facingTarget, interact, free, areaAt, map.underwater],
   );
 
   // Keyboard (web): hold arrows / WASD to walk (two at once for diagonals); E / Enter /
@@ -478,8 +527,8 @@ export function WorldScreen({ map, worldId }: { map: WorldMap; worldId: string }
     return out;
   }, [residents, solved, map, dailyDone]);
 
-  const left = area.jobs.filter((j) => !solved(j)).length;
-  const status = area.jobs.length === 0 ? 'Home' : left === 0 ? 'All lit up!' : `${left} job${left === 1 ? '' : 's'} left here`;
+  const left = allJobs(area).filter((j) => !solved(j)).length;
+  const status = allJobs(area).length === 0 ? 'Home' : left === 0 ? 'All lit up!' : `${left} job${left === 1 ? '' : 's'} left here`;
 
   return (
     <View style={styles.screen}>
@@ -495,6 +544,7 @@ export function WorldScreen({ map, worldId }: { map: WorldMap; worldId: string }
         sparkles={sparkles}
         ghosts={ghosts}
         walker={walker}
+        lantern={lantern}
         onTick={onTick}
         onView={onView}
       />
@@ -509,6 +559,7 @@ export function WorldScreen({ map, worldId }: { map: WorldMap; worldId: string }
           <PixelText size={12} color="#c9c3e6" shadow>
             {status}
           </PixelText>
+          {map.underwater && <LanternGauge value={lanternShown} />}
         </Pressable>
         <View style={styles.flex} pointerEvents="none" />
         <Counter icon="✦" value={`${litCount}/${worldJobs.length}`} color="#ffe58a" />
@@ -563,6 +614,21 @@ export function WorldScreen({ map, worldId }: { map: WorldMap; worldId: string }
   );
 }
 
+/** How full the lantern is: a little jar that drains, gold when full and red when nearly out. */
+function LanternGauge({ value }: { value: number }) {
+  const color = value > 0.5 ? '#ffd27a' : value > 0.25 ? '#ef914f' : '#e0394c';
+  return (
+    <View style={styles.gauge} pointerEvents="none">
+      <PixelText size={11} color={color} shadow>
+        Lantern
+      </PixelText>
+      <View style={styles.gaugeBar}>
+        <View style={[styles.gaugeFill, { width: `${Math.round(value * 100)}%`, backgroundColor: color }]} />
+      </View>
+    </View>
+  );
+}
+
 function labelFor(t: Target): string {
   if (t.kind === 'gate') return 'Look';
   if (t.kind === 'resident') return t.resident.who === 'pip' ? 'Talk to Pip' : 'Talk';
@@ -574,7 +640,7 @@ function labelFor(t: Target): string {
     case 'daily':
       return 'Talk';
     case 'exit':
-      return 'Bus stop';
+      return t.spot.via === 'bubble' ? 'The well' : 'Bus stop';
     case 'sign':
     case 'note':
       return 'Read';
@@ -598,6 +664,9 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   title: { paddingHorizontal: 4 },
+  gauge: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 3 },
+  gaugeBar: { width: 70, height: 10, borderWidth: 2, borderColor: '#141b1b', backgroundColor: '#2e2b30', borderRadius: 2 },
+  gaugeFill: { height: '100%' },
   action: { position: 'absolute', right: 18, bottom: 16, alignItems: 'center', gap: 2 },
   hint: { marginTop: 2 },
   travel: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(8,9,20,0.55)' },

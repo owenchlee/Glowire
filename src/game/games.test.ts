@@ -1,6 +1,17 @@
 import { describe, expect, it } from 'vitest';
 
-import { bandsOf, colourQuestion, formatOhms, ohmsOf, rng, signalPattern } from './games';
+import {
+  bandsOf,
+  colourQuestion,
+  dropGap,
+  formatOhms,
+  needleQuestion,
+  needleReading,
+  nextDrop,
+  ohmsOf,
+  rng,
+  signalPattern,
+} from './games';
 import { NEW_SAVE, recordGame } from './save';
 
 describe('colour code', () => {
@@ -29,6 +40,37 @@ describe('signal lamp', () => {
   it('never flashes one colour three times running', () => {
     const p = signalPattern(500, rng(9));
     for (let i = 2; i < p.length; i++) expect(p[i] === p[i - 1] && p[i] === p[i - 2]).toBe(false);
+  });
+});
+
+describe('needle drop', () => {
+  it('reads less current through a bigger resistor, as the real circuit does', () => {
+    const r = [100, 220, 470, 1000].map((ohms) => needleReading(3, ohms, 'red'));
+    for (let i = 1; i < r.length; i++) expect(r[i]!).toBeLessThan(r[i - 1]!);
+    expect(r[1]).toBeCloseTo(5.5, 0); // (3 V − about 1.8 V) / 220 Ω, as in the Reading the Dial job
+  });
+
+  it('asks only questions with one right resistor and no burned-out lamps', () => {
+    const random = rng(11);
+    for (let round = 0; round < 60; round++) {
+      const q = needleQuestion(round % 10, random);
+      expect(q.readings[q.ohms]).toBe(q.target);
+      const same = Object.values(q.readings).filter((v) => Math.round(v) === Math.round(q.target));
+      expect(same).toHaveLength(1);
+      expect(q.target).toBeLessThan(30);
+    }
+  });
+});
+
+describe('jar catch', () => {
+  it('starts with only sparks, then mixes in the dark, faster as it goes', () => {
+    const random = rng(3);
+    const early = Array.from({ length: 50 }, () => nextDrop(4, random));
+    expect(early.some((d) => d.dark)).toBe(false);
+    const late = Array.from({ length: 200 }, () => nextDrop(40, random));
+    expect(late.some((d) => d.dark)).toBe(true);
+    expect(late.filter((d) => d.dark).length).toBeLessThan(100);
+    expect(dropGap(40)).toBeLessThan(dropGap(0));
   });
 });
 

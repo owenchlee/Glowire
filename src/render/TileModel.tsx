@@ -2,7 +2,7 @@
 
 import { useFrame } from './r3f';
 import { useEffect, useMemo, useRef } from 'react';
-import { Color, type Group, type Material, MeshBasicMaterial, type Sprite } from 'three';
+import { Color, type Group, type Material, MeshBasicMaterial, MeshStandardMaterial, type Sprite } from 'three';
 
 import {
   type Direction,
@@ -98,7 +98,63 @@ export function TileModel({ tile, result, ghost = false }: Props) {
       )}
       {tile.kind === 'changeover' && <ChangeoverModel up={tile.up} ghost={ghost} wireMat={wireMat} />}
       {tile.kind === 'meter' && <MeterModel mode={tile.mode} result={result} ghost={ghost} wireMat={wireMat} />}
+      {tile.kind === 'capacitor' && <CapacitorModel uf={tile.uf} result={result} ghost={ghost} wireMat={wireMat} />}
     </group>
+  );
+}
+
+/** Can sizes by value: small, medium, big. */
+const CAN = [
+  { min: 0, radius: 0.13, length: 0.34, body: 'capSmall' },
+  { min: 2200, radius: 0.16, length: 0.4, body: 'capMedium' },
+  { min: 4700, radius: 0.19, length: 0.46, body: 'capBig' },
+] as const;
+
+/**
+ * A capacitor: an electrolytic can on its side with a pale stripe at its − end, and a
+ * window on top that glows brighter the more charge it holds.
+ */
+function CapacitorModel({
+  uf,
+  result,
+  ghost,
+  wireMat,
+}: {
+  uf: number;
+  result: TileResult | null;
+  ghost: boolean;
+  wireMat: Material;
+}) {
+  const { geometry: g, material: m } = getAssets();
+  const can = [...CAN].reverse().find((c) => uf >= c.min)!;
+  const window = useMemo(
+    () => new MeshStandardMaterial({ color: '#5b4a2a', emissive: new Color('#ffd27a'), emissiveIntensity: 0, roughness: 0.3 }),
+    [],
+  );
+  useEffect(() => () => window.dispose(), [window]);
+  // How full it is: 3 V (one battery) counts as full.
+  const charge = Math.min(1, Math.abs(result?.voltage ?? 0) / 3);
+  useEffect(() => {
+    window.emissiveIntensity = 2.2 * charge;
+    window.color.set(charge > 0.05 ? '#ffe18d' : '#5b4a2a');
+  }, [charge, window]);
+  const pick = (mat: Material) => (ghost ? m.ghost : mat);
+  const r = can.radius;
+  return (
+    <>
+      <Arm dir={W} length={0.5 - can.length / 2} material={wireMat} />
+      <Arm dir={E} length={0.5 - can.length / 2} material={wireMat} />
+      <mesh geometry={g.capBody} material={pick(m[can.body])} position-y={TOP + r} scale={[can.length, r / 0.2, r / 0.2]} />
+      <mesh
+        geometry={g.capBody}
+        material={pick(m.capStripe)}
+        position={[can.length / 2 - 0.05, TOP + r, 0]}
+        scale={[0.07, (r + 0.004) / 0.2, (r + 0.004) / 0.2]}
+      />
+      <mesh geometry={g.capWindow} material={pick(window)} position={[-0.03, TOP + r * 2, 0]} scale={[can.length / 0.46, 1, 1]} />
+      <Plus position={[-0.3, TOP + 0.013, 0.27]} material={pick(m.marking)} />
+      <Minus position={[0.3, TOP + 0.013, 0.27]} material={pick(m.marking)} />
+    </>
   );
 }
 

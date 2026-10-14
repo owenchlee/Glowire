@@ -6,7 +6,8 @@
 //   row 1: battery, LED red/green/blue/burned, resistors 100/220/470/1000 Ω,
 //          switch open/closed, rivets, spark, hover frame, bench A, bench B
 //   row 2: bushes (from the village pack), then the diode at column 4, changeover switch
-//          up / down (5, 6), ammeter (7), voltmeter (8)
+//          up / down (5, 6), ammeter (7), voltmeter (8), capacitors 1000 / 2200 / 4700 µF
+//          (9, 10, 11)
 //
 // Pixels that light up (copper cores, LED domes, sparks) get alpha 254; the shader makes
 // them glow when current flows.
@@ -260,6 +261,34 @@ function changeover(up) {
   return s;
 }
 
+/**
+ * A capacitor: an electrolytic can lying on its side, a pale stripe down its − end, and a
+ * glowing charge window. Bigger values are bigger cans in deeper colours.
+ */
+function capacitorSprite(uf) {
+  const s = new Sprite();
+  const size = uf >= 4700 ? 2 : uf >= 2200 ? 1 : 0;
+  const body = [C.batteryLight, 'a5608b', C.battery][size];
+  const light = [C.batteryShine, 'ef9597', C.batteryLight][size];
+  const dark = [C.battery, '6e48a8', '1f283f'][size];
+  const half = 3 + size; // half-height of the can
+  const x0 = 4 - size;
+  const x1 = 11 + size;
+  leads(s, x0 - 1, x1 + 1);
+  s.rect(x0, 8 - half, x1 - x0 + 1, half * 2, body);
+  s.rect(x0, 8 - half, x1 - x0 + 1, 1, light);
+  s.rect(x0, 7 + half, x1 - x0 + 1, 1, dark);
+  // Rounded ends.
+  for (const [x, y] of [[x0, 8 - half], [x1, 8 - half], [x0, 7 + half], [x1, 7 + half]]) s.px[y * 16 + x] = null;
+  // The pale stripe on the − (east) end, with little − marks.
+  s.rect(x1 - 2, 8 - half, 2, half * 2, C.greyLight);
+  for (let y = 9 - half; y < 7 + half; y += 2) s.set(x1 - 2, y, C.grey);
+  // The charge window: glows once it holds charge.
+  s.rect(x0 + 2, 7, x1 - x0 - 5, 2, C.spark, true);
+  s.outline();
+  return s;
+}
+
 /** A meter: a round dial on a dark case, with a needle and A (amps) or V (volts). */
 function meterSprite(mode) {
   const s = new Sprite();
@@ -384,6 +413,9 @@ export function circuitSheet(bushes) {
   stamp(png, changeover(false), 6, 2);
   stamp(png, meterSprite('A'), 7, 2);
   stamp(png, meterSprite('V'), 8, 2);
+  stamp(png, capacitorSprite(1000), 9, 2);
+  stamp(png, capacitorSprite(2200), 10, 2);
+  stamp(png, capacitorSprite(4700), 11, 2);
   bushes.forEach((tile, i) => {
     for (let y = 0; y < 16; y++)
       for (let x = 0; x < 16; x++) {

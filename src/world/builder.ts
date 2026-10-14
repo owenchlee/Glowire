@@ -47,6 +47,53 @@ const TOWN = {
 } as const;
 export type TowerStyle = keyof typeof TOWN.towers;
 
+/** A tile of the drawn undersea sheet (scripts/deep-art.mjs), by column and row. */
+const deep = (col: number, row: number) => at('deep', row * SHEETS.deep.cols + col);
+
+/** Where things sit in the deep sheet (keep in sync with scripts/deep-art.mjs). */
+const DEEP = {
+  /** Small things along row 0, by column. `flat`: you walk over it. `glows`: lights with its group. */
+  smalls: {
+    shell: { col: 4, flat: true },
+    starfish: { col: 5, flat: true },
+    pebbles: { col: 6, flat: true },
+    coral: { col: 7, flat: false },
+    brainCoral: { col: 8, flat: false },
+    rock: { col: 9, flat: false },
+    urchin: { col: 10, flat: false },
+    crab: { col: 11, flat: false },
+    anemone: { col: 12, flat: false },
+    seagrass: { col: 13, flat: true },
+    bones: { col: 14, flat: true },
+    chest: { col: 15, flat: false },
+  },
+  /** Two-tall things on rows 1–2: first column and width. */
+  talls: {
+    kelp: { col: 4, w: 1 },
+    kelpGold: { col: 5, w: 1 },
+    kelpDark: { col: 6, w: 1 },
+    jar: { col: 7, w: 1 },
+    anchor: { col: 8, w: 1 },
+    coralTree: { col: 9, w: 2 },
+    coralTreeOrange: { col: 11, w: 2 },
+    signpost: { col: 13, w: 1 },
+    pillar: { col: 14, w: 1 },
+    vent: { col: 15, w: 1 },
+  },
+  /** Bigger pieces: top-left tile, size, rows they block at the bottom, the door column. */
+  big: {
+    dome: { col: 4, row: 3, w: 4, h: 4, solid: 2, door: 2 },
+    domeTall: { col: 8, row: 3, w: 4, h: 4, solid: 2, door: 2 },
+    heartJar: { col: 12, row: 3, w: 4, h: 5, solid: 2, door: 2 },
+    clam: { col: 0, row: 4, w: 4, h: 3, solid: 2, door: 2 },
+    wreck: { col: 0, row: 7, w: 6, h: 4, solid: 2, door: 3 },
+    bell: { col: 6, row: 8, w: 4, h: 3, solid: 2, door: 2 },
+  },
+} as const;
+export type DeepSmall = keyof typeof DEEP.smalls;
+export type DeepTall = keyof typeof DEEP.talls;
+export type DeepBig = keyof typeof DEEP.big;
+
 /** Ground you paint with. Grass kinds are plain; the rest blend into the grass around them. */
 export type Ground = 'grass' | 'meadow' | 'sand' | TerrainId | 'paved';
 const GROUNDS: Ground[] = ['grass', 'meadow', 'sand', 'dirt', 'darkDirt', 'stone', 'pond', 'sea', 'paved'];
@@ -376,6 +423,95 @@ export class MapBuilder {
     return { x: x + 2, y: y + 10 };
   }
 
+  // ── Under the sea (Brightwater Deep) ──────────────────────────────────────
+
+  /**
+   * A reef over columns x0..x1, from the top of the map down to about row `edge` (side
+   * 'top') or from about `edge` to the bottom: kelp, coral and rocks, too thick to get
+   * through. The edge wanders, like a tree line.
+   */
+  reef(x0: number, x1: number, side: 'top' | 'bottom', edge: number) {
+    const wander = (x: number) => Math.round(Math.sin(x * 0.41) * 1.3 + Math.sin(x * 0.13 + 1) * 1.2);
+    const kinds: DeepTall[] = ['kelp', 'kelpDark', 'kelp', 'kelpGold', 'kelpDark'];
+    for (let x = x0; x < x1; x++) {
+      const lim = edge + wander(x);
+      const [from, to] = side === 'top' ? [0, lim] : [lim, this.height - 1];
+      this.block(x, from, 1, to - from + 1);
+      // Something two tall standing on every other row (staggered by column), so the reef has
+      // no gaps: its foot on row `foot`, its top on the row above.
+      for (let foot = from; foot <= to; foot++) {
+        const n = hash(x * 1.3, foot * 0.7);
+        const t = DEEP.talls[kinds[Math.floor(n * 100) % kinds.length]!];
+        // Rocks and coral clumps at the kelp's feet, so the reef reads as a solid mass.
+        const clump = n < 0.18 ? 'rock' : n < 0.36 ? 'brainCoral' : n < 0.44 ? 'coral' : null;
+        if (clump) this.object(x, foot - 1, 1, 2, [deep(t.col, 1), deep(DEEP.smalls[clump].col, 0)]);
+        else this.object(x, foot - 1, 1, 2, [deep(t.col, 1), deep(t.col, 2)]);
+      }
+    }
+  }
+
+  /** A wall of reef down column `x`, with a gap at rows gapFrom..gapTo where the way goes through. */
+  reefWall(x: number, gapFrom: number, gapTo: number) {
+    for (let y = 0; y < this.height; y++) {
+      if (y >= gapFrom && y <= gapTo) continue;
+      const i = y * this.width + x;
+      if (!this.solid[i] && !this.taken.has(i)) {
+        const n = hash(x, y * 1.1);
+        this.object(x, y - 1, 1, 2, [deep(DEEP.talls[n < 0.5 ? 'kelpDark' : 'kelp'].col, 1), deep(DEEP.talls[n < 0.5 ? 'kelpDark' : 'kelp'].col, 2)]);
+      }
+      this.block(x, y, 1, 1);
+    }
+  }
+
+  /** Rippled seabed over a rectangle, with shells, pebbles and sea grass strewn about. */
+  seabed(x: number, y: number, w: number, h: number) {
+    for (let j = 0; j < h; j++)
+      for (let i = 0; i < w; i++) {
+        const cx = x + i;
+        const cy = y + j;
+        this.setGround(cx, cy, deep(((cx % 4) + 4) % 4, ((cy % 4) + 4) % 4));
+        this.setDecal(cx, cy, -1);
+        const n = hash(cx * 0.91, cy * 1.73);
+        const strewn: DeepSmall[] = ['pebbles', 'seagrass', 'shell', 'pebbles', 'seagrass', 'starfish'];
+        if (n < 0.05) this.setDecal(cx, cy, deep(DEEP.smalls[strewn[Math.floor(n * 1000) % strewn.length]!].col, 0));
+      }
+  }
+
+  /** Something small on the seabed: flat ones you walk over, the rest are in the way. */
+  deepProp(x: number, y: number, name: DeepSmall, group?: string) {
+    const s = DEEP.smalls[name];
+    this.object(x, y, 1, 1, [deep(s.col, 0)], group, s.flat);
+    if (!s.flat) this.block(x, y, 1, 1);
+  }
+
+  /** Something two tall standing on row `y` (kelp, an anchor, a coral tree…). */
+  deepTall(x: number, y: number, name: DeepTall, group?: string) {
+    const t = DEEP.talls[name];
+    const tiles: number[] = [];
+    for (let j = 0; j < 2; j++) for (let i = 0; i < t.w; i++) tiles.push(deep(t.col + i, 1 + j));
+    this.object(x, y - 1, t.w, 2, tiles, group);
+    this.block(x, y, t.w, 1);
+  }
+
+  /**
+   * A jar lamp: lightning in a jar on a post. Its glass glows and lights the seabed round it
+   * once `group` is lit.
+   */
+  jarLamp(x: number, y: number, group: string) {
+    this.deepTall(x, y, 'jar', group);
+    this.lights.push({ x: x + 0.5, y: y - 0.6, radius: 4.6, color: '#ffe8a0', group });
+  }
+
+  /** A big piece (a dome house, the Heart Jar, the wreck…). Returns the cell outside its door. */
+  deepBig(x: number, y: number, name: DeepBig, group?: string): Point {
+    const b = DEEP.big[name];
+    const tiles: number[] = [];
+    for (let j = 0; j < b.h; j++) for (let i = 0; i < b.w; i++) tiles.push(deep(b.col + i, b.row + j));
+    this.object(x, y, b.w, b.h, tiles, group);
+    this.block(x, y + b.h - b.solid, b.w, b.solid);
+    return { x: x + b.door, y: y + b.h };
+  }
+
   /** Plain asphalt with a little variety (it clears any kerb or crack drawn there). */
   asphalt(x: number, y: number, w: number, h: number) {
     const a = TILES.asphalt;
@@ -674,6 +810,7 @@ export class MapBuilder {
     const index = this.areas.length;
     this.areas.push(spec);
     this.group(`area:${spec.id}`, spec.jobs);
+    for (const j of spec.side ?? []) this.group(`job:${j}`, [j]);
     for (const r of rects)
       for (let j = 0; j < r.h; j++)
         for (let i = 0; i < r.w; i++) if (this.inside(r.x + i, r.y + j)) this.areaOf[(r.y + j) * this.width + r.x + i] = index;
@@ -702,13 +839,15 @@ export class MapBuilder {
    * A barrier across the way out of area `index`: road barriers on these cells, gone once
    * the area's jobs are done.
    */
-  gate(index: number, cells: Point[]) {
+  gate(index: number, cells: Point[], look: 'barrier' | 'kelp' = 'barrier') {
     const group = `area:${this.areas[index]!.id}`;
-    cells.forEach((c, k) => this.objects.push({ x: c.x, y: c.y, w: 1, h: 1, tiles: [BARRIER[k % 2]!], until: group }));
+    // Under the sea, a thicket of dark kelp blocks the way instead of road barriers.
+    const tiles = look === 'kelp' ? [deep(DEEP.talls.kelpDark.col, 2), deep(DEEP.talls.kelp.col, 2)] : BARRIER;
+    cells.forEach((c, k) => this.objects.push({ x: c.x, y: c.y, w: 1, h: 1, tiles: [tiles[k % 2]!], until: group }));
     this.gates.push({ area: index, cells });
   }
 
-  finish(meta: { id: string; name: string; spawn: Point & { facing: Facing }; night?: string }): WorldMap {
+  finish(meta: { id: string; name: string; spawn: Point & { facing: Facing }; night?: string; underwater?: boolean }): WorldMap {
     this.resolveGround();
     return {
       ...meta,

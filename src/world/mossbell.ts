@@ -193,6 +193,9 @@ function bellfield(b: MapBuilder) {
   for (const [x, y] of [[79, 21], [85, 19], [98, 20], [90, 25], [83, 24]] as const) b.prop(x, y, 'mushroom');
   b.treeLine(72, 104, 'top', 10, ['dead', 'dead', 'pine']);
   b.treeLine(72, 104, 'bottom', 35, ['dead', 'pine']);
+  // Moth's game: her grandpa's old meter, nailed to a post by the schoolroom path.
+  b.prop(84, 19, 'sign');
+  b.spots.push({ kind: 'game', x: 84, y: 19, game: 'needle' });
   b.spots.push({ kind: 'note', x: 102, y: 25, note: 'two' });
   b.sighting({ id: 'bellfield-lantern', who: 'glimmer', x: 97, y: 30 });
   b.prop(102, 25, 'sign');
@@ -241,6 +244,9 @@ function bellTower(b: MapBuilder) {
   b.treeLine(104, W, 'top', 6, ['dead', 'pine']);
   b.treeLine(104, W, 'bottom', 32, ['dead', 'pine']);
   b.secret({ id: 'tower-clock', x: 124, y: 16 });
+  // The old well behind the tower: Glimmer's bubble goes down it, all the way to the sea.
+  b.prop(131, 22, 'well');
+  b.spots.push({ kind: 'exit', x: 131, y: 22, to: 'deep', via: 'bubble' });
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────

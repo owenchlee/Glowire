@@ -21,7 +21,7 @@ import { PNG } from 'pngjs';
 export const TOWN_COLS = 16;
 const ROWS = 18;
 
-const C = {
+export const C = {
   ink: '141b1b',
   shadow: '2e2b30',
   greyHi: 'd2c9c9',
@@ -60,12 +60,12 @@ const C = {
 const hex = (h) => [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)];
 
 /** Deterministic noise. */
-function noise(x, y, seed = 0) {
+export function noise(x, y, seed = 0) {
   const v = Math.sin(x * 127.1 + y * 311.7 + seed * 74.7) * 43758.5453;
   return v - Math.floor(v);
 }
 
-class Canvas {
+export class Canvas {
   /** `top`: extra rows above y = 0, for drawing up past the usual top edge. */
   constructor(w, h, top = 0) {
     this.w = w;
@@ -350,7 +350,7 @@ function fountain() {
 // ── Clocktowers ──────────────────────────────────────────────────────────────
 
 /** Stone blocks in rows, lit on top: fills a rectangle. */
-function masonry(c, x0, y0, w, h, pal, mossy = false) {
+export function masonry(c, x0, y0, w, h, pal, mossy = false) {
   for (let y = y0; y < y0 + h; y++)
     for (let x = x0; x < x0 + w; x++) {
       const row = Math.floor((y - y0) / 4);
@@ -364,10 +364,10 @@ function masonry(c, x0, y0, w, h, pal, mossy = false) {
 }
 
 const STONE = { base: C.greyHi, mid: C.grey, hi: C.white, mortar: C.greyMid, dark: C.greyDark };
-const OLD_STONE = { base: C.grey, mid: C.greyMid, hi: C.greyHi, mortar: C.greyDark, dark: C.greyMortar };
+export const OLD_STONE ={ base: C.grey, mid: C.greyMid, hi: C.greyHi, mortar: C.greyDark, dark: C.greyMortar };
 
 /** An arched window or door (dark until lit). */
-function arch(c, x, y, w, h, glow = true) {
+export function arch(c, x, y, w, h, glow = true) {
   for (let j = 0; j < h; j++)
     for (let i = 0; i < w; i++) {
       const top = j < w / 2 && Math.hypot(i + 0.5 - w / 2, j + 0.5 - w / 2) > w / 2;

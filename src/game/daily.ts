@@ -273,6 +273,8 @@ export function tileToken(t: Tile | null): string {
       return `C${t.up ? 'u' : 'd'}${t.rotation || ''}`;
     case 'meter':
       return `M${t.mode}${t.rotation % 2 ? 'v' : ''}`;
+    case 'capacitor':
+      return `C${t.uf}${t.rotation % 2 ? 'v' : ''}`;
   }
 }
 

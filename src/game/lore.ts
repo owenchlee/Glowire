@@ -17,10 +17,20 @@
 // Marigold's lantern. Hazel, the last miller, is Wren's grandmother. Professor Lumen was
 // born in Mossbell and saw Glimmer wave to him the night of the Long Dark. And the bell
 // was cast "under the sea", where Old Gus's grandad saw lamps in rows like a street…
+//
+// …in Brightwater Deep. Its lamplighters caught sea storms in great glass jars, and their
+// Heart Jar sent light up the Glowire to the whole land long before Marigold. The night she
+// switched her town on, lightning struck the wire and the whole storm ran down into the
+// Heart Jar, which cracked at 11:52 (so every clock on the Glowire still stops then). Out of
+// the crack came Glimmer and Grumble, and a third cloud nobody saw: the Hush, born in the
+// dark and eating light to keep warm. Bits of her drift up the wire as Mossbell's fog. The
+// two bells were cast together, one for the sea and one for the Hollow, and answer each
+// other: that's the thirteenth ring. Fill the Heart Jar and the crack mends, and the Hush
+// is just a little cloud who was cold. The storms that filled the jars come from Stormpeak.
 
 import type { Line } from './story';
 
-export type WorldId = 'glowtown' | 'harbour' | 'mossbell';
+export type WorldId = 'glowtown' | 'harbour' | 'mossbell' | 'deep';
 
 export interface Secret {
   id: string;
@@ -121,6 +131,48 @@ export const SECRETS: Record<string, Secret> = Object.fromEntries(
       pip('She doesn’t look scary. She looks like she’s waiting for someone.'),
     ]),
 
+    // ── Things to find in Brightwater Deep ──
+    secret('well-rope', 'deep', 'The little bell', [
+      pip('A rope hangs all the way down the well from Mossbell. Tied to the end of it: a little bronze bell.'),
+      pip('Every time the big bell rings up top, this one rings down here. Thirteen… the thirteenth ring is THIS one. Somebody down here has been answering.'),
+    ]),
+    secret('jar-labels', 'deep', 'The last jar', [
+      pip('A shelf of old jars, each with a label. “Storm of 1903.” “Storm of 1911.” “The Big Blow, 1919.”'),
+      pip('The last one says “THE NIGHT IT CRACKED. 11:52.” It’s empty. No, wait. It isn’t empty. Something in it is breathing.'),
+    ]),
+    secret('clam-pearl', 'deep', 'The pearl that blinks', [
+      pip('Inside the great clam: a pearl with a tiny light in it, like a candle in a snow globe.'),
+      pip('It’s blinking at the same speed as my eye. Bzzt. Blink. Blink. …It’s blinking AT me.'),
+    ]),
+    secret('drowned-bell', 'deep', 'One for the sea', [
+      pip('A great bronze bell, half sunk in the sand. Words round the lip: “ONE FOR THE SEA. ONE FOR THE HOLLOW.”'),
+      pip('There were TWO bells! One went up to Mossbell. When that one rings thirteen times, this one rings back.'),
+    ]),
+    secret('wreck-log', 'deep', 'The last page of the log', [
+      pip('The Marigold’s logbook, dry in a tin box. The last page: “Going down to see the Heart Jar with Echo. Marlo says it holds every storm since forever.”'),
+      pip('“If I can join it to my town, nobody up top will ever sit in the dark again.” And underneath, in wobbly writing: “What have I done.”'),
+    ]),
+    secret('hall-names', 'deep', 'Names on the floor', [
+      pip('Names carved round the hall floor: every family who lived in Brightwater. Hundreds of them.'),
+      pip('And by the jar, scratched very small, the newest name: “HUSH”. Somebody gave it a name a long time ago.'),
+    ]),
+    secret('street-shadow', 'deep', 'Something drinking', [
+      pip('Something DARK just slid past that lamp, and the lamp went dim as it passed. Like it was… drinking it.'),
+      pip('Gone. The lamp’s coming back. Slowly. Bzzt. I am staying RIGHT next to you.'),
+    ]),
+    secret('nursery-eyes', 'deep', 'Eyes in the kelp', [
+      pip('EYES. Two eyes, in the kelp, looking right at us!'),
+      pip('…and gone. Tess said not to look at them. I LOOKED AT THEM.'),
+    ]),
+    secret('wreck-diver', 'deep', 'The diver', [
+      pip('A diver! In a brass suit, walking along the sea floor… and waving at us.'),
+      pip('Then the kelp closes and they’re gone. Divers don’t live down here. Do they?'),
+    ]),
+    secret('wreck-shadow', 'deep', 'It follows', [
+      pip('The shadow is following us. When we stop, it stops. When we look, it isn’t there.'),
+      pip('It doesn’t feel angry, though. It feels… cold. Like it wants to sit by our lantern.'),
+    ]),
+
     // ── What people tell you once you've helped them ──
     secret('who:gran', 'glowtown', 'Gran’s friend', [
       says('gran', 'When I was about your age, Grandma Marigold took me up a valley to a village with a bell.'),
@@ -184,6 +236,27 @@ export const SECRETS: Record<string, Secret> = Object.fromEntries(
       says('grumble', '…all those years in the dark, I thought she forgot me.'),
       says('grumble', 'Don’t tell anyone I said this. I missed her. Every night. Hmph.'),
     ], 'grumble'),
+    secret('who:pearl', 'deep', 'Pearl’s name', [
+      says('pearl', 'Grandpa says I’m named after the light in the big clam.'),
+      says('pearl', 'When I was a baby, every lamp in the street went out but that one. He says it kept watch over me all night.'),
+    ], 'pearl'),
+    secret('who:marlo', 'deep', 'Marigold’s lantern', [
+      says('marlo', 'When Marigold went back up, she left me her lantern. I lit every lamp on this street from it for ninety years.'),
+      says('marlo', 'Then one winter it went out. That was the winter the Hush moved into the hall.'),
+    ], 'marlo'),
+    secret('who:tess', 'deep', 'What the fish know', [
+      says('tess', 'Every night, at eight minutes to midnight, all my fish turn to face the Heart Hall. All at once.'),
+      says('tess', 'There’s a lady in a town up top who keeps fish. I bet hers do the same.'),
+    ], 'tess'),
+    secret('who:echo', 'deep', 'Memory file 0003', [
+      says('marigold', '“Echo, if I don’t come back down, keep taking pictures. One day someone will need to see what’s in the dark.”'),
+      says('echo', 'Echo has taken 31,412 pictures of the dark. In six of them, it is smiling.'),
+    ], 'echo'),
+    secret('who:hush', 'deep', 'The lady who sang', [
+      says('hush', 'Sssh… a lady with a lantern used to sit by the crack and sing to me.'),
+      says('hush', 'Then she stopped coming. I waited. I got so cold. …Is she coming back?'),
+      says('gran', '…No, sweetheart. But I’m her granddaughter. And I know all her songs.'),
+    ], 'hush'),
   ].map((s) => [s.id, s]),
 );
 
@@ -211,6 +284,11 @@ export const PERSON_SECRETS: Record<string, { secret: string; afterScene?: strin
   wren: { secret: 'who:wren', afterScene: 'hollow-intro' },
   pip: { secret: 'who:pip', afterScene: 'clock-outro' },
   grumble: { secret: 'who:grumble', afterScene: 'tower-outro' },
+  pearl: { secret: 'who:pearl' },
+  marlo: { secret: 'who:marlo' },
+  tess: { secret: 'who:tess' },
+  echo: { secret: 'who:echo' },
+  hush: { secret: 'who:hush', afterScene: 'heart-outro' },
 };
 
 /** Secrets that belong to a world (for its counter in the corner). */

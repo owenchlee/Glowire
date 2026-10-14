@@ -10,9 +10,11 @@ import {
   getPorts,
   parseBoard,
   rotateTile,
+  settledCharges,
   simulate,
+  timeUntil,
 } from '../engine';
-import { BRIGHTNESS, type Goal, type LevelDef, type PartKey, type SwitchStates } from './types';
+import { BRIGHTNESS, type Goal, type LevelDef, type PartKey, type SwitchStates, type TimedGoal } from './types';
 
 const LED_PART: Record<LedColor, PartKey> = { red: 'led', green: 'ledGreen', blue: 'ledBlue' };
 
@@ -21,6 +23,7 @@ export function partKey(tile: Tile): PartKey | null {
   if (tile.kind === 'resistor') return `r${tile.ohms}` as PartKey;
   if (tile.kind === 'battery' && tile.volts === 3) return 'battery';
   if (tile.kind === 'diode') return 'diode';
+  if (tile.kind === 'capacitor') return `c${tile.uf}` as PartKey;
   return null;
 }
 
@@ -36,15 +39,18 @@ function rng(seed: number): () => number {
   };
 }
 
-/** Pieces a twist level shuffles: everything but batteries, switches and blocks. */
-export const spins = (t: Tile) => t.kind === 'wire' || t.kind === 'led' || t.kind === 'resistor';
+/** Pieces a twist level shuffles: wires, LEDs, resistors, diodes and capacitors. */
+export const spins = (t: Tile) =>
+  t.kind === 'wire' || t.kind === 'led' || t.kind === 'resistor' || t.kind === 'diode' || t.kind === 'capacitor';
 
 /** Quarter turns that visibly change a tile: a straight piece turned twice looks the same. */
 function scrambleTurns(t: Tile, random: () => number): number {
   const ports = getPorts(t);
   if (ports.length === 4) return 0;
   const halfSymmetric =
-    t.kind === 'resistor' || (t.kind === 'wire' && ports.every((d) => d % 2 === ports[0]! % 2));
+    t.kind === 'resistor' ||
+    t.kind === 'capacitor' ||
+    (t.kind === 'wire' && ports.every((d) => d % 2 === ports[0]! % 2));
   return halfSymmetric ? (random() < 0.5 ? 1 : 3) : 1 + Math.floor(random() * 3);
 }
 
@@ -138,6 +144,8 @@ export function remainingParts(
 export interface GoalStatus {
   goal: Goal;
   met: boolean;
+  /** Timed goals: how many seconds it took (Infinity: longer than anyone would wait). */
+  seconds?: number;
 }
 
 export interface Evaluation {
@@ -178,6 +186,23 @@ export function meterReading(t: TileResult | null | undefined, mode: 'A' | 'V'):
 const inBand = (led: TileResult, brightness: keyof typeof BRIGHTNESS = 'any') =>
   led.brightness >= BRIGHTNESS[brightness].min && led.brightness <= BRIGHTNESS[brightness].max;
 
+/**
+ * A timed goal: leave the switch one way until everything has settled, flip it, and count
+ * the seconds until the lamp goes out (hold) or comes on (delay). Infinity if it doesn't
+ * happen within a second past the longest time that would do. A lamp that's dark straight
+ * after the flip holds for (next to) no time at all.
+ */
+export function timeLamp(goal: TimedGoal, state: BoardState, labels: Record<string, number>): number {
+  const hold = goal.kind === 'hold';
+  const before = toEngineBoard(withSwitches(state, labels, { ...goal.when, [goal.switch]: hold }));
+  const after = toEngineBoard(withSwitches(state, labels, { ...goal.when, [goal.switch]: !hold }));
+  const cell = labels[goal.led] ?? -1;
+  const lit = (r: SimulationResult) => isLit(r.tiles[cell]);
+  const limit = (goal.max ?? goal.min) + 1;
+  const t = timeUntil(after, settledCharges(before), hold ? (r) => !lit(r) : lit, limit);
+  return t ?? Infinity;
+}
+
 export function evaluateLevel(level: LevelDef, state: BoardState): Evaluation {
   const labels = levelLabels(level);
   const ledLabels = Object.keys(labels).filter(isLedLabel);
@@ -194,6 +219,13 @@ export function evaluateLevel(level: LevelDef, state: BoardState): Evaluation {
   };
 
   const goals = level.goals.map((goal): GoalStatus => {
+    if (goal.kind === 'hold' || goal.kind === 'delay') {
+      // Both switch positions count for shorts and burnouts too.
+      solve({ ...goal.when, [goal.switch]: true });
+      solve({ ...goal.when, [goal.switch]: false });
+      const seconds = timeLamp(goal, state, labels);
+      return { goal, met: seconds >= goal.min && seconds <= (goal.max ?? Infinity), seconds };
+    }
     const tiles = solve(goal.when).tiles;
     const at = (name: string) => tiles[labels[name] ?? -1];
     if (goal.kind === 'dark') return { goal, met: isDark(at(goal.led)) };
@@ -299,10 +331,17 @@ export function describeGoal(
 ): string {
   const name = (led: string) => names[led] ?? led;
   const how =
-    goal.kind !== 'dark' && goal.kind !== 'meter' && goal.brightness && goal.brightness !== 'any'
-      ? ` ${BRIGHTNESS[goal.brightness].word}`
-      : '';
+    'brightness' in goal && goal.brightness && goal.brightness !== 'any' ? ` ${BRIGHTNESS[goal.brightness].word}` : '';
   const ledCount = Object.keys(names).length;
+  if (goal.kind === 'hold' || goal.kind === 'delay') {
+    const sw = switchCount === 1 ? 'the switch' : goal.switch;
+    const on = goal.kind === 'delay';
+    const flip = words.twoWay ? `flips ${on ? 'UP' : 'DOWN'}` : `goes ${on ? 'ON' : 'OFF'}`;
+    const span = goal.max === undefined ? `at least ${formatReading(goal.min)} s` : `${formatReading(goal.min)}–${formatReading(goal.max)} s`;
+    return on
+      ? `After ${sw} ${flip}, light ${name(goal.led)} ${span} later`
+      : `After ${sw} ${flip}, keep ${name(goal.led)} glowing for ${span}`;
+  }
   let verb: string;
   if (goal.kind === 'meter') {
     const meters = words.meters ?? {};
@@ -324,7 +363,7 @@ export function describeGoal(
     const all = Array.from({ length: switchCount }, (_, i) => `S${i + 1} is ${pos(`S${i + 1}`)}`);
     return `${verb} when ${list(all)}`;
   }
-  const on =Object.entries(goal.when)
+  const on = Object.entries(goal.when)
     .filter(([, v]) => v)
     .map(([k]) => k);
   if (switchCount === 1) return `${verb} when the switch is ${on.length ? 'ON' : 'OFF'}`;

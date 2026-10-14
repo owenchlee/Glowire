@@ -11,6 +11,8 @@ Each version is a git tag you can play again (see [Play an old version](#play-an
 | `v0.4-glowtown`    | Day 1 | Oct 8, 2026 | A game layer: town map, story, stars, shop, pets, daily, bosses |
 | `v0.5-open-world`  | Day 2 | Oct 9, 2026 | Landscape pixel-art town you walk around as one hero            |
 | `v0.6-route`       | Day 3 | Oct 13, 2026 | One road with lore, dark gates, World 2, the 3D board is back  |
+| `v0.7-mossbell`    | Day 4 | Oct 13, 2026 | 8-way walking, changeovers and meters, World 3, the Lantern Lady |
+| `v0.8-deep`        | Day 4 | Oct 13, 2026 | Capacitors, World 4 under the sea, a lantern that runs down     |
 
 ---
 
@@ -341,6 +343,70 @@ Driftwood Harbour:
 Mossbell Hollow:
 
 ![Mossbell Hollow map](v0.7/map-mossbell.png)
+
+---
+
+## v0.8 Brightwater Deep
+
+**Day 4 (Oct 13, 2026)** · tag `v0.8-deep`
+
+### What I decided
+
+- **Next: World 4 and capacitors together,** with the flashing sea lights and the end of
+  the mystery arriving at once.
+- **Every world brings a new mechanic:** “yeah each world should introduce a new mechanic.
+  and yes work on the rest of it” (the rest being more diode jobs, more twist puzzles, and a
+  mini-game in every world).
+
+### What got built
+
+- **A new part: the capacitor**, a “jar” for electricity. It fills while the battery is on
+  and empties through the lamp afterwards, so a lamp keeps glowing after you switch it off.
+  The solver now steps through time, and the puzzle board runs live: flip the switch and
+  watch the lamp fade, while the jar shows its charge. Jobs can now be timed (“keep it
+  glowing for 2 to 4 seconds after OFF”, “light it 1 to 3 seconds after ON”), and the goal
+  list shows how long it lasts right now.
+- **Chapter 7 “Jars of Light”:** seven jobs, among them a slow sunrise lamp, two lamps that
+  need diodes to stop their jars sharing, a twist puzzle with jars in it, a camera flash
+  worked by a changeover switch, and a three-round boss against **the Hush**.
+- **World 4, Brightwater Deep:** a sunken town at the bottom of the sea. Glimmer’s bubble
+  takes you down the bottomless well behind Mossbell’s bell tower. There are five areas:
+  the Well’s Bottom, Jar Street, the Coral Nursery, the Wreck of the Marigold, and the
+  Heart Hall. All of its art is drawn in `scripts/deep-art.mjs`: seabed, kelp reefs, coral,
+  jar lamps, air-dome houses, the wreck, a drowned bell, a giant clam and the cracked Heart
+  Jar.
+- **World 4’s own mechanic: your lantern runs down.** It is darker than any night down
+  there. Your light shrinks as your lantern drains, and standing by a lit lamp fills it
+  again. When it runs low, eyes open in the dark around you. When it runs out, something
+  sends you back to the last light. Bubbles drift up all the while.
+- **The mystery, answered.** The Glowire starts at the Heart Jar, which held a hundred years
+  of caught storms. The night Marigold switched her town on, lightning cracked it at 11:52
+  (which is why every clock stops then). Out came Glimmer and Grumble, and a third cloud
+  nobody saw: the Hush, born in the dark, eating light to keep warm. Fill the jar and the
+  crack mends, and the twins find they have a little sister. Along the way: Echo, Bolt’s
+  brass sister, who has photographed the dark for 99 years; the two bells that answer each
+  other (that’s the thirteenth ring); and 16 new secrets and notebook pages 11 and 12. The
+  ending points north, to Stormpeak.
+- **Mini-games in every world:** **Needle Drop** in Mossbell (pick the resistor that puts a
+  meter’s needle on the mark, worked out by the real solver) and **Jar Catch** in the Deep
+  (catch falling sparks, pour your jar into the lamp before it overflows, dodge the dark
+  drops).
+- **More diode jobs, as side jobs** in Driftwood Harbour: **Lamp Test** (a panel with a test
+  switch that lights both lamps) and **Turn It Up** (party lights like a stereo’s bars).
+  Side jobs don’t hold up the road, so saves already past the harbour aren’t blocked.
+
+### What it looked like
+
+![Jar Street](v0.8/jar-street.png)
+![Eyes in the dark when the lantern runs low](v0.8/eyes-in-the-dark.png)
+![A capacitor keeping the lamp lit after OFF](v0.8/capacitor-fading.png)
+![The Hush strikes](v0.8/hush-boss.png)
+![Needle Drop](v0.8/needle-drop.png)
+![Jar Catch](v0.8/jar-catch.png)
+
+Brightwater Deep (lit):
+
+![Brightwater Deep map](v0.8/map-deep.png)
 
 ---
 

@@ -1,6 +1,7 @@
 import {
   type BatteryTile,
   type BlockTile,
+  type CapacitorTile,
   type ChangeoverTile,
   type DiodeTile,
   type MeterTile,
@@ -143,6 +144,11 @@ export const changeover = (up = true, rotation: Rotation = 0): ChangeoverTile =>
 export const meter = (mode: 'A' | 'V' = 'A', rotation: Rotation = 0): MeterTile => ({
   kind: 'meter',
   mode,
+  rotation,
+});
+export const capacitor = (uf: number, rotation: Rotation = 0): CapacitorTile => ({
+  kind: 'capacitor',
+  uf,
   rotation,
 });
 export const resistor = (ohms: number, rotation: Rotation = 0): ResistorTile => ({

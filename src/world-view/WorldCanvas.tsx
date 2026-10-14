@@ -4,7 +4,7 @@
 import { type RefObject, useEffect, useMemo, useRef, useState } from 'react';
 import { StyleSheet } from 'react-native';
 import type { RootState } from '@react-three/fiber';
-import { type BufferGeometry, Color, type Mesh, type OrthographicCamera, type ShaderMaterial, type Texture } from 'three';
+import { type BufferGeometry, Color, type Group, type Mesh, type OrthographicCamera, type ShaderMaterial, type Texture } from 'three';
 
 import { EXTRAS, PEOPLE } from '../world/people.generated';
 import type { Resident, WorldMap } from '../world/types';
@@ -45,6 +45,8 @@ interface Props {
   /** Residents with a speech bubble over their head. */
   bubbles: { who: string; x: number; y: number; kind: (typeof EXTRAS)[number] }[];
   walker: RefObject<Walker>;
+  /** Under the sea: how full the hero's lantern is (0–1). It sets how far their light reaches. */
+  lantern?: RefObject<number>;
   /** The hero's sprite (an outfit). */
   hero?: string;
   /** The pet trotting along behind the hero, if one is equipped. */
@@ -98,6 +100,7 @@ function Scene({
   hero = 'hero',
   sparkles = [],
   ghosts = [],
+  lantern,
 }: Props & { sheets: { city: Texture; people: Texture } }) {
   const fogTexture = useMemo(() => createFog(map.width, map.height), [map]);
   const lighting = useMemo(() => createLighting(map.night ?? '#6a74ad', fogTexture), [fogTexture, map.night]);
@@ -178,7 +181,7 @@ function Scene({
     driftFog(fogNow, fog, fogTexture, delta);
     const flicker = 0.75 + 0.25 * Math.sin(state.clock.elapsedTime * 13) * Math.sin(state.clock.elapsedTime * 3.1);
     const all = ghostLights.length ? [...ghostLights.map((l) => ({ ...l, r: l.r * flicker })), ...lights] : lights;
-    onView(frame(state, walkerPosition(walker.current), map, all, lighting));
+    onView(frame(state, walkerPosition(walker.current), map, all, lighting, map.underwater ? (lantern?.current ?? 1) : null));
   });
 
   return (
@@ -199,7 +202,84 @@ function Scene({
       {bubbles.map((b) => (
         <Bubble key={`${b.who}@${b.x},${b.y}`} {...b} sheet={peopleSheet} material={people} />
       ))}
+      {map.underwater && <SeaBubbles sheet={peopleSheet} material={people} />}
+      {map.underwater && lantern && <DarkEyes walker={walker} lantern={lantern} sheet={peopleSheet} material={people} />}
     </>
+  );
+}
+
+/** Bubbles drifting up from the seabed all round the camera, wobbling as they go. */
+function SeaBubbles({ sheet, material }: { sheet: Sheet; material: ShaderMaterial }) {
+  const g = useQuad(sheet, EXTRAS.indexOf('bubble') * T, 112, T, T, 0.5, 0.5);
+  const group = useRef<Group>(null);
+  const seeds = useMemo(() => Array.from({ length: 28 }, (_, i) => ({ x: (i * 7.31) % 1, y: (i * 3.77) % 1, speed: 0.6 + ((i * 0.37) % 1) * 0.9, size: 0.5 + ((i * 0.53) % 1) * 0.7 })), []);
+  useFrame((state) => {
+    const grp = group.current;
+    if (!grp) return;
+    const cam = state.camera;
+    const t = state.clock.elapsedTime;
+    const w = state.size.width / (cam as OrthographicCamera).zoom + 2;
+    const h = state.size.height / (cam as OrthographicCamera).zoom + 2;
+    // Each bubble has a place in the world and rises from it; seen through a screen-sized
+    // window that wraps, so they stay put as the camera moves and never run out.
+    const wrap = (v: number, lo: number, span: number) => lo + ((((v - lo) % span) + span) % span);
+    grp.children.forEach((child, i) => {
+      const s = seeds[i]!;
+      const x = wrap(s.x * w * 3, cam.position.x - w / 2, w);
+      const y = wrap(s.y * h * 3 + t * s.speed, cam.position.y - h / 2, h);
+      child.position.set(x + Math.sin(t * 2 + i) * 0.15, y, 4);
+      child.scale.setScalar(s.size);
+    });
+  });
+  return (
+    <group ref={group}>
+      {seeds.map((_, i) => (
+        <mesh key={i} geometry={g} material={material} />
+      ))}
+    </group>
+  );
+}
+
+/**
+ * When the hero's lantern runs low, eyes open in the dark around them, blinking, a little
+ * closer the lower it gets. They're gone the moment the light comes back.
+ */
+function DarkEyes({
+  walker,
+  lantern,
+  sheet,
+  material,
+}: {
+  walker: RefObject<Walker>;
+  lantern: RefObject<number>;
+  sheet: Sheet;
+  material: ShaderMaterial;
+}) {
+  const g = useQuad(sheet, EXTRAS.indexOf('eyes') * T, 112, T, T);
+  const group = useRef<Group>(null);
+  const spots = useMemo(() => [0.4, 2.1, 3.4, 4.9, 5.8].map((a, i) => ({ a, r: 3.6 + (i % 2) * 0.8, blink: 1.3 + i * 0.7 })), []);
+  useFrame(({ clock }) => {
+    const grp = group.current;
+    if (!grp) return;
+    const low = lantern.current ?? 1;
+    const p = walkerPosition(walker.current);
+    const t = clock.elapsedTime;
+    grp.children.forEach((child, i) => {
+      const s = spots[i]!;
+      // More of them, the darker it gets.
+      const show = low < 0.3 && i < Math.ceil((0.3 - low) / 0.06);
+      const open = Math.sin(t * s.blink + i) > -0.85;
+      child.visible = show && open;
+      const r = s.r - (0.3 - low) * 4;
+      child.position.set(p.x + Math.cos(s.a + t * 0.05) * r, -p.y + Math.sin(s.a + t * 0.05) * r * 0.7, 4);
+    });
+  });
+  return (
+    <group ref={group}>
+      {spots.map((_, i) => (
+        <mesh key={i} geometry={g} material={material} visible={false} />
+      ))}
+    </group>
   );
 }
 
@@ -238,6 +318,8 @@ function frame(
   map: WorldMap,
   lights: Lit[],
   lighting: Lighting,
+  /** Under the sea: the hero's lantern (0–1). Null on land, where they carry a steady glow. */
+  lantern: number | null,
 ): View {
   const camera = state.camera as OrthographicCamera;
   const { size } = state;
@@ -270,8 +352,15 @@ function frame(
     .slice(0, MAX_LIGHTS - 1);
   const u = lighting.uLights.value;
   const uc = lighting.uLightColors.value;
-  u[0]!.set(hero.x + 0.5, -hero.y - 0.4, 2.8, 1);
-  uc[0]!.set(0.32, 0.36, 0.48);
+  if (lantern === null) {
+    u[0]!.set(hero.x + 0.5, -hero.y - 0.4, 2.8, 1);
+    uc[0]!.set(0.32, 0.36, 0.48);
+  } else {
+    // A warm lantern whose light shrinks as it runs down (and flickers when nearly out).
+    const flicker = lantern < 0.25 ? 0.85 + 0.15 * Math.sin(state.clock.elapsedTime * 23) : 1;
+    u[0]!.set(hero.x + 0.5, -hero.y - 0.4, (1.1 + 3.4 * lantern) * flicker, 1);
+    uc[0]!.set(0.62, 0.52, 0.32);
+  }
   near.forEach(({ l }, i) => {
     u[i + 1]!.set(l.x, l.y, l.r, 1);
     uc[i + 1]!.set(l.color[0], l.color[1], l.color[2]);

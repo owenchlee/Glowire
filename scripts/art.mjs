@@ -14,6 +14,7 @@ import { PNG } from 'pngjs';
 
 import { blobTable } from './autotile.mjs';
 import { circuitSheet } from './circuit-art.mjs';
+import { deepExtras, deepSheet } from './deep-art.mjs';
 import { townSheet } from './town-art.mjs';
 
 const SRC = 'art/source';
@@ -104,6 +105,7 @@ const SHEETS = [
   { id: 'abandoned', file: 'TilesetVillageAbandoned.png' },
   { id: 'towers', file: 'TilesetTowers.png' },
   { id: 'town', file: null, make: townSheet },
+  { id: 'deep', file: null, make: deepSheet },
 ];
 
 /** Doorways in the village houses: their dark openings glow warm once the house is lit. */
@@ -256,6 +258,11 @@ const CAST_SPRITES = {
   moth: 'Villager',
   glimmer: 'Spirit',
   marigold: 'EggGirl',
+  pearl: 'Cavegirl',
+  marlo: 'Monk',
+  tess: 'Woman',
+  echo: 'RobotGrey',
+  hush: 'Spirit',
 };
 
 /**
@@ -300,8 +307,8 @@ const PIP_RECOLOUR = {
 };
 
 /**
- * Mossbell Hollow's people are village-pack characters in new colours, so nobody looks
- * like someone from another world: Hazel grey-haired in moss green, Bram in a ferryman's teal coat,
+ * Mossbell Hollow's (and Brightwater Deep's) people are village-pack characters in new
+ * colours, so nobody looks like someone from another world: Hazel grey-haired in moss green, Bram in a ferryman's teal coat,
  * Moth in a plum hoodie, and Glimmer, the lantern spirit, in gold (Grumble's sprite is the
  * same spirit in storm blue: they're twins).
  */
@@ -310,6 +317,14 @@ const CAST_RECOLOUR = {
   bram: { d14b34: '61372e', '8f3e56': '3b3643', '4a5270': '2d697b' },
   moth: { d14b34: 'a5608b', '548789': '3b3643', '4e484a': '61372e' },
   glimmer: { '79b8ce': 'ffe166', '9ba7aa': 'f1ae41' },
+  // Brightwater Deep: Pearl with sea-foam hair in a teal diving suit, Old Marlo in the
+  // Jar-Keeper's navy and gold, Tess in coral and kelp, Echo in brass, and the Hush: the same
+  // spirit as Grumble and Glimmer, gone ink-dark with a violet glow.
+  pearl: { '56864c': '3da6bd', '345a52': '2d697b', d14b34: 'e3f1f5' },
+  marlo: { '3b3643': '34406e', '4e484a': '2d697b', d14b34: 'f1ae41' },
+  tess: { '548789': '74a334', '79b8ce': 'adbc3a', f1c471: 'e66a3a', d78b4a: 'd14b34' },
+  echo: { '8d977f': 'd2b37d', '5f7160': 'a3754e', f2eaf1: 'ffe166', e0394c: '71ddee' },
+  hush: { '79b8ce': '3b3643', '9ba7aa': '2e2b30', ffffff: '9a6ad6' },
 };
 
 /** Swap colours. `fromRow`: leave rows above it alone (a portrait's face shares shirt colours). */
@@ -396,7 +411,19 @@ function characters() {
     extras.push(read(join(NINJA, 'ui', 'Emote', `emote${file}.png`)));
     emoteNames.push(name);
   }
-  extras.forEach((img, i) => blit(atlas, img, i * 16 + Math.floor((16 - img.width) / 2), 112 + 16 - img.height));
+  // Drawn ones (deep-art.mjs): eyes in the dark, and bubbles. Glowing pixels keep alpha 254.
+  for (const [name, img] of Object.entries(deepExtras())) {
+    extras.push(img);
+    emoteNames.push(name);
+  }
+  extras.forEach((img, i) => {
+    const dx = i * 16 + Math.floor((16 - img.width) / 2);
+    const dy = 112 + 16 - img.height;
+    blit(atlas, img, dx, dy);
+    // blit makes every pixel solid; put the glow marks back.
+    for (let y = 0; y < img.height; y++)
+      for (let x = 0; x < img.width; x++) if (img.data[(y * img.width + x) * 4 + 3] === 254) atlas.data[((dy + y) * atlas.width + dx + x) * 4 + 3] = 254;
+  });
   write(join(OUT, 'people.png'), atlas);
 
   // Overwrite portraits in place and only remove ones nobody uses any more: deleting the

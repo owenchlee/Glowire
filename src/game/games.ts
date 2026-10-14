@@ -4,8 +4,15 @@
 //   and pick its value. Real electricians do this every day.
 // - Signal Lamp (Old Gus's lighthouse): the lamp flashes a pattern of colours; flash it
 //   back. Each round adds one more flash.
+// - Needle Drop (Moth's old schoolroom, Mossbell): a meter, a battery and a lamp. Which
+//   resistor puts the needle where it should be? Real circuits, worked out by the solver.
+// - Jar Catch (Pearl's porch, Brightwater): lightning falls; catch it in your jar and pour
+//   it into the lamp before the jar overflows. Mind the dark drops: they drink your jar dry.
 
-export type GameId = 'colours' | 'signal';
+import { LED_MODELS, parseBoard, simulate } from '../engine';
+import type { GameSpot } from '../world/types';
+
+export type GameId = GameSpot;
 
 export interface GameInfo {
   id: GameId;
@@ -27,6 +34,18 @@ export const GAMES: Record<GameId, GameInfo> = {
     title: 'Signal Lamp',
     host: 'gus',
     how: 'Watch the lighthouse flash its colours, then flash them back in the same order. Every round, one more flash. How long can you keep up?',
+  },
+  needle: {
+    id: 'needle',
+    title: 'Needle Drop',
+    host: 'moth',
+    how: 'Grandpa’s old meter game! A battery, a lamp, and a meter. Pick the resistor that puts the needle where it’s asked. Bigger resistor, less current. Quick answers score double.',
+  },
+  jars: {
+    id: 'jars',
+    title: 'Jar Catch',
+    host: 'pearl',
+    how: 'Catch the falling sparks in your jar, then POUR it into the lamp before it overflows. A full jar holds five. Dodge the dark drops: they drink your jar dry!',
   },
 };
 
@@ -139,3 +158,88 @@ export function flashMs(length: number): number {
 
 /** A pattern this long gets an answer from far out at sea (a secret: see lore.ts). */
 export const SEA_ANSWERS_AT = 7;
+
+// ── Needle Drop ──────────────────────────────────────────────────────────────
+
+export const NEEDLE_RESISTORS = [100, 220, 470, 1000] as const;
+export type LampColour = keyof typeof LED_MODELS;
+
+export interface NeedleQuestion {
+  volts: number;
+  lamp: LampColour;
+  /** Milliamps the meter reads with each resistor, worked out by the circuit solver. */
+  readings: Record<number, number>;
+  /** The resistor that's right… */
+  ohms: number;
+  /** …and the reading asked for (rounded, as the meter shows it). */
+  target: number;
+}
+
+const readingCache = new Map<string, number>();
+
+/** What the meter reads: a battery, a resistor, a lamp and an ammeter in one loop. */
+export function needleReading(volts: number, ohms: number, lamp: LampColour): number {
+  const key = `${volts}/${ohms}/${lamp}`;
+  let mA = readingCache.get(key);
+  if (mA === undefined) {
+    const led = { red: 'L>', green: 'Lg>', blue: 'Lb>' }[lamp];
+    const result = simulate(parseBoard([`┌ B${volts === 3 ? '' : volts}< R${ohms} ┐`, `└ ${led}  MA   ┘`]));
+    const meter = result.tiles.find((t) => t?.kind === 'meter');
+    mA = Math.round(Math.abs(meter?.current ?? 0) * 10000) / 10;
+    readingCache.set(key, mA);
+  }
+  return mA;
+}
+
+/**
+ * Question `round` (0-based): a battery and a lamp, and a reading to hit. Early rounds are
+ * one battery and a red lamp; later ones bring in more volts and fussier colours. Only
+ * setups where every resistor gives a different, safe reading are asked.
+ */
+export function needleQuestion(round: number, random: () => number): NeedleQuestion {
+  const pick = <T>(list: readonly T[]) => list[Math.floor(random() * list.length)]!;
+  for (let guard = 0; ; guard++) {
+    const volts = round < 3 ? 3 : pick([3, 6, 6, 9]);
+    const lamp: LampColour = round < 3 ? 'red' : pick(['red', 'red', 'green', 'blue']);
+    const readings: Record<number, number> = {};
+    for (const r of NEEDLE_RESISTORS) readings[r] = needleReading(volts, r, lamp);
+    const values = Object.values(readings);
+    const distinct = new Set(values.map((v) => Math.round(v))).size === values.length;
+    const safe = values.every((v) => v < LED_MODELS[lamp].maxCurrent * 1000 && v > 0.3);
+    if ((distinct && safe) || guard > 40) {
+      const usable = NEEDLE_RESISTORS.filter((r) => readings[r]! < LED_MODELS[lamp].maxCurrent * 1000);
+      const ohms = pick(usable.length ? usable : NEEDLE_RESISTORS);
+      return { volts, lamp, readings, ohms, target: readings[ohms]! };
+    }
+  }
+}
+
+/** Seconds per Needle Drop question, and questions in a game. */
+export const NEEDLE_TIME = 15;
+export const NEEDLE_ROUNDS = 10;
+
+// ── Jar Catch ────────────────────────────────────────────────────────────────
+
+/** Seconds in a game of Jar Catch, and sparks a full jar holds. */
+export const JAR_SECONDS = 45;
+export const JAR_SIZE = 5;
+
+export interface Drop {
+  /** Across the play area, 0 (left) to 1 (right). */
+  x: number;
+  /** Down the play area, 0 (top) to 1 (bottom). */
+  y: number;
+  /** A spark of lightning, or a drop of the dark. */
+  dark: boolean;
+  /** Play-area heights per second. */
+  speed: number;
+}
+
+/** The next thing to fall, `t` seconds into the game: faster, and more often dark, as it goes on. */
+export function nextDrop(t: number, random: () => number): Drop {
+  const dark = t > 8 && random() < Math.min(0.35, 0.12 + t / 150);
+  return { x: 0.06 + random() * 0.88, y: -0.05, dark, speed: 0.32 + t / 120 + random() * 0.12 };
+}
+
+/** Seconds between drops, `t` seconds in. */
+export const dropGap = (t: number) => Math.max(0.32, 0.75 - t / 90);

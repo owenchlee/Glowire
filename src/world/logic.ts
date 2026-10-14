@@ -32,10 +32,13 @@ export function openAreas(map: WorldMap, solved: Solved): number {
   return n;
 }
 
-/** The area a job belongs to (index), or -1. */
+/** The area a job belongs to (index), side jobs included, or -1. */
 export function areaOfJob(map: WorldMap, job: number): number {
-  return map.areas.findIndex((a) => a.jobs.includes(job));
+  return map.areas.findIndex((a) => a.jobs.includes(job) || !!a.side?.includes(job));
 }
+
+/** Every job in an area: the ones that open the road, then its side jobs. */
+export const allJobs = (area: Area) => [...area.jobs, ...(area.side ?? [])];
 
 /** A job can be started once you've reached its area. Jobs within an area go in any order. */
 export function jobOpen(map: WorldMap, job: number, solved: Solved): boolean {

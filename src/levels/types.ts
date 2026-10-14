@@ -1,5 +1,16 @@
 export type PartKey =
-  'led' | 'ledGreen' | 'ledBlue' | 'battery' | 'r100' | 'r220' | 'r470' | 'r1000' | 'diode';
+  | 'led'
+  | 'ledGreen'
+  | 'ledBlue'
+  | 'battery'
+  | 'r100'
+  | 'r220'
+  | 'r470'
+  | 'r1000'
+  | 'diode'
+  | 'c1000'
+  | 'c2200'
+  | 'c4700';
 
 /** Brightness bands, as fractions of full (20 mA) LED brightness. */
 export const BRIGHTNESS = {
@@ -24,7 +35,17 @@ export type Goal =
   /** Free builds: at least `count` LEDs on the board (placed ones too), every one lit. */
   | { kind: 'all'; count: number; brightness?: Brightness; when?: SwitchStates }
   /** A meter's reading lands between min and max: milliamps (ammeter) or volts (voltmeter). */
-  | { kind: 'meter'; meter: string; min: number; max: number; when?: SwitchStates };
+  | { kind: 'meter'; meter: string; min: number; max: number; when?: SwitchStates }
+  /**
+   * Capacitors: with `switch` ON (a changeover UP) for a long time, then turned OFF (DOWN),
+   * the LED keeps glowing for `min` to `max` seconds. Other switches as in `when`.
+   */
+  | { kind: 'hold'; led: string; switch: string; min: number; max?: number; when?: SwitchStates }
+  /** Capacitors: with `switch` OFF for a long time, then ON, the LED lights after `min` to `max` seconds. */
+  | { kind: 'delay'; led: string; switch: string; min: number; max: number; when?: SwitchStates };
+
+/** Goals that time a lamp as a switch changes. */
+export type TimedGoal = Extract<Goal, { kind: 'hold' | 'delay' }>;
 
 /**
  * Extra challenges for the second and third star (the first star is solving the job).
@@ -57,7 +78,7 @@ export type Sabotage =
   | { op: 'scramble'; seed: number };
 
 export interface Phase {
-  /** What Grumble says as he strikes. */
+  /** What Grumble (or the level's villain) says as they strike. */
   grumble: string;
   sabotage: Sabotage[];
   intro: string;
@@ -114,6 +135,8 @@ export interface LevelDef {
   job?: Job;
   /** A Grumble sabotage at the end of a district: harder, and pays double. */
   boss?: boolean;
+  /** Who does the sabotage between boss phases (a cast id): Grumble unless it says otherwise. */
+  villain?: string;
   /**
    * Boss fights: after the first goals are met, Grumble sabotages the board and sets new
    * goals, once per phase. The level's own goals, intro and solution are phase one.

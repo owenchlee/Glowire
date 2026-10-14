@@ -106,6 +106,7 @@ function lighthouse(b: MapBuilder) {
       id: 'point',
       name: 'Lighthouse Point',
       jobs: [21, 23],
+      side: [54],
       intro: 'lighthouse-intro',
       outro: 'lighthouse-outro',
       entry: { x: 40, y: 25, facing: 'right' },
@@ -138,6 +139,10 @@ function lighthouse(b: MapBuilder) {
   b.treeLine(38, 62, 'top', 14, ['pine', 'bigGreen', 'round']);
   rocks(b, [[44, 34], [56, 33], [55, 37], [45, 38], [58, 30]]);
   b.lamp(42, 23, 'area:point', 'post');
+  // Side job: Gus's control panel lamps, on a post by the path (job 54).
+  b.lamp(54, 24, 'job:54', 'twin');
+  b.spots.push({ kind: 'job', x: 54, y: 24, job: 54 });
+  b.resident('gus', 53, 25, 'right', { job: 54 });
   b.secret({ id: 'sea-lamps', x: 50, y: 35 });
   b.sighting({ id: 'cliff-lantern', who: 'glimmer', x: 58, y: 21 });
   b.lamp(57, 25, 'area:point', 'post');
@@ -150,6 +155,7 @@ function ferryPier(b: MapBuilder) {
       id: 'pier',
       name: 'Ferry Pier',
       jobs: [22, 24, 36],
+      side: [55],
       intro: 'pier-intro',
       outro: 'pier-outro',
       entry: { x: 64, y: 25, facing: 'right' },
@@ -177,6 +183,10 @@ function ferryPier(b: MapBuilder) {
   b.lamp(76, 26, 'job:36', 'post');
   b.spots.push({ kind: 'job', x: 76, y: 26, job: 36 });
   b.resident('sal', 75, 26, 'right', { job: 36 });
+  // Side job: Sal's party lights that go with the music (job 55).
+  b.lamp(71, 23, 'job:55', 'park');
+  b.spots.push({ kind: 'job', x: 71, y: 23, job: 55 });
+  b.resident('sal', 70, 24, 'right', { job: 55 });
 }
 
 // ── H4: Warehouse Row ────────────────────────────────────────────────────────

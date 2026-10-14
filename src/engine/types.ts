@@ -88,6 +88,16 @@ export interface MeterTile extends TileBase {
   mode: 'A' | 'V';
 }
 
+/**
+ * A capacitor: a little tank that fills up with charge. It blocks steady current like a gap,
+ * but while it fills or empties current flows, so it can keep a lamp glowing after the
+ * battery is switched off. `uf` is its size in microfarads.
+ */
+export interface CapacitorTile extends TileBase {
+  kind: 'capacitor';
+  uf: number;
+}
+
 export type Tile =
   | WireTile
   | BlockTile
@@ -97,9 +107,11 @@ export type Tile =
   | SwitchTile
   | DiodeTile
   | ChangeoverTile
-  | MeterTile;
+  | MeterTile
+  | CapacitorTile;
 /** Parts with a + and a − terminal on opposite sides. */
-export type TwoTerminalTile = ResistorTile | LedTile | BatteryTile | SwitchTile | DiodeTile | MeterTile;
+export type TwoTerminalTile =
+  ResistorTile | LedTile | BatteryTile | SwitchTile | DiodeTile | MeterTile | CapacitorTile;
 export type TileKind = Tile['kind'];
 
 /** A rectangular grid. Cell (x, y) lives at index y * width + x; y grows towards S. */

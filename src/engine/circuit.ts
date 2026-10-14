@@ -12,6 +12,7 @@
 //   switch          + ──R── −   (wire resistance when closed, 1 GΩ when open)
 //   changeover      common ──R── centre, centre ──R── each throw (closed one ≈ 0, open one 1 GΩ)
 //   meter           + ──R── −   (ammeter ≈ 0 Ω, voltmeter 1 GΩ)
+//   capacitor       + ──C── −   (a gap once settled; see mna.ts for how it fills over time)
 //   block           nothing
 
 import {
@@ -38,7 +39,9 @@ export interface DiodeModel {
 export type Element =
   | { type: 'R'; a: number; b: number; ohms: number; cell: number }
   | { type: 'V'; a: number; b: number; volts: number; cell: number }
-  | { type: 'D'; a: number; b: number; model: DiodeModel; cell: number };
+  | { type: 'D'; a: number; b: number; model: DiodeModel; cell: number }
+  /** A capacitor; `a` is its + end. */
+  | { type: 'C'; a: number; b: number; farads: number; cell: number };
 
 /** Which element terminal sits on each tile port, so results can be mapped back to tiles. */
 export interface PortRef {
@@ -172,6 +175,10 @@ export function buildCircuit(board: Board): Circuit {
               ? WIRE_RESISTANCE
               : OPEN_SWITCH_RESISTANCE;
       const e = add({ type: 'R', a: p, b: m, ohms, cell });
+      port(cell, plus, e, 'a');
+      port(cell, minus, e, 'b');
+    } else if (tile.kind === 'capacitor') {
+      const e = add({ type: 'C', a: p, b: m, farads: tile.uf * 1e-6, cell });
       port(cell, plus, e, 'a');
       port(cell, minus, e, 'b');
     } else if (tile.kind === 'led' || tile.kind === 'diode') {

@@ -9,7 +9,7 @@
 //              the guess stops moving: Newton–Raphson.
 
 import type { Circuit, DiodeModel } from './circuit';
-import { GMIN } from './constants';
+import { GMIN, OPEN_SWITCH_RESISTANCE } from './constants';
 import { solveLinear } from './linear';
 
 export interface NetlistSolution {
@@ -69,8 +69,23 @@ export function limitJunctionStep(vNew: number, vOld: number, d: DiodeModel): nu
   return vNew;
 }
 
-export function solveNetlist(circuit: Circuit): NetlistSolution {
+/**
+ * One step forward in time, for circuits with capacitors. Without it the circuit is solved
+ * as it ends up once everything has settled, when a capacitor is just a gap.
+ */
+export interface TimeStep {
+  /** Seconds since the last step. */
+  dt: number;
+  /** Each capacitor's voltage (+ end minus − end) at the last step, by board cell. */
+  charges: Readonly<Record<number, number>>;
+}
+
+export function solveNetlist(circuit: Circuit, step?: TimeStep): NetlistSolution {
   const { nodeCount, elements } = circuit;
+  // A capacitor over one time step (backward Euler): a conductance C/dt, plus a current
+  // source that keeps pushing with the charge it already holds.
+  const capG = (el: { farads: number }) => (step ? el.farads / step.dt : 1 / OPEN_SWITCH_RESISTANCE);
+  const charge = (el: { cell: number }) => (step ? (step.charges[el.cell] ?? 0) : 0);
   const voltages = new Float64Array(nodeCount);
   const currents = new Float64Array(elements.length);
   const powered = new Uint8Array(nodeCount);
@@ -96,8 +111,9 @@ export function solveNetlist(circuit: Circuit): NetlistSolution {
     for (const n of [el.a, el.b]) if (--degree[n]! === 1) leaves.push(n);
   }
 
-  // 2. Find connected circuits among what's left; only those with a battery get solved.
-  //    Each one is grounded at the − node of its first battery.
+  // 2. Find connected circuits among what's left; only those with a battery (or, stepping
+  //    through time, a capacitor that may hold charge) get solved. Each one is grounded at
+  //    the − node of its first battery, else of its first capacitor.
   const parent = Array.from({ length: nodeCount }, (_, i) => i);
   const find = (k: number): number => {
     while (parent[k] !== k) k = parent[k] = parent[parent[k]!]!;
@@ -110,6 +126,10 @@ export function solveNetlist(circuit: Circuit): NetlistSolution {
   elements.forEach((el, i) => {
     if (active[i] && el.type === 'V' && !groundOf.has(find(el.a))) groundOf.set(find(el.a), el.b);
   });
+  if (step)
+    elements.forEach((el, i) => {
+      if (active[i] && el.type === 'C' && !groundOf.has(find(el.a))) groundOf.set(find(el.a), el.b);
+    });
 
   // Matrix index for every powered, non-ground node; then one row per voltage source.
   const index = new Int32Array(nodeCount).fill(-1);
@@ -159,6 +179,11 @@ export function solveNetlist(circuit: Circuit): NetlistSolution {
     elements.forEach((el, i) => {
       if (!active[i] || !powered[el.a]) return;
       if (el.type === 'R') stampG(el.a, el.b, 1 / el.ohms);
+      if (el.type === 'C') {
+        const g = capG(el);
+        stampG(el.a, el.b, g);
+        stampI(el.a, el.b, -g * charge(el));
+      }
     });
     sources.forEach((s, k) => {
       const el = elements[s]!;
@@ -181,6 +206,7 @@ export function solveNetlist(circuit: Circuit): NetlistSolution {
     elements.forEach((el, i) => {
       if (!active[i] || !powered[el.a]) return;
       if (el.type === 'R') currents[i] = (V(el.a, z) - V(el.b, z)) / el.ohms;
+      if (el.type === 'C') currents[i] = capG(el) * (V(el.a, z) - V(el.b, z) - charge(el));
     });
     sources.forEach((s, k) => (currents[s] = z[n + k]!));
 
@@ -204,12 +230,13 @@ export function solveNetlist(circuit: Circuit): NetlistSolution {
   for (let node = 0; node < nodeCount; node++) voltages[node] = V(node, z);
 
   // 4. Pruned elements carry no current, so the voltage across them is 0 (or the EMF
-  //    for a battery's source). Walk back out to the leaves to give them voltages.
+  //    for a battery's source, or the charge a capacitor still holds). Walk back out to
+  //    the leaves to give them voltages.
   for (let k = pruned.length - 1; k >= 0; k--) {
     const { element, leaf } = pruned[k]!;
     const el = elements[element]!;
     currents[element] = 0;
-    const emf = el.type === 'V' ? el.volts : 0;
+    const emf = el.type === 'V' ? el.volts : el.type === 'C' ? charge(el) : 0;
     voltages[leaf] = leaf === el.a ? voltages[el.b]! + emf : voltages[el.a]! - emf;
   }
 

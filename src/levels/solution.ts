@@ -38,11 +38,13 @@ export function sameJob(a: Tile | null | undefined, b: Tile | null | undefined):
   if (a.kind === 'led' && b.kind === 'led' && a.color !== b.color) return false;
   if (a.kind === 'battery' && b.kind === 'battery' && a.volts !== b.volts) return false;
   if (a.kind === 'meter' && b.kind === 'meter' && a.mode !== b.mode) return false;
+  if (a.kind === 'capacitor' && b.kind === 'capacitor' && a.uf !== b.uf) return false;
   // A changeover's position is the player's to flip, but which side is common matters.
   if (a.kind === 'changeover' && b.kind === 'changeover') return a.rotation === b.rotation;
   if (!isTwoTerminal(a) || !isTwoTerminal(b)) return false;
-  // Resistors, switches and meters work either way round; LEDs and batteries don't.
-  if (a.kind === 'resistor' || a.kind === 'switch' || a.kind === 'meter') return portKey(a) === portKey(b);
+  // Resistors, switches, meters and capacitors work either way round; LEDs and batteries don't.
+  if (a.kind === 'resistor' || a.kind === 'switch' || a.kind === 'meter' || a.kind === 'capacitor')
+    return portKey(a) === portKey(b);
   const [pa, ma] = getTerminals(a);
   const [pb, mb] = getTerminals(b);
   return pa === pb && ma === mb;

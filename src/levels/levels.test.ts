@@ -73,7 +73,7 @@ describe('levels', () => {
   });
 
   it('numbers levels within their chapter and links them in order', () => {
-    expect(CHAPTERS.map((c) => c.id)).toEqual([1, 2, 3, 4, 5, 6]);
+    expect(CHAPTERS.map((c) => c.id)).toEqual([1, 2, 3, 4, 5, 6, 7]);
     expect(levelNumber(1)).toBe('1-1');
     expect(levelNumber(11)).toBe('2-1');
     expect(nextLevel(10)?.id).toBe(32); // the Maple Street boss
@@ -447,6 +447,20 @@ describe('diodes', () => {
   });
 });
 
+describe('diode side jobs', () => {
+  it('Lamp Test: plain wires let each lamp’s switch light the other', () => {
+    const wired = getLevel(54)!.solution!.map((r) => r.replace('D^', '│ ').replace('Dv', '│ '));
+    expect(check(54, wired).goals.map((g) => g.met)).toEqual([false, false, true, true]);
+  });
+
+  it('Turn It Up: diodes pointing down turn the bar graph upside down', () => {
+    const down = getLevel(55)!.solution!.map((r) => r.replaceAll('D^', 'Dv'));
+    expect(check(55, down).complete).toBe(false);
+    const wired = getLevel(55)!.solution!.map((r) => r.replaceAll('D^', '│ '));
+    expect(check(55, wired).goals[0]!.met).toBe(false);
+  });
+});
+
 describe('changeover switches (chapter 5)', () => {
   it('the staircase needs both travellers', () => {
     // Cut the top traveller: one combination of the switches can no longer reach the lamp.
@@ -478,6 +492,60 @@ describe('changeover switches (chapter 5)', () => {
     const level = getLevel(39)!;
     expect(describeGoal(level.goals[0]!, ledNamesFor(level), 2, goalWordsFor(level))).toBe(
       'Light the LED when S1 is UP and S2 is DOWN',
+    );
+  });
+});
+
+describe('capacitors (chapter 7)', () => {
+  const swap = (id: number, from: string, to: string) => getLevel(id)!.solution!.map((r) => r.replace(from, to));
+
+  it('Light in a Jar: the small jar empties too fast; no jar at all goes dark at once', () => {
+    expect(check(47, swap(47, 'C4700v', 'C1000v')).complete).toBe(false);
+    const noJar = check(47, swap(47, 'C4700v', '.     '));
+    expect(noJar.goals.map((g) => g.met)).toEqual([true, false]);
+    expect(noJar.goals[1]!.seconds).toBeLessThan(0.1);
+  });
+
+  it('Longer, Please: 100 Ω is too bright and too short, 470 Ω too dim', () => {
+    expect(check(48, swap(48, 'R220', 'R100')).goals.map((g) => g.met)).toEqual([false, false]);
+    expect(check(48, swap(48, 'R220', 'R470')).goals[0]!.met).toBe(false);
+  });
+
+  it('Sunrise: 470 Ω fills the jar too fast; without a jar it snaps on', () => {
+    expect(check(49, swap(49, 'R1000', 'R470 ')).complete).toBe(false);
+    const snap = check(49, swap(49, 'C4700v', '.     '));
+    expect(snap.goals[1]!.seconds).toBeLessThan(0.1);
+  });
+
+  it('Two Timers: plain wires let the jars share; swapped jars swap the times', () => {
+    const shared = check(50, getLevel(50)!.solution!.map((r) => r.replaceAll('Dv', '│ ')));
+    // Sharing, both glow the same in-between time: too long for A, too short for B.
+    expect(shared.goals.map((g) => g.met)).toEqual([true, false, false]);
+    expect(shared.goals[1]!.seconds).toBeGreaterThan(1.5);
+    expect(shared.goals[2]!.seconds).toBeLessThan(3);
+    const swapped = check(
+      50,
+      getLevel(50)!.solution!.map((r) => r.replace('C1000v', 'CXv').replace('C4700v', 'C1000v').replace('CXv', 'C4700v')),
+    );
+    expect(swapped.complete).toBe(false);
+  });
+
+  it('Flash!: the other resistor misses the two seconds', () => {
+    expect(check(52, swap(52, 'R100', 'R220')).complete).toBe(false);
+  });
+
+  it('describes timed goals', () => {
+    const l47 = getLevel(47)!;
+    expect(describeGoal(l47.goals[1]!, ledNamesFor(l47), 1, goalWordsFor(l47))).toBe(
+      'After the switch goes OFF, keep the LED glowing for at least 1.5 s',
+    );
+    const l49 = getLevel(49)!;
+    expect(describeGoal(l49.goals[1]!, ledNamesFor(l49), 1, goalWordsFor(l49))).toBe(
+      'After the switch goes ON, light the LED 1–3 s later',
+    );
+    const l52 = getLevel(52)!;
+    expect(describeGoal(l52.goals[1]!, ledNamesFor(l52), 1, goalWordsFor(l52))).toBe(
+      'After the switch flips DOWN, keep the LED glowing for 1.8–2.6 s',
     );
   });
 });

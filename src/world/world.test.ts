@@ -4,6 +4,7 @@ import { CAST } from '../game/cast';
 import { NOTES, SCENES } from '../game/story';
 import { CHAPTERS } from '../levels/levels';
 import {
+  allJobs,
   blockedCells,
   findPath,
   fogMask,
@@ -27,7 +28,7 @@ for (const info of WORLDS.filter((w) => w.build)) {
     };
 
     it('puts every job of its chapters in exactly one area, with a door, a client and a light', () => {
-      expect([...map.areas.flatMap((a) => a.jobs)].sort((a, b) => a - b)).toEqual([...jobs].sort((a, b) => a - b));
+      expect([...map.areas.flatMap(allJobs)].sort((a, b) => a - b)).toEqual([...jobs].sort((a, b) => a - b));
       for (const id of jobs) {
         expect(map.spots.some((s) => s.kind === 'job' && s.job === id), `spot for job ${id}`).toBe(true);
         expect(map.residents.some((r) => r.job === id), `client for job ${id}`).toBe(true);
@@ -87,7 +88,7 @@ for (const info of WORLDS.filter((w) => w.build)) {
         }
         // Jobs open exactly when their area does.
         for (const [i, area] of map.areas.entries())
-          for (const j of area.jobs) expect(jobOpen(map, j, solved), `job ${j} after ${k}`).toBe(i < open || solved(j));
+          for (const j of allJobs(area)) expect(jobOpen(map, j, solved), `job ${j} after ${k}`).toBe(i < open || solved(j));
       }
     });
 

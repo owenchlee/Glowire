@@ -1,14 +1,18 @@
 // Board in, per-tile physics results out.
 
 import { buildCircuit } from './circuit';
-import { DIODE_MODEL, CURRENT_EPSILON, LED_MODELS, SHORT_CIRCUIT_CURRENT } from './constants';
-import { solveNetlist } from './mna';
+import { CAPACITOR_CHARGED, CURRENT_EPSILON, DIODE_MODEL, LED_MODELS, SHORT_CIRCUIT_CURRENT } from './constants';
+import { type TimeStep, solveNetlist } from './mna';
 import { getChangeoverPorts, getTerminals } from './tiles';
 import type { Board, ComponentStatus, Direction, SimulationResult, TileResult } from './types';
 
-export function simulate(board: Board): SimulationResult {
+/**
+ * The board's circuit, settled. With a time step, capacitors start from the given charges
+ * and the result is the circuit `dt` seconds later (see transient.ts).
+ */
+export function simulate(board: Board, step?: TimeStep): SimulationResult {
   const circuit = buildCircuit(board);
-  const sol = solveNetlist(circuit);
+  const sol = solveNetlist(circuit, step);
 
   // Port inflows and port nodes per tile.
   const inflow = new Map<number, Partial<Record<Direction, number>>>();
@@ -111,6 +115,10 @@ export function simulate(board: Board): SimulationResult {
       // A voltmeter "works" when it's across something powered; an ammeter when current flows.
       const reading = tile.mode === 'A' ? Math.abs(current) > CURRENT_EPSILON : powered;
       status = reading ? 'OK' : 'OFF';
+    } else if (tile.kind === 'capacitor') {
+      current = intoPlus;
+      // "Working" while it holds a useful charge or current is flowing in or out of it.
+      status = Math.abs(voltage) > CAPACITOR_CHARGED || Math.abs(current) > CURRENT_EPSILON ? 'OK' : 'OFF';
     } else if (tile.kind === 'diode') {
       current = intoPlus;
       if (bypassed) status = 'BYPASSED';

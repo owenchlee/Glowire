@@ -36,6 +36,9 @@ export const GMIN = 1e-12;
 /** Currents below this count as "no current" when deciding statuses. */
 export const CURRENT_EPSILON = 1e-6;
 
+/** A capacitor holding more than this many volts counts as charged. */
+export const CAPACITOR_CHARGED = 0.05;
+
 /** A small silicon diode (1N4148-ish): about 0.7 V forward at 10 mA. */
 export const DIODE_MODEL = {
   ratedVoltage: 0.7,

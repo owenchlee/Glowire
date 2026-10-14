@@ -75,6 +75,9 @@ function create() {
     meterFace: new CylinderGeometry(0.19, 0.19, 0.02, 24, 1, false, Math.PI / 2, Math.PI),
     needle: new BoxGeometry(0.17, 0.02, 0.025).translate(0.085, 0, 0),
     bush: new SphereGeometry(0.17, 14, 10),
+    /** A unit-long can of radius 0.2, lying along x (scaled per value). */
+    capBody: new CylinderGeometry(0.2, 0.2, 1, 24).rotateZ(Math.PI / 2),
+    capWindow: new BoxGeometry(0.24, 0.03, 0.09),
   };
 
   const wireLevels = [0, 0.3, 0.55, 0.8, 1.1].map((intensity) =>
@@ -91,8 +94,13 @@ function create() {
       diode: soft('#dfe3ee'),
       changeover: soft(COLORS.switchBase),
       meter: soft('#e4e0d4'),
+      capacitor: soft('#dfe3ee'),
       block: soft(COLORS.blockStone),
     },
+    capSmall: soft('#3da6bd', { roughness: 0.45 }),
+    capMedium: soft('#9a6ad6', { roughness: 0.45 }),
+    capBig: soft('#2d4a8a', { roughness: 0.45 }),
+    capStripe: soft('#d2c9c9', { roughness: 0.5 }),
     bush: soft(COLORS.bush),
     switchOn: soft(COLORS.switchOn),
     switchOff: soft(COLORS.switchOff),

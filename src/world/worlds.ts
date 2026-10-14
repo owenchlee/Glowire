@@ -2,6 +2,7 @@
 
 import { buildGlowtown } from './glowtown';
 import { buildHarbour } from './harbour';
+import { buildDeep } from './deep';
 import { buildMossbell } from './mossbell';
 import type { WorldMap } from './types';
 
@@ -36,6 +37,13 @@ export const WORLDS: WorldInfo[] = [
     tagline: 'An old mill village up the valley, where a lantern walks the lanes at night.',
     chapters: [5, 6],
     build: buildMossbell,
+  },
+  {
+    id: 'deep',
+    name: 'Brightwater Deep',
+    tagline: 'A sunken town at the bottom of the sea, where the first lights were kept in jars.',
+    chapters: [7],
+    build: buildDeep,
   },
 ];
 

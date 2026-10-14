@@ -32,6 +32,7 @@ import {
   type SimulationResult,
   type Tile,
   battery,
+  capacitor,
   diode,
   isTwoTerminal,
   led,
@@ -63,14 +64,16 @@ import {
   starGoalMet,
   starGoalsFor,
 } from '../levels/stars';
-import type { LevelDef, PartKey } from '../levels/types';
+import type { Goal, LevelDef, PartKey } from '../levels/types';
 import type { GhostPreview, ScenePicker } from '../puzzle-view/types';
 import { BoardCanvas } from '../render/BoardScene';
 import type { BackdropSpec } from '../render/Backdrop';
 import { litGroups, presentResidents } from '../world/logic';
 import { jobPlace, worldMap } from '../world/worlds';
 import { LED_PALETTE, formatCurrent, formatOhms } from '../render/theme';
+import { speakerName } from './Dialog';
 import { useGame } from './game';
+import { useLiveCircuit } from './useLiveCircuit';
 import { buzz } from './haptics';
 import { type Hint, HINTS, pickHint } from './hints';
 import {
@@ -111,6 +114,9 @@ const PART_ORDER: PartKey[] = [
   'r470',
   'r1000',
   'diode',
+  'c1000',
+  'c2200',
+  'c4700',
 ];
 
 function tileForPart(key: PartKey): Tile {
@@ -119,6 +125,7 @@ function tileForPart(key: PartKey): Tile {
   if (key === 'ledGreen') return led(0, 'green');
   if (key === 'ledBlue') return led(0, 'blue');
   if (key === 'diode') return diode(0);
+  if (key[0] === 'c') return capacitor(Number(key.slice(1)), 0);
   return resistor(Number(key.slice(1)), 0);
 }
 
@@ -128,7 +135,14 @@ function partLabel(key: PartKey): string {
   if (key === 'ledGreen') return 'Green';
   if (key === 'ledBlue') return 'Blue';
   if (key === 'diode') return 'Diode';
+  if (key[0] === 'c') return `${key.slice(1)} µF`;
   return formatOhms(Number(key.slice(1)));
+}
+
+/** "2.1 s", or how a lamp that never changed is described. */
+function formatSeconds(goal: Goal, seconds: number): string {
+  if (seconds === Infinity) return goal.kind === 'hold' ? 'stays on' : 'never lights';
+  return `${seconds.toFixed(1)} s`;
 }
 
 /**
@@ -176,7 +190,8 @@ export function LevelScreen({ level, day }: { level: LevelDef; day?: string }) {
   const [phaseStart, setPhaseStart] = useState<BoardState | null>(null);
   const active = useMemo(() => phaseLevel(level, phase), [level, phase]);
   const lastPhase = phase === phaseCount(level) - 1;
-  const result = useMemo(() => simulate(toEngineBoard(board)), [board]);
+  const steady = useMemo(() => simulate(toEngineBoard(board)), [board]);
+  const result = useLiveCircuit(board, steady);
   const evaluation = useMemo(() => evaluateLevel(active, board), [active, board]);
   const labels = useMemo(() => levelLabels(level), [level]);
   const remaining = remainingParts(active, board);
@@ -540,9 +555,15 @@ export function LevelScreen({ level, day }: { level: LevelDef; day?: string }) {
         </View>
 
         <ScrollView style={styles.flex} contentContainerStyle={styles.goals}>
-          {evaluation.goals.map(({ goal, met }, i) => (
+          {evaluation.goals.map(({ goal, met, seconds }, i) => (
             <PixelText key={i} size={12} color={met ? GREEN : CREAM} shadow>
               {met ? '✓' : '○'} {describeGoal(goal, ledNames, switchCount, goalWords)}
+              {seconds !== undefined && (
+                <PixelText size={11} color={met ? GREEN : GOLD}>
+                  {' '}
+                  (now: {formatSeconds(goal, seconds)})
+                </PixelText>
+              )}
             </PixelText>
           ))}
           {budget !== null && (
@@ -684,6 +705,7 @@ export function LevelScreen({ level, day }: { level: LevelDef; day?: string }) {
 
       {phaseCleared && (
         <GrumbleStrike
+          who={level.villain ?? 'grumble'}
           line={level.phases![phase]!.grumble}
           round={phase + 1}
           rounds={phaseCount(level)}
@@ -735,13 +757,15 @@ function PetFace({ id, hopKey }: { id: string; hopKey: number }) {
   );
 }
 
-/** Between boss rounds: Grumble gloats and sabotages the board. */
+/** Between boss rounds: Grumble (or whoever the villain is) gloats and sabotages the board. */
 function GrumbleStrike({
+  who,
   line,
   round,
   rounds,
   onFight,
 }: {
+  who: string;
   line: string;
   round: number;
   rounds: number;
@@ -759,7 +783,7 @@ function GrumbleStrike({
       <Animated.View style={{ transform: [{ translateX: shake }] }}>
         <Panel style={styles.modal} tone="night">
           <View style={styles.introRow}>
-            <Portrait who="grumble" size={84} />
+            <Portrait who={who} size={84} />
             <View style={styles.flex}>
               <PixelText size={11} color={MUTED} shadow>
                 ROUND {round} CLEARED · {rounds - round} TO GO
@@ -770,7 +794,7 @@ function GrumbleStrike({
                 ))}
               </View>
               <PixelText size={13} color={GOLD} shadow>
-                Grumble
+                {speakerName(who)}
               </PixelText>
               <PixelText size={15} color={CREAM} shadow>
                 “{line}”
@@ -986,6 +1010,10 @@ function Labels({
     } else if (t.kind === 'changeover') {
       text = `${switchCount > 1 && name ? `${name} ` : ''}${t.up ? 'UP' : 'DOWN'}`;
       tone = '#3f5a7a';
+    } else if (t.kind === 'capacitor') {
+      const v = Math.abs(r?.voltage ?? 0);
+      text = v > 0.05 ? `${t.uf}µF ${v.toFixed(1)}V` : `${t.uf} µF`;
+      tone = v > 0.05 ? '#8a6a1f' : undefined;
     } else if (t.kind === 'meter') {
       const reading = meterReading(r, t.mode);
       text = t.mode === 'A' ? `${reading < 10 ? reading.toFixed(1) : Math.round(reading)} mA` : `${reading.toFixed(2)} V`;
