@@ -3,7 +3,7 @@
 
 import { router } from 'expo-router';
 import { type ReactNode, useEffect, useMemo, useRef } from 'react';
-import { Animated, Easing, Image, ScrollView, StyleSheet, View } from 'react-native';
+import { Animated, Easing, Image, type ImageStyle, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { currentStreak, dayKey, totalStars } from '../game/save';
@@ -12,6 +12,14 @@ import { WORLDS, type WorldInfo } from '../world/worlds';
 import { FACES } from './faces.generated';
 import { starsFor, useGame } from './game';
 import { CREAM, Counter, GOLD, NIGHT_DEEP, Panel, PixelButton, PixelText, TEXT_SOFT } from './pixel';
+
+/** A snapshot of each world for its card (made with `npm run map-preview`, see docs/PLAN-polish.md). */
+const WORLD_ART: Record<string, number> = {
+  glowtown: require('../../assets/art/worlds/glowtown.png'),
+  harbour: require('../../assets/art/worlds/harbour.png'),
+  mossbell: require('../../assets/art/worlds/mossbell.png'),
+  deep: require('../../assets/art/worlds/deep.png'),
+};
 
 export function WorldSelect() {
   const { save } = useGame();
@@ -146,6 +154,9 @@ function WorldCard({ world, number }: { world: WorldInfo; number: number }) {
   );
   return (
     <Panel style={[styles.card, !open && styles.locked]} tone={open ? 'cream' : 'night'}>
+      {WORLD_ART[world.id] !== undefined && (
+        <Image source={WORLD_ART[world.id]} resizeMode="cover" style={[styles.art, !open && styles.faceDark]} />
+      )}
       <PixelText size={12} color={open ? TEXT_SOFT : '#8f88b5'}>
         WORLD {number}
       </PixelText>
@@ -235,7 +246,8 @@ const styles = StyleSheet.create({
     minHeight: 40,
   },
   locked: { opacity: 0.92 },
-  tagline: { marginTop: 4, minHeight: 54 },
+  tagline: { marginTop: 2, minHeight: 36 },
+  art: { width: '100%', height: 58, borderWidth: 3, borderColor: '#141b1b', marginBottom: 6, imageRendering: 'pixelated' } as ImageStyle,
   faces: { flexDirection: 'row', gap: 4, marginTop: 8 },
   face: { width: 38, height: 38, borderRadius: 3 },
   faceDark: { opacity: 0.35 },
