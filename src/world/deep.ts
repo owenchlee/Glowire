@@ -8,7 +8,7 @@
 //       Bottom  │ 47, 48      │ 49, 50        │ the Marigold    │ Hall 53 (B)
 //                                             │ 51, 52          │
 
-import { MapBuilder } from './builder';
+import { MapBuilder, hash } from './builder';
 import type { WorldMap } from './types';
 
 const W = 136;
@@ -59,6 +59,7 @@ function wellBottom(b: MapBuilder) {
   b.secret({ id: 'well-rope', x: 5, y: 20 });
   b.reef(0, 16, 'top', 14);
   b.reef(0, 16, 'bottom', 32);
+  wellExtras(b);
 }
 
 // ── D1: Jar Street ───────────────────────────────────────────────────────────
@@ -98,14 +99,13 @@ function jarStreet(b: MapBuilder) {
   b.deepProp(31, 27, 'chest');
   b.spots.push({ kind: 'game', x: 31, y: 27, game: 'lantern' });
   // Jar lamps down the street: two to start with, the rest once the street is lit.
-  b.jarLamp(25, STREET - 1, 'home');
   b.jarLamp(41, STREET + STREET_H, 'home');
   b.jarLamp(30, STREET - 1, 'area:jars');
   b.jarLamp(19, STREET + STREET_H, 'area:jars');
   b.jarLamp(35, STREET + STREET_H, 'area:jars');
   b.deepTall(42, 18, 'anchor');
   b.deepTall(25, 30, 'pillar');
-  for (const [x, y] of [[23, 28], [39, 29], [27, 17], [41, 16]] as const) b.deepProp(x, y, 'coral');
+  for (const [x, y] of [[23, 28], [39, 29], [41, 16]] as const) b.deepProp(x, y, 'coral');
   b.deepProp(31, 29, 'crab');
   b.secret({ id: 'jar-labels', x: 41, y: 26 });
   b.spots.push({ kind: 'note', x: 43, y: 28, note: 'jars' });
@@ -113,6 +113,7 @@ function jarStreet(b: MapBuilder) {
   b.sighting({ id: 'street-shadow', who: 'hush', x: 38, y: 31 });
   b.reef(16, 44, 'top', 9);
   b.reef(16, 44, 'bottom', 34);
+  jarsExtras(b);
 }
 
 // ── D2: the Coral Nursery ────────────────────────────────────────────────────
@@ -162,6 +163,7 @@ function nursery(b: MapBuilder) {
   b.sighting({ id: 'wreck-diver', who: 'echo', x: 69, y: 32 });
   b.reef(44, 72, 'top', 9);
   b.reef(44, 72, 'bottom', 35);
+  nurseryExtras(b);
 }
 
 // ── D3: the Wreck of the Marigold ────────────────────────────────────────────
@@ -206,6 +208,7 @@ function theWreck(b: MapBuilder) {
   b.sighting({ id: 'wreck-shadow', who: 'hush', x: 84, y: 34, after: 'job:51' });
   b.reef(72, 104, 'top', 9);
   b.reef(72, 104, 'bottom', 36);
+  wreckExtras(b);
 }
 
 // ── D4: the Heart Hall ───────────────────────────────────────────────────────
@@ -249,9 +252,187 @@ function heartHall(b: MapBuilder) {
   b.secret({ id: 'hall-names', x: 115, y: 12 });
   b.reef(104, W, 'top', 3);
   b.reef(104, W, 'bottom', 33);
+  heartExtras(b);
 }
 
 /** The cells of the gap in a reef wall at column `x`, where the street goes through. */
 function gateCells(x: number) {
   return Array.from({ length: STREET_H }, (_, k) => ({ x, y: STREET + k }));
+}
+
+// ── Geography: helpers ───────────────────────────────────────────────────────
+
+type Cell = readonly [number, number];
+
+/** A horizontal wall; with `dy` it is two rows thick (this row and the one `dy` away), so it reads as solid. */
+const row = (y: number, x0: number, x1: number, skip: number[] = [], dy = 0): Cell[] =>
+  Array.from({ length: x1 - x0 + 1 }, (_, i) => x0 + i)
+    .filter((x) => !skip.includes(x))
+    .flatMap((x) => (dy ? [[x, y] as Cell, [x, y + dy] as Cell] : [[x, y] as Cell]));
+const col = (x: number, y0: number, y1: number, skip: number[] = []): Cell[] =>
+  Array.from({ length: y1 - y0 + 1 }, (_, i) => [x, y0 + i] as Cell).filter(([, y]) => !skip.includes(y));
+
+/** Is something (a spot or a resident) standing on this cell? Walls must leave those alone. */
+function occupied(b: MapBuilder, x: number, y: number) {
+  return b.spots.some((s) => s.x === x && s.y === y) || b.residents.some((r) => r.x === x && r.y === y);
+}
+
+/** A thicket of kelp, rocks and coral over these cells (skipping cells already in use). */
+function thicket(b: MapBuilder, cells: readonly Cell[]) {
+  const kinds = ['kelp', 'kelpDark', 'kelp', 'kelpGold'] as const;
+  for (const [x, y] of cells) {
+    if (!b.inside(x, y) || b.solid[y * b.width + x] || occupied(b, x, y)) continue;
+    const n = hash(x * 1.7, y * 2.3);
+    b.deepTall(x, y, kinds[Math.floor(n * 100) % kinds.length]!);
+    // A clump at the kelp's foot, so a wall reads as solid as the reef.
+    const m = hash(x * 0.9, y * 3.1);
+    if (m < 0.25) b.deepProp(x, y, 'rock');
+    else if (m < 0.5) b.deepProp(x, y, 'brainCoral');
+    else if (m < 0.7) b.deepProp(x, y, 'coral');
+    else if (m < 0.85) b.deepProp(x, y, 'anemone');
+  }
+}
+
+/** A sparse forest: kelp on about `density` of the cells in a rectangle, with a clearing left bare. */
+function forest(b: MapBuilder, x: number, y: number, w: number, h: number, density: number, clear?: { x: number; y: number; w: number; h: number }) {
+  const cells: Cell[] = [];
+  for (let j = 0; j < h; j++)
+    for (let i = 0; i < w; i++) {
+      const cx = x + i;
+      const cy = y + j;
+      if (clear && cx >= clear.x && cx < clear.x + clear.w && cy >= clear.y && cy < clear.y + clear.h) continue;
+      if (hash(cx * 0.37, cy * 0.83) < density) cells.push([cx, cy]);
+    }
+  thicket(b, cells);
+}
+
+/** A chest of sparks, drawn as the little sea chest. */
+function seaChest(b: MapBuilder, id: string, x: number, y: number, sparks: number) {
+  b.deepProp(x, y, 'chest');
+  b.spots.push({ kind: 'chest', x, y, id, sparks });
+}
+
+function sign(b: MapBuilder, x: number, y: number, text: string) {
+  b.spots.push({ kind: 'sign', x, y, text });
+  b.deepTall(x, y, 'signpost');
+}
+
+// ── The Well's Bottom: a chimney landmark, a kelp patch and a nook ───────────
+function wellExtras(b: MapBuilder) {
+  // Two vent chimneys smoking in the north: you can see them from the spawn.
+  b.deepTall(6, 19, 'vent');
+  b.deepTall(8, 18, 'vent');
+  b.deepProp(7, 19, 'rock');
+  b.deepProp(9, 19, 'brainCoral');
+  thicket(b, [[5, 18], [4, 19], [10, 18], [11, 19], [10, 20], [4, 17], [11, 17]]);
+  // A kelp patch south of the well, with the little clearing Glimmer sits in.
+  forest(b, 3, 28, 9, 3, 0.55, { x: 5, y: 26, w: 4, h: 4 });
+  sign(b, 10, 21, 'A jar keeps lightning the way a capacitor keeps charge: fill it, and it glows on after the battery stops.');
+  // The nook: a wall of kelp with one gap at (14,28), and a lone jar glowing outside it.
+  thicket(b, [...row(28, 12, 15, [14], -1), ...col(12, 29, 30), ...row(31, 12, 15, [], 1)]);
+  b.jarLamp(15, 27, 'home');
+  seaChest(b, 'deep-well-nook', 14, 30, 15);
+}
+
+// ── Jar Street: a lookout mesa, a kelp ring, a hidden nook, the lamp graveyard
+function jarsExtras(b: MapBuilder) {
+  // The lamplighters' lookout: a sand mesa north of the street, a ladder up its face.
+  b.plateau(24, 13, 6, 6, 'sand');
+  b.ladder(25, 18, 'sand');
+  sign(b, 27, 19, 'A sandy mesa with a ladder. The old lamplighters sat up there to watch the whole street.');
+  b.jarLamp(25, 14, 'home');
+  seaChest(b, 'deep-jars-mesa', 28, 14, 25);
+  b.secret({ id: 'deep-lookout', x: 27, y: 16 });
+  // A finger of reef hanging down between the mesa and Marlo's dome.
+  thicket(b, [[31, 12], [31, 13], [31, 14], [31, 15], [31, 16], [32, 12], [32, 13], [30, 12], [31, 17]]);
+  // A ring of kelp east of Marlo's dome, open at the bottom, with a jar glowing inside.
+  thicket(b, [...row(13, 38, 42, [], -1), ...col(38, 14, 16), ...col(42, 14, 16), ...row(16, 38, 41, [40], 1)]);
+  b.jarLamp(39, 15, 'home');
+  seaChest(b, 'deep-jars-ring', 41, 14, 20);
+  // A hidden nook at the street's west end: the only way in is a gap in the kelp, marked by a lone jar.
+  thicket(b, [...row(28, 17, 22, [20], -1), ...col(17, 29, 30), ...col(22, 29, 30), ...row(31, 17, 22, [], 1)]);
+  b.jarLamp(22, 27, 'home');
+  seaChest(b, 'deep-jars-nook', 19, 30, 30);
+  b.deepProp(21, 30, 'bones');
+  // The lamp graveyard: jars that went out, in the sand south of the street.
+  for (const [x, y] of [[36, 29], [38, 30], [41, 29], [37, 28]] as const) b.deepTall(x, y, 'jar');
+  b.deepTall(40, 31, 'anchor');
+  b.deepProp(39, 28, 'bones');
+  b.deepProp(38, 28, 'bones');
+  b.secret({ id: 'lamp-graveyard', x: 40, y: 30 });
+  sign(b, 34, 28, 'A capacitor is a jar for electricity. It fills up, it holds on, and then it can pour out again.');
+  forest(b, 18, 12, 5, 4, 0.35);
+  b.resident('pearl', 27, 22, 'down', { chat: 'pearl-rumour' });
+}
+
+// ── The Coral Nursery: a hidden dome, a mesa, a vent garden ──────────────────
+function nurseryExtras(b: MapBuilder) {
+  // The hidden dome: walled in with kelp, one gap in the south wall, a lone jar beside it.
+  b.deepBig(46, 12, 'dome');
+  thicket(b, [...row(18, 45, 51, [49], 1), ...col(51, 12, 17)]);
+  b.jarLamp(51, 19, 'home');
+  sign(b, 47, 19, 'Tess says coral grows toward the light. Follow the lamp.');
+  seaChest(b, 'deep-nursery-dome', 50, 16, 30);
+  b.secret({ id: 'first-lamplighters', x: 48, y: 16 });
+  b.deepProp(45, 16, 'coral');
+  // The nursery mesa, north-east.
+  b.plateau(64, 12, 7, 6, 'sand');
+  b.ladder(66, 17, 'sand');
+  b.jarLamp(65, 14, 'home');
+  seaChest(b, 'deep-nursery-mesa', 69, 13, 25);
+  // A vent garden: chimneys, rocks and kelp between the dome and the mesa.
+  b.deepTall(58, 14, 'vent');
+  b.deepTall(60, 15, 'vent');
+  b.deepTall(59, 13, 'vent');
+  b.deepProp(58, 16, 'rock');
+  b.deepProp(61, 16, 'brainCoral');
+  thicket(b, [[57, 13], [57, 14], [61, 13], [62, 14], [56, 15], [62, 16]]);
+  sign(b, 63, 23, 'Lights on one loop share the current. Break the loop anywhere and they all go dark.');
+  // A canyon of reef in the south, and a kelp wood with a clearing.
+  thicket(b, [...col(62, 28, 32), ...col(63, 29, 32)]);
+  forest(b, 66, 27, 6, 5, 0.5, { x: 68, y: 28, w: 3, h: 3 });
+  b.resident('wren', 59, 22, 'left', { chat: 'wren-nursery' });
+  b.resident('tess', 56, 24, 'right', { chat: 'tess-rumour' });
+}
+
+// ── The Wreck of the Marigold: a lookout mesa, a hull, the Hush's clearing ───
+function wreckExtras(b: MapBuilder) {
+  // The mesa behind Echo's camera.
+  b.plateau(92, 12, 8, 6, 'sand');
+  b.ladder(95, 17, 'sand');
+  b.jarLamp(93, 14, 'home');
+  seaChest(b, 'deep-wreck-mesa', 98, 13, 30);
+  b.secret({ id: 'marigold-marlo', x: 96, y: 15 });
+  // A reef spur north of the street, beside the wreck.
+  thicket(b, [...col(86, 12, 17), ...col(87, 12, 15), [88, 12], [85, 12]]);
+  // A second hull on its side in the south-east: ribs, and a hold you get into by one gap.
+  thicket(b, [...row(28, 93, 101, [], -1), ...row(32, 93, 101, [], 1), ...col(93, 29, 31, [30]), ...col(101, 29, 31)]);
+  b.deepTall(96, 31, 'anchor');
+  b.jarLamp(91, 30, 'home');
+  seaChest(b, 'deep-wreck-hull', 99, 30, 35);
+  // The Hush's clearing, west: a ring of kelp opening where the bones lie.
+  thicket(b, [...row(28, 73, 78, [76], -1), ...col(73, 29, 32), ...col(78, 29, 32), ...row(32, 74, 77, [], 1)]);
+  b.secret({ id: 'hush-cold', x: 75, y: 30 });
+  sign(b, 90, 28, 'Two bells cast together ring the same note. Strike one and the other hums back: that is resonance.');
+  sign(b, 85, 21, 'No loop, no light. Current has to be able to get home.');
+  b.resident('glimmer', 82, 24, 'left', { chat: 'glimmer-wreck' });
+  b.resident('echo', 96, 25, 'left', { chat: 'echo-rumour' });
+}
+
+// ── The Heart Hall: the second bell, the cracked jar, a mesa ─────────────────
+function heartExtras(b: MapBuilder) {
+  // The bell that answers: a bell by the north-west wall, with a chest behind it.
+  b.deepBig(108, 6, 'bell');
+  b.secret({ id: 'two-bells', x: 110, y: 9 });
+  b.jarLamp(113, 9, 'home');
+  // A hairline crack in the Heart Jar, up close.
+  b.secret({ id: 'crack-hum', x: 116, y: 9 });
+  // A mesa in the north-east corner.
+  b.plateau(125, 6, 8, 5, 'sand');
+  b.ladder(128, 10, 'sand');
+  b.jarLamp(126, 7, 'home');
+  seaChest(b, 'deep-heart-mesa', 131, 7, 40);
+  seaChest(b, 'deep-heart-bell', 106, 8, 30);
+  thicket(b, [[105, 7], [106, 7], [107, 7], [105, 9], [107, 9], [105, 8]]);
+  b.resident('marlo', 124, 26, 'left', { chat: 'marlo-rumour' });
 }
