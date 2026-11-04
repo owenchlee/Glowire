@@ -47,6 +47,30 @@ export const GAMES: Record<GameId, GameInfo> = {
     host: 'pearl',
     how: 'Catch the falling sparks in your jar, then POUR it into the lamp before it overflows. A full jar holds five. Dodge the dark drops: they drink your jar dry!',
   },
+  probe: {
+    id: 'probe',
+    title: 'Dead Lamp Hunt',
+    host: 'gran',
+    how: 'Grumble’s zap killed ONE lamp in the string. A dead lamp is a gap, so the whole battery pushes across it. Probe a stretch: volts means it’s in there, 0 means it isn’t. Few probes! Then name the lamp.',
+  },
+  pipes: {
+    id: 'pipes',
+    title: 'Dockyard Wiring',
+    host: 'bolt',
+    how: 'Tap a tile to turn it and carry power from the battery to EVERY lamp. Wires must meet end to end. A diode (arrow) is bolted down and only passes power the way it points.',
+  },
+  panel: {
+    id: 'panel',
+    title: 'Clock Panel',
+    host: 'hazel',
+    how: 'Every clock stopped at 11:52. Each switch flips ITSELF and the ones touching it. Get them all ticking. Beat par for a bonus. Pressing twice undoes it.',
+  },
+  lantern: {
+    id: 'lantern',
+    title: 'Lantern Budget',
+    host: 'pearl',
+    how: 'Your lantern burns down and the Hush is hungry. Pick the circuit that lights the lamp BRIGHTEST. Right refills it; wrong feeds the Hush. A resistor beside the lamp isn’t in its way.',
+  },
 };
 
 // ── Colour Code ──────────────────────────────────────────────────────────────

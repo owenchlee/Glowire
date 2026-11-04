@@ -94,6 +94,9 @@ function jarStreet(b: MapBuilder) {
   // Pearl's game: catching sparks in jars.
   b.deepProp(28, 27, 'chest');
   b.spots.push({ kind: 'game', x: 28, y: 27, game: 'jars' });
+  // Pearl's lantern rack, where the Hush feeds: Lantern Budget.
+  b.deepProp(31, 27, 'chest');
+  b.spots.push({ kind: 'game', x: 31, y: 27, game: 'lantern' });
   // Jar lamps down the street: two to start with, the rest once the street is lit.
   b.jarLamp(25, STREET - 1, 'home');
   b.jarLamp(41, STREET + STREET_H, 'home');

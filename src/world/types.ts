@@ -75,7 +75,7 @@ export type Spot =
   | { kind: 'game'; x: number; y: number; game: GameSpot };
 
 /** Mini-games you can find in the world (see game/games.ts). */
-export type GameSpot = 'colours' | 'signal' | 'needle' | 'jars';
+export type GameSpot = 'colours' | 'signal' | 'needle' | 'jars' | 'probe' | 'pipes' | 'panel' | 'lantern';
 
 /** One stretch of the route. */
 export interface Area {

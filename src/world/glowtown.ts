@@ -210,6 +210,9 @@ function schoolhouseHill(b: MapBuilder) {
   // Ms. Ito's blackboard in the schoolyard: the Colour Code game.
   b.prop(81, 22, 'sign');
   b.spots.push({ kind: 'game', x: 81, y: 22, game: 'colours' });
+  // Gran's string of street lamps, one of them dead since Grumble's zap: Dead Lamp Hunt.
+  b.prop(84, 22, 'sign');
+  b.spots.push({ kind: 'game', x: 84, y: 22, game: 'probe' });
   b.prop(78, 19, 'bin');
   for (const x of [71, 72, 76, 77]) b.flowers(x, 28);
   b.lamp(69, 19, 'area:school', 'twin');

@@ -37,6 +37,7 @@ import {
 } from '../game/games';
 import { SECRETS, secretKey } from '../game/lore';
 import { speakerName } from './Dialog';
+import { ClockPanel, DeadLampHunt, DockyardWiring, LanternBudget } from './BrainGames';
 import { useGame } from './game';
 import { buzz } from './haptics';
 import { CREAM, Counter, GOLD, GREEN, INK, NIGHT, NIGHT_DEEP, NameTab, Panel, PixelButton, PixelText, Portrait, RED } from './pixel';
@@ -107,6 +108,10 @@ export function MiniGame({ id }: { id: GameId }) {
         )}
         {phase === 'play' && id === 'colours' && <ColourCode key={run} seed={run} onSay={setSay} onEnd={finish} />}
         {phase === 'play' && id === 'needle' && <NeedleDrop key={run} seed={run} onSay={setSay} onEnd={finish} />}
+        {phase === 'play' && id === 'probe' && <DeadLampHunt key={run} seed={run} onSay={setSay} onEnd={finish} />}
+        {phase === 'play' && id === 'pipes' && <DockyardWiring key={run} seed={run} onSay={setSay} onEnd={finish} />}
+        {phase === 'play' && id === 'panel' && <ClockPanel key={run} seed={run} onSay={setSay} onEnd={finish} />}
+        {phase === 'play' && id === 'lantern' && <LanternBudget key={run} seed={run} onSay={setSay} onEnd={finish} />}
         {phase === 'play' && id === 'jars' && <JarCatch key={run} seed={run} onSay={setSay} onEnd={finish} />}
         {phase === 'play' && id === 'signal' && (
           <SignalLamp

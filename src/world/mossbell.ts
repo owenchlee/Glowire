@@ -196,6 +196,9 @@ function bellfield(b: MapBuilder) {
   // Moth's game: her grandpa's old meter, nailed to a post by the schoolroom path.
   b.prop(84, 19, 'sign');
   b.spots.push({ kind: 'game', x: 84, y: 19, game: 'needle' });
+  // Hazel's mill-room panel of stopped clocks: Clock Panel.
+  b.prop(87, 19, 'sign');
+  b.spots.push({ kind: 'game', x: 87, y: 19, game: 'panel' });
   b.spots.push({ kind: 'note', x: 102, y: 25, note: 'two' });
   b.sighting({ id: 'bellfield-lantern', who: 'glimmer', x: 97, y: 30 });
   b.prop(102, 25, 'sign');

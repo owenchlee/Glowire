@@ -135,6 +135,9 @@ function lighthouse(b: MapBuilder) {
   // Old Gus's signal lamp, on a post by the lighthouse path: the Signal Lamp game.
   b.lamp(46, 25, 'job:21', 'hook');
   b.spots.push({ kind: 'game', x: 46, y: 25, game: 'signal' });
+  // Bolt's warehouse pipes: Dockyard Wiring.
+  b.prop(48, 25, 'sign');
+  b.spots.push({ kind: 'game', x: 48, y: 25, game: 'pipes' });
   b.prop(45, 20, 'well');
   b.treeLine(38, 62, 'top', 14, ['pine', 'bigGreen', 'round']);
   rocks(b, [[44, 34], [56, 33], [55, 37], [45, 38], [58, 30]]);
