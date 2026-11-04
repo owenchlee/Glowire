@@ -2,7 +2,7 @@
 // arrive as the game grows.
 
 import { router } from 'expo-router';
-import { useEffect, useMemo, useRef } from 'react';
+import { type ReactNode, useEffect, useMemo, useRef } from 'react';
 import { Animated, Easing, Image, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -21,9 +21,7 @@ export function WorldSelect() {
       <SafeAreaView style={styles.flex} edges={['left', 'right']}>
         <View style={styles.top}>
           <View>
-            <PixelText size={40} color={GOLD} shadow style={styles.logo}>
-              GLOWIRE
-            </PixelText>
+            <GlowLogo />
             <PixelText size={13} color="#c9c3e6" shadow>
               Fix the lights. Save the towns.
             </PixelText>
@@ -35,12 +33,66 @@ export function WorldSelect() {
           <PixelButton label="Shop" tone="teal" size={13} onPress={() => router.push('/shop')} />
         </View>
         <ScrollView horizontal contentContainerStyle={styles.row} showsHorizontalScrollIndicator={false}>
-          <DailyCard />
+          <Rise index={0}>
+            <DailyCard />
+          </Rise>
           {WORLDS.map((w, i) => (
-            <WorldCard key={w.id} world={w} number={i + 1} />
+            <Rise key={w.id} index={i + 1}>
+              <WorldCard world={w} number={i + 1} />
+            </Rise>
           ))}
         </ScrollView>
       </SafeAreaView>
+    </View>
+  );
+}
+
+/** A card that slides up and fades in, a beat after the one before it. */
+function Rise({ index, children }: { index: number; children: ReactNode }) {
+  const t = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    Animated.timing(t, { toValue: 1, duration: 420, delay: 120 + index * 110, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start();
+  }, [t, index]);
+  return (
+    <Animated.View style={{ opacity: t, transform: [{ translateY: t.interpolate({ inputRange: [0, 1], outputRange: [28, 0] }) }] }}>
+      {children}
+    </Animated.View>
+  );
+}
+
+/** The title, wired up like the game: every few seconds a surge runs along it and each letter flickers. */
+function GlowLogo() {
+  const letters = 'GLOWIRE'.split('');
+  const flick = useRef(letters.map(() => new Animated.Value(1))).current;
+  useEffect(() => {
+    const surge = Animated.loop(
+      Animated.sequence([
+        Animated.delay(2600),
+        Animated.stagger(
+          90,
+          flick.map((v) =>
+            Animated.sequence([
+              Animated.timing(v, { toValue: 0.25, duration: 70, useNativeDriver: true }),
+              Animated.timing(v, { toValue: 1, duration: 110, useNativeDriver: true }),
+              Animated.timing(v, { toValue: 0.55, duration: 60, useNativeDriver: true }),
+              Animated.timing(v, { toValue: 1, duration: 160, useNativeDriver: true }),
+            ]),
+          ),
+        ),
+      ]),
+    );
+    surge.start();
+    return () => surge.stop();
+  }, [flick]);
+  return (
+    <View style={styles.logoRow}>
+      {letters.map((l, i) => (
+        <Animated.View key={i} style={{ opacity: flick[i]! }}>
+          <PixelText size={40} color={GOLD} shadow style={styles.logo}>
+            {l}
+          </PixelText>
+        </Animated.View>
+      ))}
     </View>
   );
 }
@@ -170,6 +222,7 @@ const styles = StyleSheet.create({
   flex: { flex: 1 },
   top: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 20, paddingTop: 14 },
   logo: { letterSpacing: 3 },
+  logoRow: { flexDirection: 'row' },
   row: { gap: 18, paddingHorizontal: 20, paddingVertical: 16, alignItems: 'center' },
   card: { width: 300 },
   dailyTitle: { marginTop: 8 },

@@ -114,6 +114,8 @@ export function WorldScreen({ map, worldId }: { map: WorldMap; worldId: string }
   const found = useCallback((id: string) => save.seen.includes(secretKey(id)), [save.seen]);
   const worldSecrets = useMemo(() => secretsIn(map.id).filter((x) => !x.about), [map.id]);
   const secretsFound = worldSecrets.filter((x) => found(x.id)).length;
+  const chests = useMemo(() => map.spots.flatMap((s) => (s.kind === 'chest' ? [s.id] : [])), [map]);
+  const chestsFound = chests.filter((id) => save.seen.includes(chestKey(id))).length;
   const areaIndex = useCallback((x: number, y: number) => map.areaOf[y * map.width + x] ?? 255, [map]);
   // Secrets still to find twinkle, once their part of the route is open.
   const sparkles = useMemo(
@@ -579,6 +581,7 @@ export function WorldScreen({ map, worldId }: { map: WorldMap; worldId: string }
         <View style={styles.flex} pointerEvents="none" />
         <Counter icon="✦" value={`${litCount}/${worldJobs.length}`} color="#ffe58a" />
         <Counter icon="✎" value={`${notesFound}/${notes.length}`} color="#c9e7ff" />
+        {chests.length > 0 && <Counter icon="◆" value={`${chestsFound}/${chests.length}`} color="#f2b36b" />}
         {worldSecrets.length > 0 && <Counter icon="◉" value={`${secretsFound}/${worldSecrets.length}`} color="#ffd27a" />}
         <PixelButton label="Journal" tone="cream" size={13} onPress={() => go('/journal')} />
         <Counter icon="⚡" value={save.sparks} />
