@@ -184,6 +184,19 @@ const TREES = {
 } as const;
 export type TreeStyle = keyof typeof TREES;
 
+/** Raised ground (village pack, relief sheet): 3×3 slices, and 1-wide strips for narrow ridges. */
+const RELIEF = {
+  green: { slice: slice('relief', 1), strip: [0, 20, 40].map((i) => at('relief', i)) },
+  sand: { slice: slice('relief', 101), strip: [100, 120, 140].map((i) => at('relief', i)) },
+} as const;
+export type ReliefStyle = keyof typeof RELIEF;
+/** The plain wall tiles (left, middle, right) that stack above a plateau's cliff edge to make it taller. */
+const WALL = { green: [24, 25, 26].map((i) => at('relief', i)), sand: [124, 125, 126].map((i) => at('relief', i)) } as const;
+const LADDER = { green: at('reliefDetail', 15), sand: at('reliefDetail', 51) } as const;
+/** Cave mouths set into a hillside: 3×3, door in the bottom middle. */
+const CAVES = { green: cut('reliefDetail', 84, 3, 3), sand: cut('reliefDetail', 87, 3, 3) } as const;
+const CHEST = at('element', 19);
+
 /** One-tile props: atlas tile, and whether it blocks the way. */
 export const PROPS = {
   bench: { t: city(250), solid: true },
@@ -566,6 +579,65 @@ export class MapBuilder {
         this.object(x + i, y + j, 1, 1, [along === 'h' ? TILES.planks : TILES.planksV], undefined, true);
         if (this.inside(x + i, y + j)) this.walkable[(y + j) * this.width + x + i] = 1;
       }
+  }
+
+  // ── Hills, caves, stones and chests ───────────────────────────────────────
+
+  /**
+   * A raised hill seen from the front: grass on top, a cliff face along the bottom. Its rim
+   * (left, right, top and the cliff) is solid; the inside is walkable. Get up with a ladder.
+   * Needs w ≥ 3 and h ≥ 3 to have an inside.
+   */
+  plateau(x: number, y: number, w: number, h: number, style: ReliefStyle = 'green') {
+    const r = RELIEF[style];
+    // The cliff is two tiles tall when there's room: plain wall, then the cliff's ragged foot.
+    const tall = h >= 5 && w >= 3;
+    for (let j = 0; j < h; j++)
+      for (let i = 0; i < w; i++) {
+        const row = j === 0 ? 0 : j === h - 1 ? 2 : 1;
+        const col = i === 0 ? 0 : i === w - 1 ? 2 : 1;
+        const wall = tall && j === h - 2;
+        this.setGround(x + i, y + j, wall ? WALL[style][col]! : w === 1 ? r.strip[row]! : r.slice[row * 3 + col]!);
+        const rim = i === 0 || i === w - 1 || j === 0 || j >= h - (tall ? 2 : 1);
+        if (rim && this.inside(x + i, y + j)) this.solid[(y + j) * this.width + x + i] = 1;
+        else if (this.inside(x + i, y + j)) this.solid[(y + j) * this.width + x + i] = 0;
+        this.taken.add((y + j) * this.width + x + i);
+      }
+  }
+
+  /** A ladder up a cliff face (the cell on the plateau's bottom row). Opens a way through the rim. */
+  ladder(x: number, y: number, style: ReliefStyle = 'green') {
+    // Up the whole face: the bottom row y, and the wall row above it if the cliff is tall.
+    for (const yy of [y, y - 1]) {
+      if (!this.inside(x, yy)) continue;
+      if (yy !== y && !this.solid[yy * this.width + x]) continue;
+      this.setDecal(x, yy, LADDER[style]);
+      this.solid[yy * this.width + x] = 0;
+    }
+  }
+
+  /** A cave mouth in a hillside. Solid; its doorway is the spot at (x+1, y+2). Returns that cell. */
+  cave(x: number, y: number, style: ReliefStyle = 'green'): Point {
+    this.object(x, y, 3, 3, CAVES[style].slice());
+    this.block(x, y, 3, 3);
+    for (let j = 0; j < 3; j++) for (let i = 0; i < 3; i++) this.taken.add((y + j) * this.width + x + i);
+    return { x: x + 1, y: y + 2 };
+  }
+
+  /** Stepping stones across water: you can walk on each one. */
+  stones(cells: (readonly [number, number])[]) {
+    for (const [x, y] of cells) {
+      if (!this.inside(x, y)) continue;
+      this.object(x, y, 1, 1, [at('water', 12)], undefined, true);
+      this.walkable[y * this.width + x] = 1;
+    }
+  }
+
+  /** A hidden chest of sparks. Solid, so you stand beside it. */
+  chest(id: string, x: number, y: number, sparks: number) {
+    this.object(x, y, 1, 1, [CHEST]);
+    this.block(x, y, 1, 1);
+    this.spots.push({ kind: 'chest', x, y, id, sparks });
   }
 
   // ── Things standing on the ground ─────────────────────────────────────────

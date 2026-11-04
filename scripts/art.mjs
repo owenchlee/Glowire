@@ -106,6 +106,8 @@ const SHEETS = [
   { id: 'towers', file: 'TilesetTowers.png' },
   { id: 'town', file: null, make: townSheet },
   { id: 'deep', file: null, make: deepSheet },
+  { id: 'relief', file: 'TilesetRelief.png' },
+  { id: 'reliefDetail', file: 'TilesetReliefDetail.png' },
 ];
 
 /** Doorways in the village houses: their dark openings glow warm once the house is lit. */
@@ -165,11 +167,27 @@ function markDoors(house) {
   return house;
 }
 
+/**
+ * The cliff sheet's plateau tops are pale lavender (it was drawn for snow). Paint them the
+ * grass colour so a plateau looks like a grassy hill; the orange set stays as sandstone.
+ */
+function grassTops(png) {
+  for (let i = 0; i < png.data.length; i += 4) {
+    if (png.data[i] === 242 && png.data[i + 1] === 234 && png.data[i + 2] === 241 && png.data[i + 3] > 128) {
+      png.data[i] = 173;
+      png.data[i + 1] = 188;
+      png.data[i + 2] = 58;
+    }
+  }
+  return png;
+}
+
 function world(palette) {
   const pngs = SHEETS.map((s) => {
     if (s.make) return s.make();
     if (!s.file) return cityTiles(palette);
     const png = read(join(NINJA, 'tilesets', s.file));
+    if (s.id === 'relief') return grassTops(png);
     return s.id === 'house' ? markDoors(png) : png;
   });
   const origins = {};

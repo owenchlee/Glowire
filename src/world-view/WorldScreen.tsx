@@ -12,6 +12,7 @@ import { Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native'
 import { type SaveData, dayKey, totalStars } from '../game/save';
 import { outfitSprite } from '../game/shop';
 import { GAMES } from '../game/games';
+import { buzz } from '../ui/haptics';
 import { PERSON_SECRETS, SECRETS, secretKey, secretsIn } from '../game/lore';
 import { NOTES, SCENES, type Scene } from '../game/story';
 import { LEVELS } from '../levels/levels';
@@ -97,7 +98,7 @@ interface Talk {
 }
 
 export function WorldScreen({ map, worldId }: { map: WorldMap; worldId: string }) {
-  const { save, markSeen } = useGame();
+  const { save, markSeen, commitSave } = useGame();
   const solved = useMemo(() => solvedIn(save), [save]);
   const lit = useMemo(() => litGroups(map, solved), [map, solved]);
   const residents = useMemo(() => presentResidents(map, solved, lit), [map, solved, lit]);
@@ -116,8 +117,15 @@ export function WorldScreen({ map, worldId }: { map: WorldMap; worldId: string }
   const areaIndex = useCallback((x: number, y: number) => map.areaOf[y * map.width + x] ?? 255, [map]);
   // Secrets still to find twinkle, once their part of the route is open.
   const sparkles = useMemo(
-    () => map.spots.flatMap((sp) => (sp.kind === 'secret' && !found(sp.secret) && areaIndex(sp.x, sp.y) < open ? [{ x: sp.x, y: sp.y }] : [])),
-    [map, found, areaIndex, open],
+    () =>
+      map.spots.flatMap((sp) =>
+        (sp.kind === 'secret' && !found(sp.secret)) || (sp.kind === 'chest' && !save.seen.includes(chestKey(sp.id)))
+          ? areaIndex(sp.x, sp.y) < open
+            ? [{ x: sp.x, y: sp.y }]
+            : []
+          : [],
+      ),
+    [map, found, areaIndex, open, save.seen],
   );
   // The Lantern Lady, glimpsed in the distance: there until you get close.
   const ghosts = useMemo(
@@ -366,12 +374,19 @@ export function WorldScreen({ map, worldId }: { map: WorldMap; worldId: string }
             { label: 'Not now', tone: 'cream', onPress: close },
           ],
         });
+      } else if (s.kind === 'chest') {
+        if (save.seen.includes(chestKey(s.id))) setChat({ lines: [{ who: 'pip', text: 'Empty now. It was a good one, though.' }] });
+        else {
+          commitSave({ ...save, sparks: save.sparks + s.sparks, seen: [...save.seen, chestKey(s.id)] });
+          buzz.win();
+          setChat({ lines: [{ who: 'pip', text: `A hidden chest! Inside: ⚡${s.sparks} sparks. Bzzt, what a find!` }] });
+        }
       } else if (s.kind === 'secret') {
         const sec = SECRETS[s.secret];
         if (sec) setChat({ lines: sec.lines, seenId: secretKey(sec.id) });
       }
     },
-    [map, save, solved, startJob, close, talkToPip, go, askChoice],
+    [map, save, commitSave, solved, startJob, close, talkToPip, go, askChoice],
   );
 
   const facingTarget = useCallback((): Target | null => {
@@ -629,6 +644,8 @@ function LanternGauge({ value }: { value: number }) {
   );
 }
 
+const chestKey = (id: string) => `chest:${id}`;
+
 function labelFor(t: Target): string {
   if (t.kind === 'gate') return 'Look';
   if (t.kind === 'resident') return t.resident.who === 'pip' ? 'Talk to Pip' : 'Talk';
@@ -646,6 +663,8 @@ function labelFor(t: Target): string {
       return 'Read';
     case 'secret':
       return 'Look';
+    case 'chest':
+      return 'Open';
     case 'game':
       return 'Play';
   }

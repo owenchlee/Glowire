@@ -114,12 +114,43 @@ function mapleLane(b: MapBuilder) {
   b.tree(19, 17, 'round');
   b.prop(34, 19, 'mailbox');
   for (const [x, y] of [[24, 25], [26, 25], [41, 25], [35, 18], [36, 18]] as const) b.flowers(x, y);
+  mapleExtras(b);
   b.treeLine(18, 45, 'top', 12, ['round', 'oak', 'cherry', 'lime']);
   b.treeLine(18, 45, 'bottom', 31, ['round', 'oak', 'lime', 'bigGreen']);
   for (const [x, y] of [[20, 28], [29, 13], [42, 13], [24, 29], [39, 29]] as const) b.bush(x, y);
   for (const [x, y] of [[21, 14], [33, 14], [34, 14], [19, 29], [41, 30]] as const) b.flowers(x, y);
   b.spots.push({ kind: 'note', x: 44, y: 20, note: 'circle' });
   b.prop(44, 20, 'sign');
+}
+
+/**
+ * Maple Lane's two side trips, which have to be painted before the tree lines so the trees
+ * leave room: a grassy hill with a lookout (path north from the lane, ladder up the cliff),
+ * and a pond with a little island you can reach on stepping stones.
+ */
+function mapleExtras(b: MapBuilder) {
+  // The hill. Its cliff face is row 10; the ladder is at x=35.
+  b.plateau(28, 3, 15, 8, 'green');
+  b.ladder(35, 10, 'green');
+  b.path('dirt', [{ x: 35, y: 22 }, { x: 35, y: 11 }], 2);
+  // On top: a bench with a view, a lamp, a tree, and a chest tucked in the back corner.
+  b.prop(33, 6, 'bench');
+  b.prop(34, 6, 'bench');
+  b.lamp(38, 5, 'area:maple', 'park');
+  b.tree(30, 6, 'cherry');
+  b.tree(41, 5, 'bigPink');
+  for (const x of [32, 36, 37, 39]) b.flowers(x, 8);
+  b.chest('maple-hill', 40, 8, 25);
+  b.spots.push({ kind: 'sign', x: 35, y: 12, text: 'A hill to the north, with a ladder up the rock. You can see the whole lane from the top, I bet!' });
+  b.prop(35, 12, 'sign');
+
+  // The pond, with an island and stones to it.
+  b.blob('pond', 40, 34.5, 5.5, 3.2, 0.12);
+  b.path('dirt', [{ x: 39, y: 26 }, { x: 39, y: 30 }], 2);
+  b.stones([[39, 31], [39, 32], [39, 33], [39, 34]]);
+  b.chest('maple-pond', 39, 34, 20);
+  for (const [x, y] of [[35, 33], [44, 31], [45, 36]] as const) b.prop(x, y, 'reeds');
+  b.prop(37, 30, 'lily');
 }
 
 // ── A2: Willow Brook ─────────────────────────────────────────────────────────

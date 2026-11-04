@@ -71,6 +71,8 @@ export type Spot =
   | { kind: 'secret'; x: number; y: number; secret: string }
   /** The way to another world: the night bus, or Glimmer's bubble down the well and back. */
   | { kind: 'exit'; x: number; y: number; to: string; via?: 'bus' | 'bubble' }
+  /** A hidden chest: opens once, pays sparks, and is remembered in the save (seen `chest:<id>`). */
+  | { kind: 'chest'; x: number; y: number; id: string; sparks: number }
   /** A mini-game to play (game/games.ts). */
   | { kind: 'game'; x: number; y: number; game: GameSpot };
 

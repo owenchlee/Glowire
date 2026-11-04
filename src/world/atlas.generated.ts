@@ -4,7 +4,7 @@
 export const ATLAS_COLS = 33;
 
 /** Where each source sheet sits in the atlas: its first row, and its width in tiles. */
-export const SHEETS = {"city":{"row":0,"cols":27},"floor":{"row":18,"cols":22},"nature":{"row":45,"cols":24},"water":{"row":66,"cols":28},"house":{"row":83,"cols":33},"element":{"row":106,"cols":16},"detail":{"row":121,"cols":16},"field":{"row":126,"cols":5},"abandoned":{"row":141,"cols":20},"towers":{"row":153,"cols":24},"town":{"row":159,"cols":16},"deep":{"row":177,"cols":16}} as const;
+export const SHEETS = {"city":{"row":0,"cols":27},"floor":{"row":18,"cols":22},"nature":{"row":45,"cols":24},"water":{"row":66,"cols":28},"house":{"row":83,"cols":33},"element":{"row":106,"cols":16},"detail":{"row":121,"cols":16},"field":{"row":126,"cols":5},"abandoned":{"row":141,"cols":20},"towers":{"row":153,"cols":24},"town":{"row":159,"cols":16},"deep":{"row":177,"cols":16},"relief":{"row":188,"cols":20},"reliefDetail":{"row":200,"cols":12}} as const;
 
 export type SheetId = keyof typeof SHEETS;
 
