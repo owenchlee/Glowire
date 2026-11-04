@@ -7,7 +7,7 @@
 //          switch open/closed, rivets, spark, hover frame, bench A, bench B
 //   row 2: bushes (from the village pack), then the diode at column 4, changeover switch
 //          up / down (5, 6), ammeter (7), voltmeter (8), capacitors 1000 / 2200 / 4700 µF
-//          (9, 10, 11)
+//          (9, 10, 11), transistor (12)
 //
 // Pixels that light up (copper cores, LED domes, sparks) get alpha 254; the shader makes
 // them glow when current flows.
@@ -289,6 +289,34 @@ function capacitorSprite(uf) {
   return s;
 }
 
+/**
+ * A transistor (seen from above): a little black half-round body with its flat face to the
+ * east, three legs: base from the west, collector to the north, emitter to the south (with
+ * the arrow that marks it). The face glows when it's switched on.
+ */
+function transistorSprite() {
+  const s = new Sprite();
+  for (let x = 0; x <= 5; x++) (s.set(x, 7, C.copperLight, true), s.set(x, 8, C.copper, true));
+  for (let y = 0; y <= 4; y++) (s.set(7, y, C.copperLight, true), s.set(8, y, C.copper, true));
+  for (let y = 11; y <= 15; y++) (s.set(7, y, C.copperLight, true), s.set(8, y, C.copper, true));
+  // The body: half a disc, round side west.
+  for (let y = 3; y <= 12; y++)
+    for (let x = 4; x <= 11; x++) {
+      const d = Math.hypot(x - 10.5, y - 7.5);
+      if (d <= 6 && x <= 10) s.set(x, y, x < 6 ? C.rimDark : C.burnedDark);
+    }
+  s.rect(10, 3, 2, 10, C.shadow);
+  // A glowing window on the flat face, and the emitter's little arrow.
+  s.rect(10, 6, 1, 4, C.spark, true);
+  s.set(6, 12, C.greyLight);
+  s.set(7, 13, C.greyLight);
+  s.set(5, 13, C.greyLight);
+  // "NPN" ticks.
+  for (const y of [5, 7, 9]) s.set(7, y, C.grey);
+  s.outline();
+  return s;
+}
+
 /** A meter: a round dial on a dark case, with a needle and A (amps) or V (volts). */
 function meterSprite(mode) {
   const s = new Sprite();
@@ -416,6 +444,7 @@ export function circuitSheet(bushes) {
   stamp(png, capacitorSprite(1000), 9, 2);
   stamp(png, capacitorSprite(2200), 10, 2);
   stamp(png, capacitorSprite(4700), 11, 2);
+  stamp(png, transistorSprite(), 12, 2);
   bushes.forEach((tile, i) => {
     for (let y = 0; y < 16; y++)
       for (let x = 0; x < 16; x++) {

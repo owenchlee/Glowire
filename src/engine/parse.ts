@@ -1,5 +1,5 @@
 // Build boards from little text pictures. Used by tests and by level definitions.
-import { battery, block, capacitor, changeover, diode, led, meter, resistor, switchTile, wire } from './tiles';
+import { battery, block, capacitor, changeover, diode, led, meter, resistor, switchTile, transistor, wire } from './tiles';
 import type { Board, LedColor, Rotation, Tile } from './types';
 
 /**
@@ -17,6 +17,7 @@ import type { Board, LedColor, Rotation, Tile } from './types';
  *                  an optional number of quarter turns (Cu2: common on E, throws S and N)
  *   MA MAv MV MVv  ammeter / voltmeter, + on W (horizontal) or N (vertical)
  *   C1000 C4700v   capacitor (microfarads), horizontal / vertical
+ *   Q Q1 Q2 Q3     transistor: base W, collector N, emitter S, then quarter turns clockwise
  */
 export function parseBoard(rows: string[]): Board {
   const grid = rows.map((r) => r.trim().split(/\s+/));
@@ -80,6 +81,8 @@ export function parseToken(token: string): Tile | null {
   if (sw) return switchTile(sw[1] === '1', sw[2] ? 1 : 0);
   const r = /^R(\d+)(v?)$/.exec(token);
   if (r) return resistor(Number(r[1]), r[2] ? 1 : 0);
+  const q = /^Q([0-3]?)$/.exec(token);
+  if (q) return transistor(Number(q[1] || 0) as Rotation);
   const cap = /^C(\d+)(v?)$/.exec(token);
   if (cap) return capacitor(Number(cap[1]), cap[2] ? 1 : 0);
   throw new Error(`unknown token ${token}`);

@@ -78,6 +78,9 @@ function create() {
     /** A unit-long can of radius 0.2, lying along x (scaled per value). */
     capBody: new CylinderGeometry(0.2, 0.2, 1, 24).rotateZ(Math.PI / 2),
     capWindow: new BoxGeometry(0.24, 0.03, 0.09),
+    /** A transistor's body: half a cylinder standing up, flat face to the east. */
+    transistorBody: new CylinderGeometry(0.2, 0.2, 0.32, 20, 1, false, Math.PI, Math.PI),
+    transistorFace: new BoxGeometry(0.02, 0.2, 0.3),
   };
 
   const wireLevels = [0, 0.3, 0.55, 0.8, 1.1].map((intensity) =>
@@ -95,6 +98,7 @@ function create() {
       changeover: soft(COLORS.switchBase),
       meter: soft('#e4e0d4'),
       capacitor: soft('#dfe3ee'),
+      transistor: soft('#e6dff0'),
       block: soft(COLORS.blockStone),
     },
     capSmall: soft('#3da6bd', { roughness: 0.45 }),

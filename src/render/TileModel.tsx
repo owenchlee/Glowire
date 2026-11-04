@@ -99,7 +99,38 @@ export function TileModel({ tile, result, ghost = false }: Props) {
       {tile.kind === 'changeover' && <ChangeoverModel up={tile.up} ghost={ghost} wireMat={wireMat} />}
       {tile.kind === 'meter' && <MeterModel mode={tile.mode} result={result} ghost={ghost} wireMat={wireMat} />}
       {tile.kind === 'capacitor' && <CapacitorModel uf={tile.uf} result={result} ghost={ghost} wireMat={wireMat} />}
+      {tile.kind === 'transistor' && <TransistorModel result={result} ghost={ghost} wireMat={wireMat} />}
     </group>
+  );
+}
+
+/**
+ * A transistor: a little black half-cylinder with three legs (base west, collector north,
+ * emitter south). Its flat face lights up gold while it's switched on.
+ */
+function TransistorModel({ result, ghost, wireMat }: { result: TileResult | null; ghost: boolean; wireMat: Material }) {
+  const { geometry: g, material: m } = getAssets();
+  const face = useMemo(
+    () => new MeshStandardMaterial({ color: '#3a3546', emissive: new Color('#ffd27a'), emissiveIntensity: 0, roughness: 0.4 }),
+    [],
+  );
+  useEffect(() => () => face.dispose(), [face]);
+  // How hard it's switched on: 20 mA through it counts as fully on.
+  const on = Math.min(1, Math.abs(result?.current ?? 0) / 0.02);
+  useEffect(() => {
+    face.emissiveIntensity = 2.4 * on;
+    face.color.set(on > 0.05 ? '#ffe18d' : '#3a3546');
+  }, [on, face]);
+  const pick = (mat: Material) => (ghost ? m.ghost : mat);
+  return (
+    <>
+      <Arm dir={W} length={0.34} material={wireMat} />
+      <Arm dir={N} length={0.3} material={wireMat} />
+      <Arm dir={S} length={0.3} material={wireMat} />
+      <mesh geometry={g.transistorBody} material={pick(m.diodeBody)} position={[0.04, TOP + 0.16, 0]} />
+      <mesh geometry={g.transistorFace} material={pick(face)} position={[0.05, TOP + 0.16, 0]} />
+      <Plus position={[-0.3, TOP + 0.013, 0.27]} material={pick(m.marking)} />
+    </>
   );
 }
 

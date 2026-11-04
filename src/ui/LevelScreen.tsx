@@ -163,6 +163,7 @@ interface Payday {
   stars: number;
   earned: number;
   firstClear: boolean;
+  surge: number;
 }
 
 /**
@@ -258,7 +259,7 @@ export function LevelScreen({ level, day }: { level: LevelDef; day?: string }) {
     const first = bestStars.current === 0;
     bestStars.current = stars;
     const payout = day ? finishDaily(day, stars) : finishJob(level.id, stars, level.boss);
-    setPayday({ stars, earned: payout.earned, firstClear: first });
+    setPayday({ stars, earned: payout.earned, firstClear: first, surge: payout.surge ?? 1 });
     setShowWin(true);
     if (first) setCelebrateKey((k) => k + 1);
     buzz.win();
@@ -880,7 +881,7 @@ function WinCard({
           )}
           <View style={styles.winTop}>
             <PixelText size={18} color={payday.earned > 0 ? GOLD_DARK : TEXT_SOFT}>
-              {payday.earned > 0 ? `+⚡ ${sparks} sparks` : 'No new stars this time'}
+              {payday.earned > 0 ? `+⚡ ${sparks} sparks${payday.surge > 1 && sparks >= payday.earned ? `  SURGE ×${payday.surge}!` : ''}` : 'No new stars this time'}
             </PixelText>
             <View style={styles.flex} />
             {payday.stars < 3 && (

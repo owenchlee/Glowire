@@ -10,7 +10,8 @@ export type PartKey =
   | 'diode'
   | 'c1000'
   | 'c2200'
-  | 'c4700';
+  | 'c4700'
+  | 'transistor';
 
 /** Brightness bands, as fractions of full (20 mA) LED brightness. */
 export const BRIGHTNESS = {

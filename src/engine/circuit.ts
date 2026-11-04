@@ -13,6 +13,7 @@
 //   changeover      common ──R── centre, centre ──R── each throw (closed one ≈ 0, open one 1 GΩ)
 //   meter           + ──R── −   (ammeter ≈ 0 Ω, voltmeter 1 GΩ)
 //   capacitor       + ──C── −   (a gap once settled; see mna.ts for how it fills over time)
+//   transistor      each leg ──R── inner node; Ebers–Moll diodes and current sources inside
 //   block           nothing
 
 import {
@@ -23,9 +24,19 @@ import {
   LED_MODELS,
   OPEN_SWITCH_RESISTANCE,
   THERMAL_VOLTAGE,
+  TRANSISTOR,
+  TRANSISTOR_LEAD_RESISTANCE,
   WIRE_RESISTANCE,
 } from './constants';
-import { getChangeoverPorts, getPorts, getTerminals, isConnected, neighbourIndex, opposite } from './tiles';
+import {
+  getChangeoverPorts,
+  getPorts,
+  getTerminals,
+  getTransistorPorts,
+  isConnected,
+  neighbourIndex,
+  opposite,
+} from './tiles';
 import type { Board, Direction } from './types';
 
 export interface DiodeModel {
@@ -41,7 +52,9 @@ export type Element =
   | { type: 'V'; a: number; b: number; volts: number; cell: number }
   | { type: 'D'; a: number; b: number; model: DiodeModel; cell: number }
   /** A capacitor; `a` is its + end. */
-  | { type: 'C'; a: number; b: number; farads: number; cell: number };
+  | { type: 'C'; a: number; b: number; farads: number; cell: number }
+  /** A current `gain` × (the current through diode element `ctrl`), flowing a → b. */
+  | { type: 'F'; a: number; b: number; ctrl: number; gain: number; cell: number };
 
 /** Which element terminal sits on each tile port, so results can be mapped back to tiles. */
 export interface PortRef {
@@ -74,6 +87,11 @@ export function diodeModel(): DiodeModel {
   const nVt = m.emissionCoefficient * THERMAL_VOLTAGE;
   const junctionVoltage = m.ratedVoltage - m.ratedCurrent * m.seriesResistance;
   return { nVt, is: m.ratedCurrent / Math.expm1(junctionVoltage / nVt) };
+}
+
+/** A transistor's two junctions. */
+export function transistorJunction(): DiodeModel {
+  return { is: TRANSISTOR.saturationCurrent, nVt: THERMAL_VOLTAGE };
 }
 
 export function buildCircuit(board: Board): Circuit {
@@ -141,6 +159,27 @@ export function buildCircuit(board: Board): Circuit {
           port(cell, d, e, 'a');
         }
       }
+      return;
+    }
+
+    if (tile.kind === 'transistor') {
+      // Ebers–Moll: a diode from base to emitter and one from base to collector, and each
+      // one's current, multiplied, pushed back through the other leg. A small base current
+      // lets about BETA times as much flow from collector to emitter, until the collector
+      // can't give any more (the transistor is then fully on: "saturated").
+      const [bd, cd, ed] = getTransistorPorts(tile);
+      const nb = nodeCount++;
+      const nc = nodeCount++;
+      const ne = nodeCount++;
+      for (const [dir, inner] of [[bd, nb], [cd, nc], [ed, ne]] as const) {
+        const e = add({ type: 'R', a: portNode(cell, dir), b: inner, ohms: TRANSISTOR_LEAD_RESISTANCE, cell });
+        port(cell, dir, e, 'a');
+      }
+      const model = transistorJunction();
+      const be = add({ type: 'D', a: nb, b: ne, model, cell });
+      const bc = add({ type: 'D', a: nb, b: nc, model, cell });
+      add({ type: 'F', a: nc, b: nb, ctrl: be, gain: TRANSISTOR.alphaF, cell });
+      add({ type: 'F', a: ne, b: nb, ctrl: bc, gain: TRANSISTOR.alphaR, cell });
       return;
     }
 

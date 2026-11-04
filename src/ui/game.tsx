@@ -37,6 +37,8 @@ interface Game {
   /** Record a mini-game score; returns what a new best paid. */
   finishGame: (game: string, score: number) => JobPayout;
   buy: (id: string) => boolean;
+  /** Replace the save (the Lucky Lantern computes its own results). */
+  commitSave: (next: SaveData) => void;
   equip: (id: string) => void;
   markSeen: (sceneId: string) => void;
   setUnlockAll: (on: boolean) => void;
@@ -71,7 +73,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
   // Results are computed from the latest save synchronously, so callers get the payout.
   const finishJob = useCallback(
     (id: number, stars: number, boss = false) => {
-      const payout = recordJob(save, id, stars, boss);
+      const payout = recordJob(save, id, stars, boss, Math.random);
       if (payout.save !== save) commit(payout.save);
       return payout;
     },
@@ -79,7 +81,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
   );
   const finishDaily = useCallback(
     (day: string, stars: number) => {
-      const payout = recordDaily(save, day, stars);
+      const payout = recordDaily(save, day, stars, Math.random);
       if (payout.save !== save) commit(payout.save);
       return payout;
     },
@@ -118,8 +120,8 @@ export function GameProvider({ children }: { children: ReactNode }) {
   useEffect(() => wearSkin(wire, board), [wire, board]);
 
   const value = useMemo(
-    () => ({ save, finishJob, finishDaily, finishGame, buy, equip, markSeen, setUnlockAll }),
-    [save, finishJob, finishDaily, finishGame, buy, equip, markSeen, setUnlockAll],
+    () => ({ save, finishJob, finishDaily, finishGame, buy, commitSave: commit, equip, markSeen, setUnlockAll }),
+    [save, finishJob, finishDaily, finishGame, buy, commit, equip, markSeen, setUnlockAll],
   );
   return <GameContext.Provider value={value}>{children}</GameContext.Provider>;
 }

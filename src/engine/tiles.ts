@@ -13,6 +13,7 @@ import {
   type Rotation,
   type SwitchTile,
   type Tile,
+  type TransistorTile,
   type TwoTerminalTile,
   type WireShape,
   type WireTile,
@@ -63,10 +64,20 @@ export function getChangeoverPorts(tile: ChangeoverTile): [Direction, Direction,
   return [c!, u!, d!];
 }
 
+/** Transistor at rotation 0: [base, collector, emitter]. */
+const TRANSISTOR_PORTS: readonly [Direction, Direction, Direction] = [W, N, S];
+
+/** A transistor's [base, collector, emitter] ports after rotation. */
+export function getTransistorPorts(tile: TransistorTile): [Direction, Direction, Direction] {
+  const [b, c, e] = TRANSISTOR_PORTS.map((p) => rotateDirection(p, tile.rotation));
+  return [b!, c!, e!];
+}
+
 /** Ports the tile exposes, after rotation. Two-terminal parts list [+, −]. */
 export function getPorts(tile: Tile): Direction[] {
   if (tile.kind === 'block') return [];
   if (tile.kind === 'changeover') return getChangeoverPorts(tile);
+  if (tile.kind === 'transistor') return getTransistorPorts(tile);
   if (tile.kind === 'wire') {
     const rotated = armDirections(tile.arms).reduce<number>(
       (mask, d) => mask | armBit(rotateDirection(d, tile.rotation)),
@@ -133,7 +144,9 @@ export const switchTile = (closed = false, rotation: Rotation = 0): SwitchTile =
 });
 
 export const isTwoTerminal = (tile: Tile): tile is TwoTerminalTile =>
-  tile.kind !== 'wire' && tile.kind !== 'block' && tile.kind !== 'changeover';
+  tile.kind !== 'wire' && tile.kind !== 'block' && tile.kind !== 'changeover' && tile.kind !== 'transistor';
+
+export const transistor = (rotation: Rotation = 0): TransistorTile => ({ kind: 'transistor', rotation });
 
 export const changeover = (up = true, rotation: Rotation = 0): ChangeoverTile => ({
   kind: 'changeover',

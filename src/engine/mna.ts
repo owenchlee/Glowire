@@ -7,6 +7,8 @@
 //   diode      nonlinear, so it is replaced by its tangent line at the current guess
 //              (a conductance plus a current source) and the system is re-solved until
 //              the guess stops moving: Newton–Raphson.
+//   capacitor  a gap when settled; stepping through time, a conductance C/dt plus a source
+//   F source   gain × a diode's current (transistors), on that diode's tangent line too
 
 import type { Circuit, DiodeModel } from './circuit';
 import { GMIN, OPEN_SWITCH_RESISTANCE } from './constants';
@@ -142,11 +144,15 @@ export function solveNetlist(circuit: Circuit, step?: TimeStep): NetlistSolution
   }
   const sources: number[] = [];
   const diodes: number[] = [];
+  const controlled: number[] = [];
   elements.forEach((el, i) => {
     if (!active[i] || !powered[el.a]) return;
     if (el.type === 'V') sources.push(i);
     if (el.type === 'D') diodes.push(i);
+    if (el.type === 'F') controlled.push(i);
   });
+  /** Which diode (index into `diodes`) each element is, for the sources they control. */
+  const diodeSlot = new Map(diodes.map((d, k) => [d, k]));
   const size = n + sources.length;
 
   // 3. Newton–Raphson. With no diodes the system is linear and one pass is exact.
@@ -200,6 +206,27 @@ export function solveNetlist(circuit: Circuit, step?: TimeStep): NetlistSolution
       stampG(el.a, el.b, g);
       stampI(el.a, el.b, i - g * vd[k]!); // tangent line: I ≈ g·v + (i − g·vd)
     });
+    // Current-controlled sources (inside transistors): gain × the controlling diode's current,
+    // which on its tangent line is g·(V(ca) − V(cb)) + (i − g·vd). The g part is a
+    // transconductance stamped against the diode's nodes; the rest is a fixed current.
+    controlled.forEach((f) => {
+      const el = elements[f]!;
+      if (el.type !== 'F') return;
+      const k = diodeSlot.get(el.ctrl);
+      const ctrl = elements[el.ctrl]!;
+      if (k === undefined || ctrl.type !== 'D') return;
+      const { i, g } = diodeEval(vd[k]!, ctrl.model);
+      const gm = el.gain * g;
+      const rows = [index[el.a]!, index[el.b]!];
+      const cols = [index[ctrl.a]!, index[ctrl.b]!];
+      rows.forEach((r, ri) => {
+        if (r < 0) return;
+        const sign = ri === 0 ? 1 : -1; // leaves a, enters b
+        if (cols[0]! >= 0) A[r * size + cols[0]!]! += sign * gm;
+        if (cols[1]! >= 0) A[r * size + cols[1]!]! -= sign * gm;
+      });
+      stampI(el.a, el.b, el.gain * (i - g * vd[k]!));
+    });
     solveLinear(A, z, size);
 
     // Record currents at this solution before moving the linearisation point.
@@ -224,6 +251,10 @@ export function solveNetlist(circuit: Circuit, step?: TimeStep): NetlistSolution
       const iSettled = di <= CURRENT_TOLERANCE + RELATIVE_TOLERANCE * Math.abs(i);
       if (next !== raw || !(vSettled || iSettled)) converged = false;
       vd[k] = next;
+    });
+    controlled.forEach((f) => {
+      const el = elements[f]!;
+      if (el.type === 'F') currents[f] = el.gain * currents[el.ctrl]!;
     });
   }
 

@@ -35,6 +35,8 @@ export function spriteCell(tile: Tile): [number, number] {
       return [tile.mode === 'A' ? 7 : 8, 2];
     case 'capacitor':
       return [tile.uf >= 4700 ? 11 : tile.uf >= 2200 ? 10 : 9, 2];
+    case 'transistor':
+      return [12, 2];
   }
 }
 

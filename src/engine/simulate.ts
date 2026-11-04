@@ -1,9 +1,19 @@
 // Board in, per-tile physics results out.
 
 import { buildCircuit } from './circuit';
-import { CAPACITOR_CHARGED, CURRENT_EPSILON, DIODE_MODEL, LED_MODELS, SHORT_CIRCUIT_CURRENT } from './constants';
+import {
+  CAPACITOR_CHARGED,
+  CURRENT_EPSILON,
+  DIODE_MODEL,
+  LED_MODELS,
+  SHORT_CIRCUIT_CURRENT,
+  TRANSISTOR,
+} from './constants';
 import { type TimeStep, solveNetlist } from './mna';
-import { getChangeoverPorts, getTerminals } from './tiles';
+import { getChangeoverPorts, getTerminals, getTransistorPorts } from './tiles';
+
+/** A transistor passing more than this (0.1 mA) counts as switched on. */
+const TRANSISTOR_ON = 1e-4;
 import type { Board, ComponentStatus, Direction, SimulationResult, TileResult } from './types';
 
 /**
@@ -84,6 +94,23 @@ export function simulate(board: Board, step?: TimeStep): SimulationResult {
         portCurrents,
         brightness: 0,
         status: current > CURRENT_EPSILON ? 'OK' : 'OFF',
+      };
+    }
+
+    if (tile.kind === 'transistor') {
+      // Its current is what flows in at the collector; its voltage, collector to emitter.
+      const [, c, e] = getTransistorPorts(tile);
+      const current = portCurrents[c] ?? 0;
+      const vc = sol.voltages[nodeAt.get(cell * 4 + c) ?? 0] ?? 0;
+      const ve = sol.voltages[nodeAt.get(cell * 4 + e) ?? 0] ?? 0;
+      return {
+        cell,
+        kind: tile.kind,
+        voltage: vc - ve,
+        current,
+        portCurrents,
+        brightness: 0,
+        status: current > TRANSISTOR.maxCurrent ? 'BURNED_OUT' : current > TRANSISTOR_ON ? 'OK' : 'OFF',
       };
     }
 

@@ -36,6 +36,21 @@ export const GMIN = 1e-12;
 /** Currents below this count as "no current" when deciding statuses. */
 export const CURRENT_EPSILON = 1e-6;
 
+/**
+ * A small NPN transistor (2N3904-ish). Current gain BETA ≈ 100 forward; reversed it barely
+ * works. αF = β/(β+1) is the share of emitter current that reaches the collector.
+ */
+export const TRANSISTOR = {
+  saturationCurrent: 1e-14,
+  alphaF: 100 / 101,
+  alphaR: 2 / 3,
+  /** Collector current above this burns it out (it gets very hot). */
+  maxCurrent: 0.2,
+};
+
+/** Each transistor leg, from the tile edge into the part. */
+export const TRANSISTOR_LEAD_RESISTANCE = 0.5;
+
 /** A capacitor holding more than this many volts counts as charged. */
 export const CAPACITOR_CHARGED = 0.05;
 

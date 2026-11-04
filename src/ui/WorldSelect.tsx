@@ -6,7 +6,7 @@ import { useEffect, useMemo, useRef } from 'react';
 import { Animated, Easing, Image, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { totalStars } from '../game/save';
+import { currentStreak, dayKey, totalStars } from '../game/save';
 import { CHAPTERS } from '../levels/levels';
 import { WORLDS, type WorldInfo } from '../world/worlds';
 import { FACES } from './faces.generated';
@@ -31,15 +31,53 @@ export function WorldSelect() {
           <View style={styles.flex} />
           <Counter icon="⚡" value={save.sparks} />
           <Counter icon="★" value={totalStars(save)} />
+          <PixelButton label="Lucky Lantern" tone="gold" size={13} onPress={() => router.push('/casino')} />
           <PixelButton label="Shop" tone="teal" size={13} onPress={() => router.push('/shop')} />
         </View>
         <ScrollView horizontal contentContainerStyle={styles.row} showsHorizontalScrollIndicator={false}>
+          <DailyCard />
           {WORLDS.map((w, i) => (
             <WorldCard key={w.id} world={w} number={i + 1} />
           ))}
         </ScrollView>
       </SafeAreaView>
     </View>
+  );
+}
+
+function DailyCard() {
+  const { save } = useGame();
+  const today = dayKey(new Date());
+  const best = save.daily.stars[today] ?? 0;
+  const streak = currentStreak(save, today);
+
+  return (
+    <Panel style={styles.card} tone="night">
+      <PixelText size={12} color={GOLD}>
+        DAILY BLACKOUT
+      </PixelText>
+      <PixelText size={22} color={CREAM} style={styles.dailyTitle}>
+        A new circuit every day
+      </PixelText>
+      <PixelText size={13} color="#b9b2db" style={styles.dailyCopy}>
+        {best > 0
+          ? `Today's best: ${'★'.repeat(best)} · ${streak}-day streak`
+          : streak > 0
+            ? `${streak}-day streak · Keep it glowing!`
+            : 'Solve today’s circuit to start a streak.'}
+      </PixelText>
+      <View style={styles.dailyFoot}>
+        <PixelText size={12} color="#c9c3e6">
+          New challenge daily
+        </PixelText>
+        <PixelButton
+          label={best > 0 ? 'Replay today' : 'Play today'}
+          tone="gold"
+          size={12}
+          onPress={() => router.push('/daily')}
+        />
+      </View>
+    </Panel>
   );
 }
 
@@ -134,6 +172,15 @@ const styles = StyleSheet.create({
   logo: { letterSpacing: 3 },
   row: { gap: 18, paddingHorizontal: 20, paddingVertical: 16, alignItems: 'center' },
   card: { width: 300 },
+  dailyTitle: { marginTop: 8 },
+  dailyCopy: { marginTop: 8, minHeight: 54 },
+  dailyFoot: {
+    marginTop: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    minHeight: 40,
+  },
   locked: { opacity: 0.92 },
   tagline: { marginTop: 4, minHeight: 54 },
   faces: { flexDirection: 'row', gap: 4, marginTop: 8 },

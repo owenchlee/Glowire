@@ -98,7 +98,17 @@ export interface CapacitorTile extends TileBase {
   uf: number;
 }
 
+/**
+ * An NPN transistor: a switch worked by a small current. At rotation 0 the base is on the W
+ * side, the collector N and the emitter S. A little current into the base lets a big one flow
+ * from collector to emitter (about 100 times as much, until the circuit can't give more).
+ */
+export interface TransistorTile extends TileBase {
+  kind: 'transistor';
+}
+
 export type Tile =
+  | TransistorTile
   | WireTile
   | BlockTile
   | ResistorTile

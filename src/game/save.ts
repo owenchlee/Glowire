@@ -1,7 +1,21 @@
 // The save file and the rules for sparks, stars, the shop and the daily streak.
 // Pure TypeScript: the UI only calls these and writes the result to disk.
 
+import { type Random, rollSurge } from './luck';
 import { item } from './shop';
+
+export interface LuckStats {
+  spins: number;
+  wagered: number;
+  won: number;
+  /** The biggest single win. */
+  biggest: number;
+  /** Paid jobs since the last Surge (it raises the next one's chance). */
+  dry: number;
+  surges: number;
+}
+
+export const NEW_LUCK: LuckStats = { spins: 0, wagered: 0, won: 0, biggest: 0, dry: 0, surges: 0 };
 
 export interface SaveData {
   version: 2;
@@ -22,6 +36,8 @@ export interface SaveData {
   seen: string[];
   /** Best score in each mini-game (games.ts). */
   games: Record<string, number>;
+  /** Lifetime luck: the Lucky Lantern and payday Surges. */
+  luck: LuckStats;
   /** Testing switch: every job is open. */
   unlockAll: boolean;
 }
@@ -35,6 +51,7 @@ export const NEW_SAVE: SaveData = {
   daily: { last: null, streak: 0, best: 0, stars: {} },
   seen: [],
   games: {},
+  luck: NEW_LUCK,
   unlockAll: false,
 };
 
@@ -76,6 +93,7 @@ export function migrate(raw: unknown): SaveData {
     },
     seen: Array.isArray(raw.seen) ? raw.seen.filter((x) => typeof x === 'string') : [],
     games: isRecord(raw.games) ? numbers(raw.games) : {},
+    luck: { ...NEW_LUCK, ...(isRecord(raw.luck) ? numbers(raw.luck) : {}) },
     unlockAll: raw.unlockAll === true,
   };
 }
@@ -107,17 +125,27 @@ export interface JobPayout {
   earned: number;
   /** True the first time the job is solved. */
   firstClear: boolean;
+  /** 2 or 5 when a payday Surge hit (already in `earned`); 1 otherwise. */
+  surge?: 1 | 2 | 5;
 }
 
-export function recordJob(save: SaveData, id: number, stars: number, boss = false): JobPayout {
+/**
+ * Roll a payday Surge on top of `earned` sparks (already in `save`). With no random source
+ * (tests) nothing rolls. Misses build pity so a long dry spell ends.
+ */
+function withSurge(save: SaveData, earned: number, random?: Random): { save: SaveData; earned: number; surge: 1 | 2 | 5 } {
+  if (!random || earned <= 0) return { save, earned, surge: 1 };
+  const surge = rollSurge(save.luck.dry, random);
+  const luck = surge > 1 ? { ...save.luck, dry: 0, surges: save.luck.surges + 1 } : { ...save.luck, dry: save.luck.dry + 1 };
+  return { save: { ...save, sparks: save.sparks + earned * (surge - 1), luck }, earned: earned * surge, surge };
+}
+
+export function recordJob(save: SaveData, id: number, stars: number, boss = false, random?: Random): JobPayout {
   const before = save.stars[String(id)] ?? 0;
   if (stars <= before) return { save, earned: 0, firstClear: false };
-  const earned = withPetBonus(save, sparksForStars(before, stars, boss));
-  return {
-    save: { ...save, stars: { ...save.stars, [id]: stars }, sparks: save.sparks + earned },
-    earned,
-    firstClear: before === 0,
-  };
+  const base = withPetBonus(save, sparksForStars(before, stars, boss));
+  const paid = withSurge({ ...save, stars: { ...save.stars, [id]: stars }, sparks: save.sparks + base }, base, random);
+  return { save: paid.save, earned: paid.earned, firstClear: before === 0, surge: paid.surge };
 }
 
 /** YYYY-MM-DD in the player's own time zone. */
@@ -142,7 +170,7 @@ export const DAILY_BASE = 30;
 /** Extra sparks per streak day, capped at a week. */
 export const DAILY_STREAK_BONUS = 5;
 
-export function recordDaily(save: SaveData, today: string, stars: number): JobPayout {
+export function recordDaily(save: SaveData, today: string, stars: number, random?: Random): JobPayout {
   const before = save.daily.stars[today] ?? 0;
   if (stars <= before) return { save, earned: 0, firstClear: false };
   const firstClear = before === 0;
@@ -155,15 +183,16 @@ export function recordDaily(save: SaveData, today: string, stars: number): JobPa
     earned += DAILY_BASE + DAILY_STREAK_BONUS * Math.min(streak, 7);
   }
   earned = withPetBonus(save, earned);
-  return {
-    save: {
+  const paid = withSurge(
+    {
       ...save,
       sparks: save.sparks + earned,
       daily: { last, streak, best, stars: { ...save.daily.stars, [today]: stars } },
     },
     earned,
-    firstClear,
-  };
+    random,
+  );
+  return { save: paid.save, earned: paid.earned, firstClear, surge: paid.surge };
 }
 
 /** Sparks for each point a mini-game score beats your best by. */
