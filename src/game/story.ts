@@ -1,3 +1,8 @@
+import { SCENES_DEEP } from './extras/deep';
+import { SCENES_GLOWTOWN } from './extras/glowtown';
+import { SCENES_HARBOUR } from './extras/harbour';
+import { SCENES_MOSSBELL } from './extras/mossbell';
+
 // The story: scenes that play as you travel the route, and the pages of Marigold's
 // notebook you find along the way.
 //
@@ -500,3 +505,4 @@ export const NOTES: Record<string, Note> = Object.fromEntries(
 export function sceneOf(id: string): Scene | undefined {
   return SCENES[id];
 }
+for (const s of [...SCENES_GLOWTOWN, ...SCENES_HARBOUR, ...SCENES_MOSSBELL, ...SCENES_DEEP]) SCENES[s.id] = s;

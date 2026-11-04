@@ -28,6 +28,10 @@
 // other: that's the thirteenth ring. Fill the Heart Jar and the crack mends, and the Hush
 // is just a little cloud who was cold. The storms that filled the jars come from Stormpeak.
 
+import { SECRETS_DEEP } from './extras/deep';
+import { SECRETS_GLOWTOWN } from './extras/glowtown';
+import { SECRETS_HARBOUR } from './extras/harbour';
+import { SECRETS_MOSSBELL } from './extras/mossbell';
 import type { Line } from './story';
 
 export type WorldId = 'glowtown' | 'harbour' | 'mossbell' | 'deep';
@@ -290,6 +294,8 @@ export const PERSON_SECRETS: Record<string, { secret: string; afterScene?: strin
   echo: { secret: 'who:echo' },
   hush: { secret: 'who:hush', afterScene: 'heart-outro' },
 };
+
+for (const s of [...SECRETS_GLOWTOWN, ...SECRETS_HARBOUR, ...SECRETS_MOSSBELL, ...SECRETS_DEEP]) SECRETS[s.id] = s;
 
 /** Secrets that belong to a world (for its counter in the corner). */
 export function secretsIn(world: string): Secret[] {
