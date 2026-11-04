@@ -5,7 +5,7 @@ import { blockedCells, findPath } from './logic';
 
 function build(fn: (b: MapBuilder) => void) {
   const b = new MapBuilder(30, 24, 'grass');
-  b.area({ id: 'a', name: 'A', jobs: [] }, [{ x: 0, y: 0, w: 30, h: 24 }]);
+  b.area({ id: 'a', name: 'A', jobs: [], entry: { x: 1, y: 20, facing: 'right' } }, [{ x: 0, y: 0, w: 30, h: 24 }]);
   fn(b);
   const map = b.finish({ id: 't', name: 'T', spawn: { x: 1, y: 20, facing: 'right' } });
   return { map, blocked: blockedCells(map, [], () => true) };

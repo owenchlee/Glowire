@@ -7,7 +7,7 @@
 
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Animated, Easing, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
 import { type SaveData, dayKey, totalStars } from '../game/save';
 import { outfitSprite } from '../game/shop';
@@ -567,6 +567,7 @@ export function WorldScreen({ map, worldId }: { map: WorldMap; worldId: string }
       />
       <Pressable style={StyleSheet.absoluteFill} onPress={(e) => onTap(e.nativeEvent.locationX, e.nativeEvent.locationY)} />
       {!talk && !travelling && <Joystick onInput={steer} />}
+      {!talk && !travelling && <AreaBanner key={`${map.id}:${here}`} name={area.name} world={map.name} />}
 
       <View style={styles.hud} pointerEvents="box-none">
         <Pressable style={styles.title} onPress={() => setTravelling(true)}>
@@ -632,6 +633,31 @@ export function WorldScreen({ map, worldId }: { map: WorldMap; worldId: string }
   );
 }
 
+/** The name of the place you've just walked into, fading in over the picture and away again. */
+function AreaBanner({ name, world }: { name: string; world: string }) {
+  const [t] = useState(() => new Animated.Value(0));
+  useEffect(() => {
+    Animated.sequence([
+      Animated.timing(t, { toValue: 1, duration: 450, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
+      Animated.delay(1700),
+      Animated.timing(t, { toValue: 0, duration: 700, useNativeDriver: true }),
+    ]).start();
+  }, [t]);
+  return (
+    <Animated.View
+      pointerEvents="none"
+      style={[styles.banner, { opacity: t, transform: [{ translateY: t.interpolate({ inputRange: [0, 1], outputRange: [-10, 0] }) }] }]}
+    >
+      <PixelText size={12} color="#c9c3e6" shadow>
+        {world.toUpperCase()}
+      </PixelText>
+      <PixelText size={28} color={GOLD} shadow>
+        {name}
+      </PixelText>
+    </Animated.View>
+  );
+}
+
 /** How full the lantern is: a little jar that drains, gold when full and red when nearly out. */
 function LanternGauge({ value }: { value: number }) {
   const color = value > 0.5 ? '#ffd27a' : value > 0.25 ? '#ef914f' : '#e0394c';
@@ -675,6 +701,7 @@ function labelFor(t: Target): string {
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: '#0d0f1e', overflow: 'hidden' },
+  banner: { position: 'absolute', top: 70, left: 0, right: 0, alignItems: 'center', gap: 2 },
   flex: { flex: 1 },
   hud: {
     position: 'absolute',
