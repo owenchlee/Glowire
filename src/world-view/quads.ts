@@ -21,6 +21,9 @@ export interface Quad {
   tint?: readonly [number, number, number];
   /** Quarter turns clockwise. */
   rot?: number;
+  /** How far the top and bottom edges sway in the wind (0–1): trees, bushes, reeds. */
+  swayTop?: number;
+  swayBottom?: number;
 }
 
 export interface Sheet {
@@ -34,6 +37,7 @@ export function quadGeometry(quads: Quad[], sheet: Sheet): BufferGeometry {
   const uv = new Float32Array(n * 4 * 2);
   const lit = new Float32Array(n * 4);
   const tint = new Float32Array(n * 4 * 3);
+  const sway = new Float32Array(n * 4);
   const index = new Uint32Array(n * 6);
   // Pull UVs in by a hair so neighbouring tiles in the sheet never bleed in.
   const ex = 0.01 / sheet.width;
@@ -61,6 +65,7 @@ export function quadGeometry(quads: Quad[], sheet: Sheet): BufferGeometry {
     const r = ((q.rot ?? 0) % 4 + 4) % 4;
     for (let k = 0; k < 4; k++) uv.set(corners[(k - r + 4) % 4]!, i * 8 + k * 2);
     lit.fill(q.lit ?? 0, i * 4, i * 4 + 4);
+    sway.set([q.swayTop ?? 0, q.swayTop ?? 0, q.swayBottom ?? 0, q.swayBottom ?? 0], i * 4);
     if (q.tint) for (let k = 0; k < 4; k++) tint.set(q.tint, (i * 4 + k) * 3);
     const v = i * 4;
     index.set([v, v + 2, v + 1, v, v + 3, v + 2], i * 6);
@@ -70,6 +75,7 @@ export function quadGeometry(quads: Quad[], sheet: Sheet): BufferGeometry {
   g.setAttribute('uv', new BufferAttribute(uv, 2));
   g.setAttribute('aLit', new BufferAttribute(lit, 1));
   g.setAttribute('aTint', new BufferAttribute(tint, 3));
+  g.setAttribute('aSway', new BufferAttribute(sway, 1));
   g.setIndex(new BufferAttribute(index, 1));
   return g;
 }

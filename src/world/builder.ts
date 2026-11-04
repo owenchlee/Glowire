@@ -744,6 +744,7 @@ export class MapBuilder {
   tree(x: number, y: number, style: TreeStyle = 'round') {
     const t = TREES[style];
     this.object(x, y - t.h + 1, t.w, t.h, [...t.tiles]);
+    this.objects[this.objects.length - 1]!.sway = true;
     if (t.w === 3) this.block(x, y, 3, 1);
     else this.block(x, y, t.w, 1);
   }
@@ -811,17 +812,20 @@ export class MapBuilder {
   prop(x: number, y: number, name: PropName) {
     const p = PROPS[name];
     this.object(x, y, 1, 1, [p.t]);
+    if (name === 'reeds' || name === 'fern' || name === 'sunflower' || name === 'tulip' || name === 'daisy') this.objects[this.objects.length - 1]!.sway = true;
     if (p.solid) this.block(x, y, 1, 1);
   }
 
   bush(x: number, y: number) {
     this.object(x, y, 1, 1, [BUSHES[Math.floor(hash(x, y) * BUSHES.length)]!]);
+    this.objects[this.objects.length - 1]!.sway = true;
     this.block(x, y, 1, 1);
   }
 
   /** Flowers you can walk through. */
   flowers(x: number, y: number) {
     this.object(x, y, 1, 1, [FLOWERS[Math.floor(hash(x, y) * FLOWERS.length)]!], undefined, true);
+    this.objects[this.objects.length - 1]!.sway = true;
   }
 
   /** A row of fence (or hedge) from x to x+w-1. */

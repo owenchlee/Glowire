@@ -69,6 +69,8 @@ export type Lighting = ReturnType<typeof createLighting>;
 const vertex = /* glsl */ `
   attribute float aLit;
   attribute vec3 aTint;
+  attribute float aSway;
+  uniform float uTime;
   varying vec2 vUv;
   varying vec2 vWorld;
   varying float vLit;
@@ -77,7 +79,10 @@ const vertex = /* glsl */ `
     vUv = uv;
     vLit = aLit;
     vTint = aTint;
-    vec4 world = modelMatrix * vec4(position, 1.0);
+    // Wind: crowns and reeds lean a pixel or so, in whole art pixels, rippling across the map.
+    vec3 pos = position;
+    if (aSway > 0.0) pos.x += floor(sin(uTime * 1.5 + position.x * 0.6 + position.y * 0.35) * 1.4 + 0.5) / 16.0 * aSway;
+    vec4 world = modelMatrix * vec4(pos, 1.0);
     #ifdef LOCAL_LIGHT
       vWorld = position.xy;
     #else
@@ -115,6 +120,13 @@ const fragment = /* glsl */ `
       float f = 1.0 - clamp(distance(p, l.xy) / l.z, 0.0, 1.0);
       f = floor(f * f * 10.0 + 0.5) / 10.0;
       light += uLightColors[i] * f * l.w * 0.85;
+    }
+    // Water: the one flat blue of every pond and sea shimmers, in whole art pixels.
+    if (uLitAll < 0.5 && all(lessThan(abs(c.rgb - vec3(0.443, 0.867, 0.933)), vec3(0.02)))) {
+      vec2 q = floor(vWorld * 16.0);
+      float w = sin(q.x * 0.55 + uTime * 1.4 + sin(q.y * 0.7 + uTime * 0.6) * 1.5) + sin(q.y * 0.9 - uTime * 1.1 + q.x * 0.2);
+      c.rgb = mix(c.rgb, vec3(0.80, 0.96, 1.0), step(1.5, w) * 0.85);
+      c.rgb = mix(c.rgb, vec3(0.30, 0.68, 0.84), step(w, -1.6) * 0.55);
     }
     vec3 col = c.rgb * light;
 

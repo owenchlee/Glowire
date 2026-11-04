@@ -32,6 +32,8 @@ export interface WorldObject {
   until?: string;
   /** Drawn flat on the ground, under everyone (rugs, bridges, crops). */
   flat?: boolean;
+  /** Moves in the wind (trees, bushes, reeds, flowers). */
+  sway?: boolean;
 }
 
 /** A pool of light (lamp, lit doorway). Shines only while its group is lit. */

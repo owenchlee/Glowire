@@ -10,6 +10,7 @@ import { EXTRAS, PEOPLE } from '../world/people.generated';
 import type { Resident, WorldMap } from '../world/types';
 import { type Walker, walkFrame, walkerPosition } from '../world/walker';
 import { Canvas, useFrame } from '../render/r3f';
+import { AMBIENT, Ambient, Dust } from './Ambient';
 import { type Lighting, MAX_LIGHTS, createFog, createLighting, loadPixelTexture, worldMaterial } from './pixels';
 import { type Quad, type Sheet, quadGeometry, setQuadSource } from './quads';
 
@@ -148,7 +149,15 @@ function Scene({
       const z = o.flat ? 0.02 : depth(o.y + o.h);
       const on = o.group && lit.has(o.group) ? 1 : 0;
       o.tiles.forEach((t, i) => {
-        if (t >= 0) quads.push(tile(t, o.x + (i % o.w), o.y + Math.floor(i / o.w), z, on));
+        if (t < 0) return;
+        const quad = tile(t, o.x + (i % o.w), o.y + Math.floor(i / o.w), z, on);
+        if (o.sway) {
+          // The top row leans furthest, the bottom (the trunk's foot) not at all.
+          const row = Math.floor(i / o.w);
+          quad.swayTop = (o.h - row) / o.h;
+          quad.swayBottom = (o.h - row - 1) / o.h;
+        }
+        quads.push(quad);
       });
     }
     return quadGeometry(quads, citySheet);
@@ -202,6 +211,8 @@ function Scene({
       {bubbles.map((b) => (
         <Bubble key={`${b.who}@${b.x},${b.y}`} {...b} sheet={peopleSheet} material={people} />
       ))}
+      {AMBIENT[map.id] && <Ambient kind={AMBIENT[map.id]!} />}
+      {!map.underwater && <Dust walker={walker} />}
       {map.underwater && <SeaBubbles sheet={peopleSheet} material={people} />}
       {map.underwater && lantern && <DarkEyes walker={walker} lantern={lantern} sheet={peopleSheet} material={people} />}
     </>
