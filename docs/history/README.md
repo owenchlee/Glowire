@@ -13,6 +13,7 @@ Each version is a git tag you can play again (see [Play an old version](#play-an
 | `v0.6-route`       | Day 3 | Oct 13, 2026 | One road with lore, dark gates, World 2, the 3D board is back  |
 | `v0.7-mossbell`    | Day 4 | Oct 13, 2026 | 8-way walking, changeovers and meters, World 3, the Lantern Lady |
 | `v0.8-deep`        | Day 4 | Oct 13, 2026 | Capacitors, World 4 under the sea, a lantern that runs down     |
+| `v0.9-brain-games` | Day 5 | Nov 3, 2026  | A puzzle game for the whole brain, and maps worth exploring     |
 
 ---
 
@@ -407,6 +408,66 @@ Mossbell Hollow:
 Brightwater Deep (lit):
 
 ![Brightwater Deep map](v0.8/map-deep.png)
+
+---
+
+## v0.9 Brain games and maps worth exploring
+
+**Day 5 (Nov 3, 2026)** · tag `v0.9-brain-games`
+
+### What I decided
+
+- **Make it a real puzzle game, not only an electronics one:** “essentially I want to make the
+  game like a puzzle game. Not in the puzzle as in it's really hard to understand how the
+  circuit works, but a puzzle as in an actual puzzle game where it tests your intuition not
+  necessarily in only the field of electronics. So I want someone to be able to learn
+  electronics while being tested on other parts of their intellect.”
+- **One special feature per world, each with its own lore:** “I wanted one new feature for
+  each map that was like special… So over time it became more complex. Each world should
+  have its own lore and that lore should connect to the puzzle part of that world.”
+- **The maps were boring:** “the layouts of the maps have to be more interesting. Right now
+  it's very, very boring. Maybe add like bridges, water, stuff like that, secrets, all that
+  fun stuff.” I asked for research into open-world games first, then a plan, then the work
+  (`docs/PLAN-polish.md`).
+
+### What got built
+
+- **Four brain games, one per world,** each testing a different kind of thinking (rules in
+  `src/game/puzzles.ts`, with tests):
+  - **Dead Lamp Hunt** (Glowtown, Gran): Grumble killed one street lamp; you get a few
+    voltmeter probes to find it. Deduction.
+  - **Dockyard Wiring** (Driftwood Harbour, Bolt): turn pipes to power every lamp, with
+    one-way diodes bolted down. Spatial planning.
+  - **Clock Panel** (Mossbell Hollow, Hazel): every clock stopped at 11:52; each switch flips
+    its neighbours. Sequencing.
+  - **Lantern Budget** (Brightwater Deep, Pearl): your lantern drains while the Hush feeds on
+    it; pick the circuit that lights the lamp brightest. Estimation under pressure.
+- **A map toolbox:** grassy and sandstone hills with two-tile cliffs and climbable ladders,
+  cave mouths, stepping stones across water, and hidden chests that pay sparks (counted in
+  the corner of the screen).
+- **All four maps rebuilt around it,** each by its own pass: forks and loops, second and
+  third bridges, boardwalks, fishing jetties, ponds, islands on stepping stones, grottos,
+  lookouts, back alleys, a canal, kelp forests and mesas. In total about 50 hidden chests and
+  35 new secrets, each with a hint (a sign, an odd tree, a path that just stops, or a
+  rumour from someone in town) and a story that points back at the circuits.
+- **Things that move:** water that shimmers, trees and reeds swaying in the wind, fireflies
+  and falling leaves, dust at the hero's heels, an area-name banner when you walk somewhere
+  new, a flickering GLOWIRE title, and world cards that show a snapshot of the world.
+
+### What it looked like
+
+![Dead Lamp Hunt](v0.9/dead-lamp-hunt.png)
+![Dockyard Wiring](v0.9/dockyard-wiring.png)
+![Clock Panel](v0.9/clock-panel.png)
+![Lantern Budget](v0.9/lantern-budget.png)
+![The title screen](v0.9/title-cards.png)
+
+The four maps, whole:
+
+![Glowtown](v0.9/map-glowtown.png)
+![Driftwood Harbour](v0.9/map-harbour.png)
+![Mossbell Hollow](v0.9/map-mossbell.png)
+![Brightwater Deep](v0.9/map-deep.png)
 
 ---
 
