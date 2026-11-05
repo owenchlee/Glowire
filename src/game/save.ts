@@ -76,7 +76,7 @@ export function migrate(raw: unknown): SaveData {
     for (const id of ids) if (Number.isInteger(id)) stars[String(id)] = 1;
     return { ...structuredClone(NEW_SAVE), stars };
   }
-  if (raw.version !== 2) return structuredClone(NEW_SAVE);
+  // Any other version (missing, or written by a newer app) is read field by field, so progress survives.
   const base = structuredClone(NEW_SAVE);
   const daily = isRecord(raw.daily) ? raw.daily : {};
   const brain = isRecord(raw.brainDaily) ? raw.brainDaily : {};
@@ -116,7 +116,7 @@ export function migrate(raw: unknown): SaveData {
 
 function numbers(r: Record<string, unknown>): Record<string, number> {
   const out: Record<string, number> = {};
-  for (const [k, v] of Object.entries(r)) if (typeof v === 'number') out[k] = v;
+  for (const [k, v] of Object.entries(r)) if (typeof v === 'number' && Number.isFinite(v)) out[k] = v;
   return out;
 }
 
