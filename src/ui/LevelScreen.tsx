@@ -540,7 +540,7 @@ export function LevelScreen({ level, day }: { level: LevelDef; day?: string }) {
         </View>
 
         <View style={[styles.hint, hint.tone === 'warning' && styles.hintWarning, hint.tone === 'success' && styles.hintSuccess]}>
-          <Pressable onPress={showTip} hitSlop={6} style={styles.pip}>
+          <Pressable onPress={showTip} hitSlop={6} accessibilityRole="button" accessibilityLabel="Ask Pip for a tip" style={styles.pip}>
             <Portrait who="pip" size={36} />
             {level.tip && !said && (
               <View style={styles.tipBadge}>
@@ -615,7 +615,7 @@ export function LevelScreen({ level, day }: { level: LevelDef; day?: string }) {
             }}
           />
           {pet?.kind === 'pet' && (
-            <Pressable onPress={callPet} hitSlop={6} style={[styles.pet, petUsed && styles.petUsed]}>
+            <Pressable onPress={callPet} hitSlop={6} accessibilityRole="button" accessibilityLabel={petUsed ? `${petName} is resting` : `Call ${petName}`} accessibilityState={{ disabled: petUsed }} style={[styles.pet, petUsed && styles.petUsed]}>
               <PetFace id={pet.id} hopKey={petHop} />
               <PixelText size={9} color={MUTED} shadow>
                 {pet.ability === 'shiny' ? '+50%' : petUsed ? 'resting' : pet.ability}

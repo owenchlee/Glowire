@@ -655,12 +655,12 @@ export function WorldScreen({ map, worldId }: { map: WorldMap; worldId: string }
         onTick={onTick}
         onView={onView}
       />
-      <Pressable style={StyleSheet.absoluteFill} onPress={(e) => onTap(e.nativeEvent.locationX, e.nativeEvent.locationY)} />
+      <Pressable accessibilityRole="button" accessibilityLabel="Walk here" style={StyleSheet.absoluteFill} onPress={(e) => onTap(e.nativeEvent.locationX, e.nativeEvent.locationY)} />
       {!talk && !travelling && <Joystick onInput={steer} />}
       {!talk && !travelling && <AreaBanner key={`${map.id}:${here}`} name={area.name} world={map.name} />}
 
       <View style={styles.hud} pointerEvents="box-none">
-        <Pressable style={styles.title} onPress={() => setTravelling(true)}>
+        <Pressable accessibilityRole="button" accessibilityLabel={`${area.name}. Open the travel map`} style={styles.title} onPress={() => setTravelling(true)}>
           <PixelText size={18} color={GOLD} shadow>
             {area.name} ▾
           </PixelText>

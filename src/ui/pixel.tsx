@@ -138,7 +138,15 @@ export function PixelButton({
 }) {
   const c = BUTTON[tone];
   return (
-    <Pressable onPress={onPress} disabled={disabled} hitSlop={6} style={[disabled && styles.disabled, style]}>
+    <Pressable
+      onPress={onPress}
+      disabled={disabled}
+      hitSlop={6}
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      accessibilityState={{ disabled }}
+      style={[disabled && styles.disabled, style]}
+    >
       {({ pressed }) => (
         <View style={[styles.buttonOutline, { marginTop: pressed ? 3 : 0 }]}>
           <View

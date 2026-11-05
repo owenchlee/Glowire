@@ -49,7 +49,7 @@ export function Journal() {
   };
 
   const entry = (key: string, found: boolean, title: string, sub: string, lines: Line[], who?: string) => (
-    <Pressable key={key} onPress={() => found && setOpen({ title, lines })} style={[styles.entry, !found && styles.entryHidden]}>
+    <Pressable key={key} onPress={() => found && setOpen({ title, lines })} accessibilityRole="button" accessibilityLabel={found ? `${title}. ${sub}` : "Not found yet"} accessibilityState={{ disabled: !found }} style={[styles.entry, !found && styles.entryHidden]}>
       {who && <Portrait who={found ? who : 'pip'} size={34} />}
       <View style={styles.flex}>
         <PixelText size={13} color={found ? '#3d2c22' : TEXT_SOFT}>

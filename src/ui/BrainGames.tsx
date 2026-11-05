@@ -152,7 +152,7 @@ export function DeadLampHunt({ seed, onSay, onEnd }: BrainProps) {
           const maybe = suspect && i >= suspect[0] && i <= suspect[1] && !cleared[i];
           const isDead = revealed && i === r.dead;
           return (
-            <Pressable key={i} onPress={() => pick(i)} hitSlop={4}>
+            <Pressable key={i} onPress={() => pick(i)} hitSlop={4} accessibilityRole="button" accessibilityLabel={`Street lamp ${i + 1}`}>
               <View
                 style={[
                   styles.streetLamp,
@@ -263,7 +263,7 @@ export function DockyardWiring({ seed, onSay, onEnd }: BrainProps) {
             const lit = on[i]!;
             const wire = lit ? LIT : WIRE_OFF;
             return (
-              <Pressable key={i} onPress={() => tap(i)} style={[styles.pipeCell, { left: (i % board.w) * CELL, top: Math.floor(i / board.w) * CELL }]}>
+              <Pressable key={i} onPress={() => tap(i)} accessibilityRole="button" accessibilityLabel={`Pipe piece, row ${Math.floor(i / board.w) + 1}, column ${(i % board.w) + 1}. Tap to turn`} accessibilityState={{ selected: lit }} style={[styles.pipeCell, { left: (i % board.w) * CELL, top: Math.floor(i / board.w) * CELL }]}>
                 <View style={[styles.pipeBack, t.kind === 'diode' && styles.pipeBolted]}>
                   {t.mask & N ? <View style={[styles.arm, styles.armN, { backgroundColor: wire }]} /> : null}
                   {t.mask & S ? <View style={[styles.arm, styles.armS, { backgroundColor: wire }]} /> : null}
@@ -349,7 +349,7 @@ export function ClockPanel({ seed, onSay, onEnd }: BrainProps) {
       <View style={styles.center}>
         <View style={[styles.clockGrid, { width: panel.n * (size + 6) }]}>
           {panel.on.map((on, i) => (
-            <Pressable key={i} onPress={() => press(i)}>
+            <Pressable key={i} onPress={() => press(i)} accessibilityRole="button" accessibilityLabel={`Clock ${i + 1}, ${on ? "on" : "off"}`}>
               <View style={[styles.clock, { width: size, height: size, borderRadius: size / 2 }, on ? styles.clockOn : styles.clockOff]}>
                 {/* Stopped at 11:52: the minute hand points at 52, the hour hand just shy of 12. */}
                 <View style={[styles.hand, { height: size * 0.18, transform: [{ rotate: '356deg' }], backgroundColor: on ? INK : '#6e6b73' }]} />
@@ -476,7 +476,7 @@ export function LanternBudget({ seed, onSay, onEnd }: BrainProps) {
         {q.rigs.map((rig, i) => {
           const shown = picked !== null;
           return (
-            <Pressable key={i} onPress={() => choose(i)} style={styles.flex}>
+            <Pressable key={i} onPress={() => choose(i)} accessibilityRole="button" accessibilityLabel={`Pick rig ${i + 1}`} style={styles.flex}>
               <View style={[styles.rigCard, shown && i === q.best && styles.rigBest, shown && i === picked && i !== q.best && styles.rigWrong]}>
                 <RigPicture rig={rig} />
                 <PixelText size={11} color={CREAM} style={styles.centerText}>

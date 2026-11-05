@@ -635,6 +635,9 @@ function SignalLamp({
             key={c}
             onPress={() => press(c)}
             disabled={showing || over}
+            accessibilityRole="button"
+            accessibilityLabel={`${c} lamp`}
+            accessibilityState={{ disabled: showing || over }}
             style={[styles.lampButton, { backgroundColor: LAMP_HEX[c], opacity: showing || over ? 0.45 : lit === c ? 1 : 0.8 }]}
           />
         ))}
