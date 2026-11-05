@@ -28,6 +28,7 @@
 // other: that's the thirteenth ring. Fill the Heart Jar and the crack mends, and the Hush
 // is just a little cloud who was cold. The storms that filled the jars come from Stormpeak.
 
+import { SECRETS_BRAIN } from './extras/brain';
 import { SECRETS_DEEP } from './extras/deep';
 import { SECRETS_GLOWTOWN } from './extras/glowtown';
 import { SECRETS_HARBOUR } from './extras/harbour';
@@ -43,6 +44,8 @@ export interface Secret {
   /** The townsperson this secret is about, for the journal's People page. */
   about?: string;
   lines: Line[];
+  /** Earned, not found: a best score in a brain game (save.games[game]) opens it. */
+  unlock?: { game: string; score: number };
 }
 
 const says = (who: string, text: string): Line => ({ who, text });
@@ -295,9 +298,21 @@ export const PERSON_SECRETS: Record<string, { secret: string; afterScene?: strin
   hush: { secret: 'who:hush', afterScene: 'heart-outro' },
 };
 
-for (const s of [...SECRETS_GLOWTOWN, ...SECRETS_HARBOUR, ...SECRETS_MOSSBELL, ...SECRETS_DEEP]) SECRETS[s.id] = s;
+for (const s of [...SECRETS_GLOWTOWN, ...SECRETS_HARBOUR, ...SECRETS_MOSSBELL, ...SECRETS_DEEP, ...SECRETS_BRAIN]) SECRETS[s.id] = s;
 
 /** Secrets that belong to a world (for its counter in the corner). */
 export function secretsIn(world: string): Secret[] {
   return Object.values(SECRETS).filter((s) => s.world === world);
+}
+
+/** Secrets that a mini-game score opens (extras/brain.ts). */
+export function puzzleSecrets(): Secret[] {
+  return Object.values(SECRETS).filter((s) => s.unlock);
+}
+
+/** Puzzle secrets whose score the best scores in `games` reach and `seen` doesn't hold yet. */
+export function earnedPuzzleSecrets(games: Record<string, number>, seen: string[], game?: string): Secret[] {
+  return puzzleSecrets().filter(
+    (s) => (!game || s.unlock!.game === game) && (games[s.unlock!.game] ?? 0) >= s.unlock!.score && !seen.includes(secretKey(s.id)),
+  );
 }

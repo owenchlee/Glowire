@@ -114,6 +114,12 @@ export function gateAt(map: WorldMap, solved: Solved, x: number, y: number): num
   return null;
 }
 
+/** Climbing from (fx, fy) up into the ledge cell (tx, ty) is not allowed: ledges are one-way, down. */
+export function enteringLedgeUp(map: WorldMap, fx: number, fy: number, tx: number, ty: number): boolean {
+  const l = map.ledges;
+  return !!l && ty < fy && !!l[ty * map.width + tx] && !l[fy * map.width + fx];
+}
+
 export function canWalk(map: WorldMap, blocked: Uint8Array, x: number, y: number): boolean {
   return inBounds(map, x, y) && !blocked[y * map.width + x];
 }
@@ -180,6 +186,7 @@ export function findPath(map: WorldMap, blocked: Uint8Array, from: Point, to: Po
       const x = cx + d.x;
       const y = cy + d.y;
       if (!canWalk(map, blocked, x, y)) continue;
+      if (d.y < 0 && enteringLedgeUp(map, cx, cy, x, y)) continue;
       const n = y * map.width + x;
       if (prev[n] !== -1) continue;
       prev[n] = cur;

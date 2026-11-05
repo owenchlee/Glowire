@@ -76,7 +76,11 @@ export type Spot =
   /** A hidden chest: opens once, pays sparks, and is remembered in the save (seen `chest:<id>`). */
   | { kind: 'chest'; x: number; y: number; id: string; sparks: number }
   /** A mini-game to play (game/games.ts). */
-  | { kind: 'game'; x: number; y: number; game: GameSpot };
+  | { kind: 'game'; x: number; y: number; game: GameSpot }
+  /** A water cell to fish in from the shore (world/fishing.ts). `id` names the spot. */
+  | { kind: 'fish'; x: number; y: number; id: string }
+  /** A small sign that slides every pushable rock back to where it started (world/rocks.ts). */
+  | { kind: 'reset'; x: number; y: number };
 
 /** Mini-games you can find in the world (see game/games.ts). */
 export type GameSpot = 'colours' | 'signal' | 'needle' | 'jars' | 'probe' | 'pipes' | 'panel' | 'lantern';
@@ -114,6 +118,11 @@ export interface Sighting {
   after?: string;
 }
 
+/** A tiny physical puzzle the maps contain (recorded so tests can prove it can be solved). */
+export type Puzzle =
+  | { kind: 'rocks'; chest: string; /** Where you stand to start. */ from: Point; /** Each push: the rock's cell, and the way it goes. */ pushes: { rock: Point; dir: Facing }[] }
+  | { kind: 'ledge'; /** The cell above a ledge cell, and the cell below it. */ above: Point; below: Point };
+
 export interface WorldMap {
   id: string;
   name: string;
@@ -149,4 +158,11 @@ export interface WorldMap {
   areaOf: Uint8Array;
   /** Cells that are walls until the area (by index) before them is done. */
   gates: { area: number; cells: Point[] }[];
+  /** Pushable rocks, where they start (world/rocks.ts). Not part of `solid`: the screen tracks them. */
+  rocks?: Point[];
+  /** 1 on one-way ledges: you can step off them downward but not climb up into them. */
+  ledges?: Uint8Array;
+  /** 1 on open water a pushed rock can fill (ponds and sea that nothing bridges). */
+  water?: Uint8Array;
+  puzzles?: Puzzle[];
 }

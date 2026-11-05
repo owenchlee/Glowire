@@ -51,7 +51,10 @@ function solved(id: number, picture: string[]): BoardState {
 /** Evaluate a picture of a board for a level. */
 const check = (id: number, picture: string[]) => evaluateLevel(getLevel(id)!, solved(id, picture));
 
-/** Every level's worked solution (twist levels: the drawn picture). */
+/** Brain jobs are games, not boards: board-based checks skip them (see brain.test.ts). */
+const CIRCUITS = LEVELS.filter((l) => !l.brain);
+
+/** Every level's worked solution, brain jobs included: their old circuit is kept as a worked example (twist levels: the drawn picture). */
 const SOLUTIONS: Record<number, string[]> = {};
 for (const l of LEVELS) {
   const picture = l.solution ?? (l.twist ? l.board : null);
@@ -62,7 +65,7 @@ describe('levels', () => {
   it('has unique ids and valid pictures', () => {
     const ids = LEVELS.map((l) => l.id);
     expect(new Set(ids).size).toBe(ids.length);
-    for (const level of LEVELS) {
+    for (const level of CIRCUITS) {
       const labels = levelLabels(level);
       for (const g of level.goals) {
         if (g.kind === 'lit' || g.kind === 'dark') expect(labels[g.led]).toBeDefined();
@@ -82,7 +85,7 @@ describe('levels', () => {
   });
 
   it('no level starts out solved', () => {
-    for (const level of LEVELS) {
+    for (const level of CIRCUITS) {
       expect(evaluateLevel(level, createLevelBoard(level)).complete, `level ${level.id}`).toBe(
         false,
       );
@@ -90,7 +93,7 @@ describe('levels', () => {
   });
 
   it('every level has a worked solution', () => {
-    const missing = LEVELS.filter((l) => !SOLUTIONS[l.id]).map((l) => l.id);
+    const missing = CIRCUITS.filter((l) => !SOLUTIONS[l.id]).map((l) => l.id);
     expect(missing).toEqual([]);
   });
 

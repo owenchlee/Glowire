@@ -6,7 +6,9 @@ import { type ReactNode, useEffect, useMemo, useRef } from 'react';
 import { Animated, Easing, Image, type ImageStyle, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { currentStreak, dayKey, totalStars } from '../game/save';
+import { brainDaily } from '../game/dailyBrain';
+import { GAMES } from '../game/games';
+import { currentBrainStreak, currentStreak, dayKey, totalStars } from '../game/save';
 import { CHAPTERS } from '../levels/levels';
 import { WORLDS, type WorldInfo } from '../world/worlds';
 import { FACES } from './faces.generated';
@@ -44,8 +46,11 @@ export function WorldSelect() {
           <Rise index={0}>
             <DailyCard />
           </Rise>
+          <Rise index={1}>
+            <BrainDailyCard />
+          </Rise>
           {WORLDS.map((w, i) => (
-            <Rise key={w.id} index={i + 1}>
+            <Rise key={w.id} index={i + 2}>
               <WorldCard world={w} number={i + 1} />
             </Rise>
           ))}
@@ -135,6 +140,43 @@ function DailyCard() {
           tone="gold"
           size={12}
           onPress={() => router.push('/daily')}
+        />
+      </View>
+    </Panel>
+  );
+}
+
+function BrainDailyCard() {
+  const { save } = useGame();
+  const today = dayKey(new Date());
+  const best = save.brainDaily.stars[today] ?? 0;
+  const streak = currentBrainStreak(save, today);
+  const game = GAMES[brainDaily(today).game].title;
+
+  return (
+    <Panel style={styles.card} tone="night">
+      <PixelText size={12} color={GOLD}>
+        DAILY BRAIN TEASER
+      </PixelText>
+      <PixelText size={22} color={CREAM} style={styles.dailyTitle}>
+        Today: {game}
+      </PixelText>
+      <PixelText size={13} color="#b9b2db" style={styles.dailyCopy}>
+        {best > 0
+          ? `Today's best: ${'★'.repeat(best)} · ${streak}-day streak`
+          : streak > 0
+            ? `${streak}-day streak · Keep it glowing!`
+            : 'Earn a star on today’s puzzle to start a streak.'}
+      </PixelText>
+      <View style={styles.dailyFoot}>
+        <PixelText size={12} color="#c9c3e6">
+          New puzzle daily
+        </PixelText>
+        <PixelButton
+          label={best > 0 ? 'Replay today' : 'Play today'}
+          tone="gold"
+          size={12}
+          onPress={() => router.push('/brain-daily')}
         />
       </View>
     </Panel>

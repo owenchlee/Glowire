@@ -9,6 +9,7 @@
 //                                             │ 51, 52          │
 
 import { MapBuilder, hash } from './builder';
+import { ledgeTerrace, rockPlug } from './puzzlekit';
 import type { WorldMap } from './types';
 
 const W = 136;
@@ -27,6 +28,7 @@ export function buildDeep(): WorldMap {
   theWreck(b);
   heartHall(b);
 
+  puzzles(b);
   return b.finish({
     id: 'deep',
     name: 'Brightwater Deep',
@@ -435,4 +437,10 @@ function heartExtras(b: MapBuilder) {
   seaChest(b, 'deep-heart-bell', 106, 8, 30);
   thicket(b, [[105, 7], [106, 7], [107, 7], [105, 9], [107, 9], [105, 8]]);
   b.resident('marlo', 124, 26, 'left', { chat: 'marlo-rumour' });
+}
+
+/** Tiny physical puzzles under the sea: boulders to push and ledges to drop off. */
+function puzzles(b: MapBuilder) {
+  rockPlug(b, 114, 20, 'deep-rock-vault', 30, 'Something glints behind that boulder. Lean on it twice, and go round. You can push, but you can never pull.', true);
+  ledgeTerrace(b, 77, 19, 'deep-ledge-shelf', 25, 'A shelf of rock with a one-way drop on its south side. In through the gap, out over the edge.', true);
 }

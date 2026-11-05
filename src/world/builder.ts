@@ -7,7 +7,7 @@
 // in one source sheet into an atlas tile.
 
 import { ATLAS_COLS, SHEETS, type SheetId, TERRAIN_TILES, type TerrainId } from './atlas.generated';
-import type { Area, Facing, LightSource, Point, Rect, Resident, Sighting, Spot, WorldMap, WorldObject } from './types';
+import type { Area, Facing, LightSource, Point, Puzzle, Rect, Resident, Sighting, Spot, WorldMap, WorldObject } from './types';
 
 export function at(sheet: SheetId, i: number): number {
   const o = SHEETS[sheet];
@@ -196,6 +196,9 @@ const LADDER = { green: at('reliefDetail', 15), sand: at('reliefDetail', 51) } a
 /** Cave mouths set into a hillside: 3×3, door in the bottom middle. */
 const CAVES = { green: cut('reliefDetail', 84, 3, 3), sand: cut('reliefDetail', 87, 3, 3) } as const;
 const CHEST = at('element', 19);
+/** The pushable boulder, and the flat stone a pushed one leaves in the water. */
+export const ROCK_TILE = at('nature', 296);
+export const FILLED_TILE = at('water', 12);
 
 /** One-tile props: atlas tile, and whether it blocks the way. */
 export const PROPS = {
@@ -279,6 +282,9 @@ export class MapBuilder {
   readonly groups: Record<string, number[]> = {};
   readonly areas: Area[] = [];
   readonly gates: { area: number; cells: Point[] }[] = [];
+  readonly rocks: Point[] = [];
+  readonly puzzles: Puzzle[] = [];
+  readonly ledges: Uint8Array;
   /** Cells that can be walked on whatever the terrain says (bridges). */
   private readonly walkable: Uint8Array;
 
@@ -293,6 +299,7 @@ export class MapBuilder {
     this.decal = new Int16Array(n).fill(-1);
     this.solid = new Uint8Array(n);
     this.walkable = new Uint8Array(n);
+    this.ledges = new Uint8Array(n);
     this.areaOf = new Uint8Array(n).fill(255);
   }
 
@@ -640,6 +647,58 @@ export class MapBuilder {
     this.spots.push({ kind: 'chest', x, y, id, sparks });
   }
 
+  // ── Puzzles: rocks, ledges, fishing ───────────────────────────────────────
+
+  /** A boulder you can push (world/rocks.ts). It starts on open ground; the screen draws it. */
+  rock(x: number, y: number) {
+    if (!this.inside(x, y)) return;
+    this.rocks.push({ x, y });
+    this.taken.add(y * this.width + x);
+  }
+
+  /** A sign that puts every rock back where it started. */
+  rockReset(x: number, y: number) {
+    this.prop(x, y, 'sign');
+    this.spots.push({ kind: 'reset', x, y });
+  }
+
+  /**
+   * A one-way ledge, `w` cells wide: step off it downward, but you can't climb up into it from
+   * below. Its ends need something solid beside them, or you could walk round.
+   */
+  ledge(x: number, y: number, w: number, style: ReliefStyle = 'green') {
+    for (let i = 0; i < w; i++) {
+      if (!this.inside(x + i, y)) continue;
+      this.setGround(x + i, y, RELIEF[style].slice[7]!);
+      this.solid[y * this.width + x + i] = 0;
+      this.ledges[y * this.width + x + i] = 1;
+      this.taken.add(y * this.width + x + i);
+    }
+  }
+
+  /** Keep trees and other clutter off this rectangle from now on. */
+  reserve(x: number, y: number, w: number, h: number) {
+    for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) if (this.inside(x + i, y + j)) this.taken.add((y + j) * this.width + x + i);
+  }
+
+  /** Pull out the trees and bushes (anything that sways) standing on a rectangle, and free their cells. */
+  clearRect(x: number, y: number, w: number, h: number) {
+    const hit = (o: WorldObject) => o.sway && o.x < x + w && o.x + o.w > x && o.y < y + h && o.y + o.h > y;
+    for (let k = this.objects.length - 1; k >= 0; k--) {
+      const o = this.objects[k]!;
+      if (!hit(o)) continue;
+      // The trunk row is the solid one.
+      for (let i = 0; i < o.w; i++) if (this.inside(o.x + i, o.y + o.h - 1)) this.solid[(o.y + o.h - 1) * this.width + o.x + i] = 0;
+      this.objects.splice(k, 1);
+    }
+    this.reserve(x, y, w, h);
+  }
+
+  /** A water cell to fish in from the shore. */
+  fish(id: string, x: number, y: number) {
+    this.spots.push({ kind: 'fish', x, y, id });
+  }
+
   // ── Things standing on the ground ─────────────────────────────────────────
 
   block(x: number, y: number, w: number, h: number) {
@@ -923,7 +982,10 @@ export class MapBuilder {
     this.gates.push({ area: index, cells });
   }
 
+  private water = new Uint8Array(0);
+
   finish(meta: { id: string; name: string; spawn: Point & { facing: Facing }; night?: string; underwater?: boolean }): WorldMap {
+    this.water = new Uint8Array(this.width * this.height);
     this.resolveGround();
     return {
       ...meta,
@@ -941,6 +1003,10 @@ export class MapBuilder {
       areas: this.areas,
       areaOf: this.areaOf,
       gates: this.gates,
+      rocks: this.rocks,
+      ledges: this.ledges,
+      water: this.water,
+      puzzles: this.puzzles,
     };
   }
 
@@ -972,7 +1038,10 @@ export class MapBuilder {
           const options = TERRAIN_TILES[g][mask]!;
           this.ground[i] = pick(options.length ? options : TERRAIN_TILES[g][255]!);
         }
-        if ((g === 'pond' || g === 'sea') && !this.walkable[i]) this.solid[i] = 1;
+        if ((g === 'pond' || g === 'sea') && !this.walkable[i]) {
+          this.solid[i] = 1;
+          this.water[i] = 1;
+        }
       }
   }
 }

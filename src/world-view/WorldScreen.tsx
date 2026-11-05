@@ -19,7 +19,9 @@ import { LEVELS } from '../levels/levels';
 import type { LevelDef } from '../levels/types';
 import { type Choice, Dialog, type DialogLine } from '../ui/Dialog';
 import { starsFor, useGame } from '../ui/game';
+import { Fishing } from '../ui/Fishing';
 import { Counter, GOLD, Panel, PixelButton, PixelText } from '../ui/pixel';
+import { type RockState, newRocks, pushRock, rockIndex, withRocks } from '../world/rocks';
 import {
   STEP,
   type Target,
@@ -36,8 +38,11 @@ import {
   targetAt,
 } from '../world/logic';
 import type { Facing, Point, WorldMap } from '../world/types';
-import { type Walker, facingCells, newWalker, smoothPath, stepWalker, walkerCell } from '../world/walker';
+import { type Walker, facingCells, setLedges, newWalker, smoothPath, stepWalker, walkerCell } from '../world/walker';
+import { type Placed, placeResidents, residentKey } from '../world/routines';
+import { ROUTINES } from '../world/routines.data';
 import { WORLDS } from '../world/worlds';
+import { clockText, currentPhase, dayClockSeconds, daylight } from './daylight';
 import { Joystick } from './Joystick';
 import { type View as CameraView, WorldCanvas } from './WorldCanvas';
 
@@ -101,8 +106,53 @@ export function WorldScreen({ map, worldId }: { map: WorldMap; worldId: string }
   const { save, markSeen, commitSave } = useGame();
   const solved = useMemo(() => solvedIn(save), [save]);
   const lit = useMemo(() => litGroups(map, solved), [map, solved]);
-  const residents = useMemo(() => presentResidents(map, solved, lit), [map, solved, lit]);
-  const blocked = useMemo(() => blockedCells(map, residents, solved), [map, residents, solved]);
+  const presentBase = useMemo(() => presentResidents(map, solved, lit), [map, solved, lit]);
+  // Residents on their daily routines: placed from the shared clock (pure, see world/routines),
+  // refreshed a few times a second, only re-rendering when someone changes cell or facing.
+  const routines = ROUTINES[worldId];
+  const placeNow = useCallback(
+    (hero?: Point): Placed[] => {
+      const night = !map.underwater && daylight(currentPhase()).night;
+      return placeResidents(presentBase, routines, dayClockSeconds(), night, hero);
+    },
+    [presentBase, routines, map.underwater],
+  );
+  const [residents, setResidents] = useState<Placed[]>(() => placeNow());
+  const residentsSig = useRef('');
+  const heroRef = useRef<{ current: Walker } | null>(null);
+  useEffect(() => {
+    const refresh = () => {
+      const w = heroRef.current?.current;
+      const next = placeNow(w ? walkerCell(w) : undefined);
+      const sig = next.map((r) => `${r.key}:${r.x},${r.y}:${r.facing}`).join('|');
+      if (sig !== residentsSig.current) {
+        residentsSig.current = sig;
+        setResidents(next);
+      }
+    };
+    refresh();
+    const id = setInterval(refresh, 200);
+    return () => clearInterval(id);
+  }, [placeNow]);
+  const baseBlocked = useMemo(() => {
+    const b = blockedCells(map, residents, solved);
+    // Someone on a routine leaves their home cell (which the map marks solid) free.
+    if (routines) for (const r of presentBase) if (routines[residentKey(r)]) b[r.y * map.width + r.x] = 0;
+    for (const r of residents) b[r.y * map.width + r.x] = 1;
+    return b;
+  }, [map, residents, solved, presentBase, routines]);
+  // Pushable rocks: they start where the map puts them every time you come in, and the sign
+  // beside each puzzle puts them back.
+  const [rockState, setRockState] = useState<RockState>(() => newRocks(map));
+  const rocksNow = useRef(rockState);
+  const baseBlockedNow = useRef(baseBlocked);
+  const pushTime = useRef(0);
+  useEffect(() => {
+    rocksNow.current = rockState;
+    baseBlockedNow.current = baseBlocked;
+  }, [rockState, baseBlocked]);
+  const blocked = useMemo(() => withRocks(map, baseBlocked, rockState), [map, baseBlocked, rockState]);
+  const [fishing, setFishing] = useState(false);
   const fog = useMemo(() => fogMask(map, solved), [map, solved]);
   const open = openAreas(map, solved);
 
@@ -116,6 +166,8 @@ export function WorldScreen({ map, worldId }: { map: WorldMap; worldId: string }
   const secretsFound = worldSecrets.filter((x) => found(x.id)).length;
   const chests = useMemo(() => map.spots.flatMap((s) => (s.kind === 'chest' ? [s.id] : [])), [map]);
   const chestsFound = chests.filter((id) => save.seen.includes(chestKey(id))).length;
+  const fishCaught = Object.values(save.fish ?? {}).reduce((a, b) => a + b, 0);
+  const hasFish = useMemo(() => map.spots.some((s) => s.kind === 'fish'), [map]);
   const areaIndex = useCallback((x: number, y: number) => map.areaOf[y * map.width + x] ?? 255, [map]);
   // Secrets still to find twinkle, once their part of the route is open.
   const sparkles = useMemo(
@@ -144,6 +196,9 @@ export function WorldScreen({ map, worldId }: { map: WorldMap; worldId: string }
 
   const [start] = useState(() => startingPlace(worldId, map));
   const walker = useRef<Walker>(newWalker(start.x, start.y, start.facing));
+  useEffect(() => {
+    heroRef.current = walker;
+  }, []);
 
   // Under the sea, the hero's lantern runs down in the dark and fills up again in the light
   // of a lit lamp. Let it run out and the dark closes in: you're sent back to the last light.
@@ -162,6 +217,10 @@ export function WorldScreen({ map, worldId }: { map: WorldMap; worldId: string }
     blockedNow.current = blocked;
   }, [blocked]);
   const free = useCallback((x: number, y: number) => canWalk(map, blockedNow.current, x, y), [map]);
+  // One-way ledges: the walker asks this (through the function) before climbing into a cell.
+  useEffect(() => {
+    setLedges(free, map.ledges, map.width);
+  }, [free, map]);
   const view = useRef<CameraView>({ x: 0, y: 0, zoom: 48, width: 1, height: 1 });
   const onView = useCallback((v: CameraView) => {
     view.current = v;
@@ -179,7 +238,7 @@ export function WorldScreen({ map, worldId }: { map: WorldMap; worldId: string }
   const [chat, setChat] = useState<Talk | null>(null);
   const scene = pendingScene(map, save, here);
   const talk: Talk | null = chat ?? (scene ? { lines: scene.lines, seenId: scene.id } : null);
-  const isTalking = talk !== null;
+  const isTalking = talk !== null || fishing;
   const talking = useRef(false);
   useEffect(() => {
     talking.current = isTalking;
@@ -265,6 +324,7 @@ export function WorldScreen({ map, worldId }: { map: WorldMap; worldId: string }
       ],
       choices: [
         { label: dailyDone ? 'Play it again' : 'On my way!', tone: dailyDone ? 'gold' : 'orange', onPress: () => go('/daily') },
+        { label: 'Brain teaser', tone: 'teal', onPress: () => go('/brain-daily') },
         ...askChoice('pip', true),
         { label: 'Later', tone: 'cream', onPress: close },
       ],
@@ -383,12 +443,23 @@ export function WorldScreen({ map, worldId }: { map: WorldMap; worldId: string }
           buzz.win();
           setChat({ lines: [{ who: 'pip', text: `A hidden chest! Inside: ⚡${s.sparks} sparks. Bzzt, what a find!` }] });
         }
+      } else if (s.kind === 'fish') setFishing(true);
+      else if (s.kind === 'reset') {
+        const c = walkerCell(walker.current);
+        if (rockState.filled.has(c.y * map.width + c.x))
+          setChat({ lines: [{ who: 'pip', text: 'You’re standing on a stepping stone! Hop off first.' }] });
+        else {
+          const rocks = newRocks(map);
+          rocksNow.current = rocks;
+          setRockState(rocks);
+          setChat({ lines: [{ who: 'pip', text: 'Clunk, rumble… every rock slid back to where it started.' }] });
+        }
       } else if (s.kind === 'secret') {
         const sec = SECRETS[s.secret];
         if (sec) setChat({ lines: sec.lines, seenId: secretKey(sec.id) });
       }
     },
-    [map, save, commitSave, solved, startJob, close, talkToPip, go, askChoice],
+    [map, save, commitSave, solved, startJob, close, talkToPip, go, askChoice, rockState],
   );
 
   const facingTarget = useCallback((): Target | null => {
@@ -417,6 +488,24 @@ export function WorldScreen({ map, worldId }: { map: WorldMap; worldId: string }
         w.path = [];
       }
       const { arrived } = stepWalker(w, dt, free);
+      // Walking into a rock pushes it, after a short beat of leaning on it.
+      const ax = Math.abs(w.input.x) > 0.3 ? Math.sign(w.input.x) : 0;
+      const ay = Math.abs(w.input.y) > 0.3 ? Math.sign(w.input.y) : 0;
+      const step = STEP[w.facing];
+      const leaning = !talking.current && !w.moving && ((step.x !== 0 && ax === step.x) || (step.y !== 0 && ay === step.y));
+      const rock = leaning ? facingCells(w).find((c) => rockIndex(rocksNow.current, c.x, c.y) >= 0) : undefined;
+      if (rock) {
+        pushTime.current += dt;
+        if (pushTime.current > 0.3) {
+          pushTime.current = 0;
+          const moved = pushRock(map, baseBlockedNow.current, rocksNow.current, rock.x, rock.y, w.facing);
+          if (moved) {
+            rocksNow.current = moved.state;
+            setRockState(moved.state);
+            buzz.thud();
+          }
+        }
+      } else pushTime.current = 0;
       if (arrived && autoInteract.current) {
         autoInteract.current = false;
         const t = facingTarget();
@@ -461,7 +550,7 @@ export function WorldScreen({ map, worldId }: { map: WorldMap; worldId: string }
         }
       }
     },
-    [facingTarget, interact, free, areaAt, map.underwater],
+    [facingTarget, interact, free, areaAt, map],
   );
 
   // Keyboard (web): hold arrows / WASD to walk (two at once for diagonals); E / Enter /
@@ -559,6 +648,7 @@ export function WorldScreen({ map, worldId }: { map: WorldMap; worldId: string }
         residents={residents}
         bubbles={bubbles}
         sparkles={sparkles}
+        rocks={rockState}
         ghosts={ghosts}
         walker={walker}
         lantern={lantern}
@@ -580,8 +670,10 @@ export function WorldScreen({ map, worldId }: { map: WorldMap; worldId: string }
           {map.underwater && <LanternGauge value={lanternShown} />}
         </Pressable>
         <View style={styles.flex} pointerEvents="none" />
+        {!map.underwater && <ClockBadge />}
         <Counter icon="✦" value={`${litCount}/${worldJobs.length}`} color="#ffe58a" />
         <Counter icon="✎" value={`${notesFound}/${notes.length}`} color="#c9e7ff" />
+        {(fishCaught > 0 || hasFish) && <Counter icon="≈" value={fishCaught} color="#8fd0e8" />}
         {chests.length > 0 && <Counter icon="◆" value={`${chestsFound}/${chests.length}`} color="#f2b36b" />}
         {worldSecrets.length > 0 && <Counter icon="◉" value={`${secretsFound}/${worldSecrets.length}`} color="#ffd27a" />}
         <PixelButton label="Journal" tone="cream" size={13} onPress={() => go('/journal')} />
@@ -628,6 +720,12 @@ export function WorldScreen({ map, worldId }: { map: WorldMap; worldId: string }
         </View>
       )}
 
+      {fishing && !talk && (
+        <Fishing
+          onClose={() => setFishing(false)}
+          onCatch={(f) => commitSave({ ...save, sparks: save.sparks + f.sparks, fish: { ...save.fish, [f.id]: (save.fish[f.id] ?? 0) + 1 } })}
+        />
+      )}
       {talk && <Dialog key={talk.seenId ?? talk.lines[0]!.text} lines={talk.lines} choices={talk.choices} onClose={close} />}
     </View>
   );
@@ -673,6 +771,17 @@ function LanternGauge({ value }: { value: number }) {
   );
 }
 
+/** Sun or moon and the time of day, in the HUD. Ticks on its own so the screen doesn't re-render. */
+function ClockBadge() {
+  const [phase, setPhase] = useState(() => currentPhase());
+  useEffect(() => {
+    const id = setInterval(() => setPhase(currentPhase()), 1000);
+    return () => clearInterval(id);
+  }, []);
+  const d = daylight(phase);
+  return <Counter icon={d.day > 0.45 ? '☀' : '☾'} value={clockText(phase)} color={d.day > 0.45 ? '#ffe58a' : '#c9d4ff'} />;
+}
+
 const chestKey = (id: string) => `chest:${id}`;
 
 function labelFor(t: Target): string {
@@ -696,6 +805,10 @@ function labelFor(t: Target): string {
       return 'Open';
     case 'game':
       return 'Play';
+    case 'fish':
+      return 'Fish';
+    case 'reset':
+      return 'Reset rocks';
   }
 }
 

@@ -17,6 +17,15 @@ export interface LuckStats {
 
 export const NEW_LUCK: LuckStats = { spins: 0, wagered: 0, won: 0, biggest: 0, dry: 0, surges: 0 };
 
+export interface DailyRecord {
+  /** The last day solved, as YYYY-MM-DD. */
+  last: string | null;
+  streak: number;
+  best: number;
+  /** Best stars per day. */
+  stars: Record<string, number>;
+}
+
 export interface SaveData {
   version: 2;
   /** Best stars per job id (1–3). A job is solved when it has any. */
@@ -24,20 +33,17 @@ export interface SaveData {
   sparks: number;
   owned: string[];
   equipped: { pet: string | null; wire: string; board: string; hat: string; outfit: string };
-  daily: {
-    /** The last day solved, as YYYY-MM-DD. */
-    last: string | null;
-    streak: number;
-    best: number;
-    /** Best stars per day. */
-    stars: Record<string, number>;
-  };
+  daily: DailyRecord;
+  /** The Daily Brain Teaser: same record as `daily`, stars are 1–3 by score. */
+  brainDaily: DailyRecord;
   /** Story scenes already shown. */
   seen: string[];
   /** Best score in each mini-game (games.ts). */
   games: Record<string, number>;
   /** Lifetime luck: the Lucky Lantern and payday Surges. */
   luck: LuckStats;
+  /** Fish caught, by kind (world/fishing.ts). */
+  fish: Record<string, number>;
   /** Testing switch: every job is open. */
   unlockAll: boolean;
 }
@@ -49,9 +55,11 @@ export const NEW_SAVE: SaveData = {
   owned: ['copper', 'wood', 'nohat', 'uniform'],
   equipped: { pet: null, wire: 'copper', board: 'wood', hat: 'nohat', outfit: 'uniform' },
   daily: { last: null, streak: 0, best: 0, stars: {} },
+  brainDaily: { last: null, streak: 0, best: 0, stars: {} },
   seen: [],
   games: {},
   luck: NEW_LUCK,
+  fish: {},
   unlockAll: false,
 };
 
@@ -71,6 +79,7 @@ export function migrate(raw: unknown): SaveData {
   if (raw.version !== 2) return structuredClone(NEW_SAVE);
   const base = structuredClone(NEW_SAVE);
   const daily = isRecord(raw.daily) ? raw.daily : {};
+  const brain = isRecord(raw.brainDaily) ? raw.brainDaily : {};
   const equipped = isRecord(raw.equipped) ? raw.equipped : {};
   const owned = Array.isArray(raw.owned) ? raw.owned.filter((x) => typeof x === 'string') : [];
   return {
@@ -91,9 +100,16 @@ export function migrate(raw: unknown): SaveData {
       best: typeof daily.best === 'number' ? daily.best : 0,
       stars: isRecord(daily.stars) ? numbers(daily.stars) : {},
     },
+    brainDaily: {
+      last: typeof brain.last === 'string' ? brain.last : null,
+      streak: typeof brain.streak === 'number' ? brain.streak : 0,
+      best: typeof brain.best === 'number' ? brain.best : 0,
+      stars: isRecord(brain.stars) ? numbers(brain.stars) : {},
+    },
     seen: Array.isArray(raw.seen) ? raw.seen.filter((x) => typeof x === 'string') : [],
     games: isRecord(raw.games) ? numbers(raw.games) : {},
     luck: { ...NEW_LUCK, ...(isRecord(raw.luck) ? numbers(raw.luck) : {}) },
+    fish: isRecord(raw.fish) ? numbers(raw.fish) : {},
     unlockAll: raw.unlockAll === true,
   };
 }
@@ -166,6 +182,12 @@ export function currentStreak(save: SaveData, today: string): number {
   return last === today || last === previousDay(today) ? streak : 0;
 }
 
+/** The Daily Brain Teaser's streak as it stands on `today`. */
+export function currentBrainStreak(save: SaveData, today: string): number {
+  const { last, streak } = save.brainDaily;
+  return last === today || last === previousDay(today) ? streak : 0;
+}
+
 export const DAILY_BASE = 30;
 /** Extra sparks per streak day, capped at a week. */
 export const DAILY_STREAK_BONUS = 5;
@@ -188,6 +210,32 @@ export function recordDaily(save: SaveData, today: string, stars: number, random
       ...save,
       sparks: save.sparks + earned,
       daily: { last, streak, best, stars: { ...save.daily.stars, [today]: stars } },
+    },
+    earned,
+    random,
+  );
+  return { save: paid.save, earned: paid.earned, firstClear, surge: paid.surge };
+}
+
+/** The Daily Brain Teaser finished with `stars` (1–3): pays like the Daily Blackout. */
+export function recordBrainDaily(save: SaveData, today: string, stars: number, random?: Random): JobPayout {
+  const before = save.brainDaily.stars[today] ?? 0;
+  if (stars <= before) return { save, earned: 0, firstClear: false };
+  const firstClear = before === 0;
+  let { streak, best, last } = save.brainDaily;
+  let earned = sparksForStars(before, stars);
+  if (firstClear) {
+    streak = currentBrainStreak(save, today) + 1;
+    best = Math.max(best, streak);
+    last = today;
+    earned += DAILY_BASE + DAILY_STREAK_BONUS * Math.min(streak, 7);
+  }
+  earned = withPetBonus(save, earned);
+  const paid = withSurge(
+    {
+      ...save,
+      sparks: save.sparks + earned,
+      brainDaily: { last, streak, best, stars: { ...save.brainDaily.stars, [today]: stars } },
     },
     earned,
     random,

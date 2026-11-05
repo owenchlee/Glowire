@@ -35,7 +35,9 @@ import {
   rng,
   signalPattern,
 } from '../game/games';
-import { SECRETS, secretKey } from '../game/lore';
+import { brainDaily, brainStars } from '../game/dailyBrain';
+import { SECRETS, earnedPuzzleSecrets, secretKey } from '../game/lore';
+import { recordBrainDaily, recordGame } from '../game/save';
 import { speakerName } from './Dialog';
 import { ClockPanel, DeadLampHunt, DockyardWiring, LanternBudget } from './BrainGames';
 import { useGame } from './game';
@@ -46,11 +48,13 @@ import { CREAM, Counter, GOLD, GREEN, INK, NIGHT, NIGHT_DEEP, NameTab, Panel, Pi
 const BAND_HEX = ['#242118', '#7b4930', '#d14b34', '#e67c44', '#ffe166', '#74a334', '#3da6bd', '#a5608b', '#8d977f', '#f2eaf1'];
 const LAMP_HEX: Record<SignalColour, string> = { red: '#e0394c', green: '#74a334', blue: '#3da6bd', gold: '#ffe166' };
 
-type Done = { score: number; earned: number; best: number };
+type Done = { score: number; earned: number; best: number; stars?: number; bonus?: number; news: string[] };
 
-export function MiniGame({ id }: { id: GameId }) {
+/** With `day`, this is the Daily Brain Teaser: today's seed, scored in stars. */
+export function MiniGame({ id, day }: { id: GameId; day?: string }) {
   const info = GAMES[id];
-  const { save, finishGame, markSeen } = useGame();
+  const { save, commitSave, markSeen } = useGame();
+  const teaser = useMemo(() => (day ? brainDaily(day) : null), [day]);
   const [phase, setPhase] = useState<'intro' | 'play' | 'done'>('intro');
   const [done, setDone] = useState<Done | null>(null);
   const [say, setSay] = useState(info.how);
@@ -59,17 +63,37 @@ export function MiniGame({ id }: { id: GameId }) {
 
   const finish = useCallback(
     (score: number) => {
-      const payout = finishGame(id, score);
-      if (payout.earned > 0) buzz.win();
-      setDone({ score, earned: payout.earned, best: Math.max(best, score) });
+      // One write for everything this result changes: best score, daily, new journal pages.
+      const payout = recordGame(save, id, score);
+      let next = payout.save;
+      let stars: number | undefined;
+      let bonus: number | undefined;
+      if (teaser) {
+        stars = brainStars(teaser, score);
+        const daily = recordBrainDaily(next, teaser.day, stars, Math.random);
+        next = daily.save;
+        bonus = daily.earned;
+      }
+      const lore = earnedPuzzleSecrets(next.games, next.seen, id);
+      if (lore.length) next = { ...next, seen: [...next.seen, ...lore.map((l) => secretKey(l.id))] };
+      if (next !== save) commitSave(next);
+      if (payout.earned > 0 || (bonus ?? 0) > 0) buzz.win();
+      setDone({
+        score,
+        earned: payout.earned,
+        best: Math.max(best, score),
+        stars,
+        bonus,
+        news: lore.map((l) => l.title),
+      });
       setPhase('done');
     },
-    [finishGame, id, best],
+    [save, commitSave, id, best, teaser],
   );
 
   const start = () => {
     // A new seed every game (this runs on a tap, not while drawing).
-    setRun(Date.now() & 0x7fffffff);
+    setRun(teaser ? teaser.seed : Date.now() & 0x7fffffff);
     setDone(null);
     setPhase('play');
   };
@@ -80,7 +104,7 @@ export function MiniGame({ id }: { id: GameId }) {
         <View style={styles.row}>
           <PixelButton label="‹" tone="cream" size={16} onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))} />
           <PixelText size={18} color={GOLD} shadow style={styles.flex}>
-            {info.title}
+            {teaser ? `Daily: ${info.title}` : info.title}
           </PixelText>
         </View>
         <View style={styles.row}>
@@ -101,7 +125,9 @@ export function MiniGame({ id }: { id: GameId }) {
         {phase === 'intro' && (
           <View style={styles.center}>
             <PixelText size={14} color={CREAM} shadow style={styles.centerText}>
-              Beat your best score to earn sparks: ⚡3 for every point.
+              {teaser
+                ? `Today's Brain Teaser! ★ ${teaser.targets[0]}  ★★ ${teaser.targets[1]}  ★★★ ${teaser.targets[2]} points. Same puzzle for everyone today.`
+                : 'Beat your best score to earn sparks: ⚡3 for every point.'}
             </PixelText>
             <PixelButton label="Start!" tone="orange" size={18} onPress={start} />
           </View>
@@ -133,6 +159,18 @@ export function MiniGame({ id }: { id: GameId }) {
             <PixelText size={14} color={CREAM} shadow style={styles.centerText}>
               {done.earned > 0 ? `New best! ⚡${done.earned} sparks.` : `Your best is ${done.best}. So close!`}
             </PixelText>
+            {done.stars !== undefined && (
+              <PixelText size={14} color={GOLD} shadow style={styles.centerText}>
+                {done.stars > 0
+                  ? `Daily: ${'★'.repeat(done.stars)}${done.bonus ? `  ⚡${done.bonus} sparks` : ''}`
+                  : 'Daily: no stars yet. Try again, it is the same puzzle!'}
+              </PixelText>
+            )}
+            {done.news.map((t) => (
+              <PixelText key={t} size={13} color={CREAM} shadow style={styles.centerText}>
+                {`New journal page: ${t}`}
+              </PixelText>
+            ))}
             <View style={styles.row}>
               <PixelButton label="Play again" tone="orange" size={15} onPress={start} />
               <PixelButton label="Back to town" tone="cream" size={15} onPress={() => router.back()} />

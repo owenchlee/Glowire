@@ -117,9 +117,23 @@ export type BuildingKind =
   | 'station'
   | 'treehouse';
 
+/** Which brain game a job is (game/puzzles.ts, ui/BrainGames.tsx). */
+export type BrainGameId = 'probe' | 'pipes' | 'panel' | 'lantern';
+
+/**
+ * A job that is a brain game instead of a circuit board. The level's `board`, `goals` and
+ * `solution` are not used for it (tests and screens skip them); the game is played from `seed`.
+ */
+export interface BrainJob {
+  game: BrainGameId;
+  seed: number;
+}
+
 export interface LevelDef {
   id: number;
   title: string;
+  /** Set on jobs that are a brain game (see BrainJob). */
+  brain?: BrainJob;
   /** Shown in the hint bubble when nothing is going wrong. */
   intro: string;
   /** Starting board as a picture (see engine/parse.ts). Pre-placed parts are locked. */

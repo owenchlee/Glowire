@@ -15,6 +15,7 @@ import {
   presentResidents,
   targetAt,
 } from './logic';
+import { newRocks, pushRock, solvedRocks, withRocks } from './rocks';
 import { WORLDS, worldMap } from './worlds';
 
 for (const info of WORLDS.filter((w) => w.build)) {
@@ -74,7 +75,9 @@ for (const info of WORLDS.filter((w) => w.build)) {
         expect(open, `after ${k} areas`).toBe(expected);
         expect(open).toBeGreaterThanOrEqual(Math.min(k + 1, map.areas.length));
         const residents = presentResidents(map, solved);
-        const blocked = blockedCells(map, residents, solved);
+        const base = blockedCells(map, residents, solved);
+        // Rock puzzles are solved first, so the chests and signs behind them count as reachable.
+        const blocked = withRocks(map, base, solvedRocks(map, base) ?? undefined);
         expect(blocked[map.spawn.y * map.width + map.spawn.x]).toBe(0);
         for (const spot of map.spots) {
           const a = map.areaOf[spot.y * map.width + spot.x]!;
@@ -178,3 +181,58 @@ describe('findPath', () => {
     expect(targetAt(residents, map, g.x, g.y)?.kind).toBe('gate');
   });
 });
+
+for (const info of WORLDS.filter((w) => w.build)) {
+  describe(`${info.name} puzzles`, () => {
+    const map = worldMap(info.id)!;
+    const base = blockedCells(map, [], () => true);
+    const puzzles = map.puzzles ?? [];
+    const at = (p: { x: number; y: number }) => p.y * map.width + p.x;
+
+    it('has rocks to push and ledges to hop', () => {
+      expect(puzzles.filter((p) => p.kind === 'rocks').length).toBeGreaterThanOrEqual(1);
+      expect(puzzles.filter((p) => p.kind === 'ledge').length).toBeGreaterThanOrEqual(1);
+    });
+
+    it('keeps every chest behind a rock puzzle out of reach until the rocks are moved, then reachable', () => {
+      for (const p of puzzles) {
+        if (p.kind !== 'rocks') continue;
+        const chest = map.spots.find((s) => s.kind === 'chest' && s.id === p.chest)!;
+        let state = newRocks(map);
+        const reach = (to: { x: number; y: number }) => findPath(map, withRocks(map, base, state), map.spawn, to);
+        expect(reach(chest), `${p.chest} open without pushing`).toBeNull();
+        expect(reach(p.from), `can't get to the start of ${p.chest}`).not.toBeNull();
+        for (const push of p.pushes) {
+          const behind = { x: push.rock.x - STEP_OF[push.dir].x, y: push.rock.y - STEP_OF[push.dir].y };
+          expect(reach(behind), `can't stand behind the rock at ${push.rock.x},${push.rock.y}`).not.toBeNull();
+          const next = pushRock(map, base, state, push.rock.x, push.rock.y, push.dir);
+          expect(next, `push at ${push.rock.x},${push.rock.y} ${push.dir}`).not.toBeNull();
+          state = next!.state;
+        }
+        expect(reach(chest), `${p.chest} can't be reached once solved`).not.toBeNull();
+      }
+    });
+
+    it('lets you drop down a ledge but not climb it', () => {
+      for (const p of puzzles) {
+        if (p.kind !== 'ledge') continue;
+        expect(map.ledges![at({ x: p.above.x, y: p.above.y + 1 })]).toBe(1);
+        expect(findPath(map, base, p.above, p.below)).toHaveLength(2);
+        const back = findPath(map, base, p.below, p.above);
+        expect(back === null || back.length >= 8, 'climbing a ledge').toBe(true);
+        expect(findPath(map, base, map.spawn, p.below), 'the foot of a ledge is reachable').not.toBeNull();
+      }
+    });
+
+    it('puts every fishing spot on water with a shore you can stand on', () => {
+      for (const s of map.spots) {
+        if (s.kind !== 'fish') continue;
+        expect(map.water![at(s)], `fish at ${s.x},${s.y} isn't water`).toBe(1);
+        expect(findPath(map, base, map.spawn, s), `no shore at ${s.x},${s.y}`).not.toBeNull();
+      }
+      if (info.id !== 'deep') expect(map.spots.some((s) => s.kind === 'fish')).toBe(true);
+    });
+  });
+}
+
+const STEP_OF = { up: { x: 0, y: -1 }, down: { x: 0, y: 1 }, left: { x: -1, y: 0 }, right: { x: 1, y: 0 } };

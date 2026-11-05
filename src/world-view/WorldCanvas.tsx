@@ -6,11 +6,15 @@ import { StyleSheet } from 'react-native';
 import type { RootState } from '@react-three/fiber';
 import { type BufferGeometry, Color, type Group, type Mesh, type OrthographicCamera, type ShaderMaterial, type Texture } from 'three';
 
+import { FILLED_TILE, ROCK_TILE } from '../world/builder';
 import { EXTRAS, PEOPLE } from '../world/people.generated';
+import type { RockState } from '../world/rocks';
 import type { Resident, WorldMap } from '../world/types';
 import { type Walker, walkFrame, walkerPosition } from '../world/walker';
 import { Canvas, useFrame } from '../render/r3f';
+import type { Placed } from '../world/routines';
 import { AMBIENT, Ambient, Dust } from './Ambient';
+import { ambientColor, currentPhase, daylight } from './daylight';
 import { type Lighting, MAX_LIGHTS, createFog, createLighting, loadPixelTexture, worldMaterial } from './pixels';
 import { type Quad, type Sheet, quadGeometry, setQuadSource } from './quads';
 
@@ -41,6 +45,8 @@ interface Props {
   residents: Resident[];
   /** Secrets not found yet: a little twinkle over each. */
   sparkles?: { x: number; y: number }[];
+  /** Pushable rocks, and the water they've filled (world/rocks.ts). */
+  rocks?: RockState;
   /** Figures glimpsed in the distance (the Lantern Lady): flickering, with a glow round them. */
   ghosts?: { who: string; x: number; y: number }[];
   /** Residents with a speech bubble over their head. */
@@ -100,6 +106,7 @@ function Scene({
   fog,
   hero = 'hero',
   sparkles = [],
+  rocks,
   ghosts = [],
   lantern,
 }: Props & { sheets: { city: Texture; people: Texture } }) {
@@ -164,6 +171,16 @@ function Scene({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [map, citySheet, litKey]);
 
+  // Pushable rocks (and the stones they leave in the water) change as you push them.
+  const rockMesh = useMemo(() => {
+    const quads: Quad[] = [];
+    for (const i of rocks?.filled ?? []) quads.push(tile(FILLED_TILE, i % map.width, Math.floor(i / map.width), 0.02));
+    for (const r of rocks?.rocks ?? []) quads.push(tile(ROCK_TILE, r.x, r.y, depth(r.y + 1)));
+    return quadGeometry(quads, citySheet);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [map, citySheet, rocks]);
+  useEffect(() => () => rockMesh.dispose(), [rockMesh]);
+
   useEffect(() => () => ground.dispose(), [ground]);
   useEffect(() => () => objects.dispose(), [objects]);
 
@@ -197,8 +214,9 @@ function Scene({
     <>
       <mesh geometry={ground} material={city} />
       <mesh geometry={objects} material={city} />
+      <mesh geometry={rockMesh} material={city} />
       {residents.map((r) => (
-        <Person key={`${r.who}@${r.x},${r.y}`} who={r.who} x={r.x} y={r.y} facing={r.facing} sheet={peopleSheet} material={people} />
+        <Person key={(r as Partial<Placed>).key ?? `${r.who}@${r.x},${r.y}`} who={r.who} x={r.x} y={r.y} facing={r.facing} sheet={peopleSheet} material={people} />
       ))}
       <Hero key={hero} who={hero} walker={walker} sheet={peopleSheet} material={people} />
       {pet && <Pet key={pet} id={pet} walker={walker} sheet={peopleSheet} material={people} />}
@@ -211,7 +229,7 @@ function Scene({
       {bubbles.map((b) => (
         <Bubble key={`${b.who}@${b.x},${b.y}`} {...b} sheet={peopleSheet} material={people} />
       ))}
-      {AMBIENT[map.id] && <Ambient kind={AMBIENT[map.id]!} />}
+      {AMBIENT[map.id] && <Ambient kind={AMBIENT[map.id]!} underwater={!!map.underwater} />}
       {!map.underwater && <Dust walker={walker} />}
       {map.underwater && <SeaBubbles sheet={peopleSheet} material={people} />}
       {map.underwater && lantern && <DarkEyes walker={walker} lantern={lantern} sheet={peopleSheet} material={people} />}
@@ -337,6 +355,17 @@ function frame(
   const dpr = state.viewport.dpr;
   lighting.uTime.value = state.clock.elapsedTime;
 
+  // Time of day: the ambient tint and how hard lamps glow follow the shared clock. Under the
+  // sea it is always dark.
+  const dl = map.underwater ? null : daylight(currentPhase());
+  if (dl) {
+    const night = nightRgb(map.night ?? '#6a74ad');
+    const a = ambientColor(dl.phase, night);
+    lighting.uAmbient.value.setRGB(a[0], a[1], a[2]);
+    lighting.uDay.value = dl.day;
+  }
+  const lamp = dl ? dl.lamp : 1;
+
   // About 11½ cells top to bottom, at a whole number of screen pixels per art pixel, so the
   // pixel art stays crisp.
   const devicePerCell = Math.max(32, Math.round((size.height * dpr) / 11.5 / T) * T);
@@ -364,7 +393,7 @@ function frame(
   const u = lighting.uLights.value;
   const uc = lighting.uLightColors.value;
   if (lantern === null) {
-    u[0]!.set(hero.x + 0.5, -hero.y - 0.4, 2.8, 1);
+    u[0]!.set(hero.x + 0.5, -hero.y - 0.4, 2.8, dl ? 1 - dl.day * 0.9 : 1);
     uc[0]!.set(0.32, 0.36, 0.48);
   } else {
     // A warm lantern whose light shrinks as it runs down (and flickers when nearly out).
@@ -374,10 +403,21 @@ function frame(
   }
   near.forEach(({ l }, i) => {
     u[i + 1]!.set(l.x, l.y, l.r, 1);
-    uc[i + 1]!.set(l.color[0], l.color[1], l.color[2]);
+    uc[i + 1]!.set(l.color[0] * lamp, l.color[1] * lamp, l.color[2] * lamp);
   });
   lighting.uLightCount.value = near.length + 1;
   return { x: cx, y: cy, zoom, width: size.width, height: size.height };
+}
+
+const nightColors = new Map<string, readonly [number, number, number]>();
+/** A world's night colour as rgb, parsed once. */
+function nightRgb(css: string): readonly [number, number, number] {
+  let c = nightColors.get(css);
+  if (!c) {
+    const col = new Color(css);
+    nightColors.set(css, (c = [col.r, col.g, col.b]));
+  }
+  return c;
 }
 
 /** Depth for something whose feet are on row `feet`: further down the map is in front. */
@@ -414,16 +454,41 @@ function Person({
   sheet: Sheet;
   material: ShaderMaterial;
 }) {
-  const column = Math.max(0, PEOPLE.indexOf(who as (typeof PEOPLE)[number]));
-  const g = useQuad(sheet, column * 64 + FACING_COLUMN[facing] * T, 0, T, T);
-  // A gentle idle bob, so the town feels alive.
+  const column = Math.max(0, PEOPLE.indexOf(who as (typeof PEOPLE)[number])) * 64;
+  const g = useQuad(sheet, column + FACING_COLUMN[facing] * T, 0, T, T);
+  // A gentle idle bob, so the town feels alive; walking residents glide between cells.
   const ref = useRef<Mesh>(null);
+  const group = useRef<Group>(null);
+  const at = useRef({ x, y, frame: -1, face: '' });
   const phase = useMemo(() => (x * 7 + y * 13) % 10, [x, y]);
-  useFrame(({ clock }) => {
-    if (ref.current) ref.current.position.y = Math.sin(clock.elapsedTime * 2.2 + phase) > 0.6 ? 1 / 16 : 0;
+  useFrame(({ clock }, delta) => {
+    const a = at.current;
+    const dx = x - a.x;
+    const dy = y - a.y;
+    const dist = Math.hypot(dx, dy);
+    let moving = false;
+    if (dist > 2.5) {
+      a.x = x;
+      a.y = y;
+    } else if (dist > 0.001) {
+      const step = Math.min(dist, 1.25 * Math.min(delta, 0.05));
+      a.x += (dx / dist) * step;
+      a.y += (dy / dist) * step;
+      moving = true;
+    }
+    const frame = moving ? Math.floor(clock.elapsedTime * 7) % 4 : 0;
+    const key = `${facing}${frame}`;
+    if (key !== a.face) {
+      a.face = key;
+      setQuadSource(g, sheet, column + FACING_COLUMN[facing] * T, frame * T, T, T);
+    }
+    if (group.current) {
+      group.current.position.set(Math.round(a.x * 16) / 16, -Math.round(a.y * 16) / 16, depth(a.y + 1));
+    }
+    if (ref.current) ref.current.position.y = !moving && Math.sin(clock.elapsedTime * 2.2 + phase) > 0.6 ? 1 / 16 : 0;
   });
   return (
-    <group position={[x, -y, depth(y + 1)]}>
+    <group ref={group} position={[x, -y, depth(y + 1)]}>
       <Shadow sheet={sheet} material={material} />
       <mesh ref={ref} geometry={g} material={material} />
     </group>

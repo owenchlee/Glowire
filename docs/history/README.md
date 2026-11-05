@@ -14,6 +14,7 @@ Each version is a git tag you can play again (see [Play an old version](#play-an
 | `v0.7-mossbell`    | Day 4 | Oct 13, 2026 | 8-way walking, changeovers and meters, World 3, the Lantern Lady |
 | `v0.8-deep`        | Day 4 | Oct 13, 2026 | Capacitors, World 4 under the sea, a lantern that runs down     |
 | `v0.9-brain-games` | Day 5 | Nov 3, 2026  | A puzzle game for the whole brain, and maps worth exploring     |
+| `v0.10-living-worlds` | Day 6 | Nov 4, 2026 | Brain jobs, daily teaser, rocks, ledges, fishing, day and night |
 
 ---
 
@@ -488,3 +489,30 @@ In a web browser, v0.1 and v0.2 sometimes show an empty board until the window i
 
 At every major change: commit, tag it (`git tag -a v0.N-name -m "..."`), add screenshots to
 `docs/history/v0.N/`, and add a section here with the decisions in my own words.
+
+## v0.10 Living worlds
+
+**Day 6 (Nov 4, 2026)** · tag `v0.10-living-worlds`
+
+You said: "yes finish all, this is a overnight run" (answering my list: walk the worlds, turn jobs into the new puzzles, and add the bigger ideas I had left out).
+
+**What changed**
+- **Brain jobs:** 21 of the 69 jobs are now Dead Lamp Hunt, Dockyard Wiring, Clock Panel or Lantern Budget puzzles. Each keeps its client, place and place in the story. Stars come from your score.
+- **Daily Brain Teaser:** a second daily puzzle picked from the date (six games), with a streak and sparks.
+- **Lore from puzzles:** 12 journal pages, three per world, unlock at a score in that world's puzzles.
+- **Rocks:** push them to plug a path or fill water into a stepping stone. A reset sign puts them back.
+- **One-way ledges** and **fishing** (wait for the bobber to dip) in all four worlds.
+- **Day and night:** a 7-minute cycle. Lamps glow at night, fireflies only come out after dark, and birds fly by day. A clock sits in the HUD.
+- **Townspeople routines:** about 35 residents pace, sit, loop, turn to face you, or go in at night.
+
+**Known limits**
+- I haven't played the fishing, water-fill rocks or ledge hops by hand.
+- Ledges look like short cliffs.
+- Sandbars are still blocky; the stone and sand-edge polish was skipped.
+- The map preview doesn't draw rocks.
+
+![Glowtown at night](v0.10/glowtown-night.png)
+![Glowtown by day](v0.10/glowtown-day.png)
+![Harbour](v0.10/harbour.png)
+![Mossbell](v0.10/mossbell.png)
+![Deep](v0.10/deep.png)

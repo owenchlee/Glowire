@@ -8,6 +8,7 @@
 //                                                  (sea along the bottom; the hill rises north)
 
 import { MapBuilder, at, type HouseStyle, type PropName } from './builder';
+import { ledgeTerrace, rockFill, rockPlug } from './puzzlekit';
 import type { Point, WorldMap } from './types';
 
 const W = 150;
@@ -28,6 +29,7 @@ export function buildHarbour(): WorldMap {
   clockHill(b);
   hilltop(b);
 
+  puzzles(b);
   return b.finish({ id: 'harbour', name: 'Driftwood Harbour', spawn: { x: 6, y: 26, facing: 'right' } });
 }
 
@@ -639,3 +641,13 @@ function rocks(b: MapBuilder, cells: (readonly [number, number])[]) {
 }
 
 export type { Point };
+
+/** Tiny physical puzzles: boulders to push, ledges to hop, and fish off the docks. */
+function puzzles(b: MapBuilder) {
+  rockFill(b, 5, 15, 'harbour-rock-channel', 25, 'A tide channel runs through this hedge room, and there’s a chest across it. Boulders slide when you lean on them. Water is just a hole that hasn’t been filled yet.');
+  rockPlug(b, 107, 28, 'harbour-rock-plug', 25, 'The old sailors jammed a boulder in the doorway. Push it in, then walk round it. Pulling is cheating, and impossible.');
+  ledgeTerrace(b, 46, 17, 'harbour-ledge-west', 20, 'Ledge on the south side of this terrace. Down is easy, up is impossible. Plan your exit before you enter.');
+  ledgeTerrace(b, 85, 3, 'harbour-ledge-clifftop', 25, 'A cliff-top nook with a one-way drop. Sailors call it the shortcut with no return ticket.');
+  b.fish('harbour-bay', 36, 27);
+  b.fish('harbour-pier', 72, 30);
+}

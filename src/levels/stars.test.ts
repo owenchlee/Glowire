@@ -21,7 +21,7 @@ function digAll(id: number): BoardState {
 
 describe('stars', () => {
   it('every level has a solution, a job, a tip and two star goals', () => {
-    for (const level of LEVELS) {
+    for (const level of LEVELS.filter((l) => !l.brain)) {
       expect(solutionPicture(level), `level ${level.id}`).not.toBeNull();
       expect(level.job, `level ${level.id}`).toBeDefined();
       expect(level.tip, `level ${level.id}`).toBeTruthy();
@@ -29,7 +29,7 @@ describe('stars', () => {
     }
   });
 
-  for (const level of LEVELS) {
+  for (const level of LEVELS.filter((l) => !l.brain)) {
     it(`level ${level.id}: Scout's digging leads to a three-star solve`, () => {
       const board = digAll(level.id);
       const evaluation = evaluateLevel(level, board);

@@ -58,7 +58,28 @@ export interface StepResult {
   arrived: boolean;
 }
 
-type Free = (x: number, y: number) => boolean;
+/**
+ * Whether a cell can be entered. `ledge` (optional) marks one-way ledges: cells you can step
+ * off downward but can't climb up into from the cell below.
+ */
+export type Free = ((x: number, y: number) => boolean) & { ledge?: (x: number, y: number) => boolean };
+
+/** Tell a `free` function where the one-way ledges are (a map's `ledges`), or clear them. */
+export function setLedges(free: Free, ledges: Uint8Array | undefined, width: number) {
+  free.ledge = ledges ? (x, y) => !!ledges[y * width + x] : undefined;
+}
+
+/** Would moving the feet from (x, y0) up to y1 climb into a ledge from below? */
+export function climbsLedge(x: number, y0: number, y1: number, free: Free): boolean {
+  if (!free.ledge || y1 >= y0) return false;
+  const oldRow = Math.floor(y0 + FEET.top);
+  const newRow = Math.floor(y1 + FEET.top);
+  if (newRow >= oldRow) return false;
+  const x0 = Math.floor(x + FEET.left);
+  const x1 = Math.floor(x + FEET.right - EPS);
+  for (let cx = x0; cx <= x1; cx++) if (free.ledge(cx, newRow) && !free.ledge(cx, oldRow)) return true;
+  return false;
+}
 
 /** Can the feet stand with the hero at (x, y)? */
 export function fits(x: number, y: number, free: Free): boolean {
@@ -98,7 +119,8 @@ function moveBy(w: Walker, dx: number, dy: number, free: Free): boolean {
 
 /** Move along one axis as far as possible (up to `d`), stopping flush against a wall. */
 function slide(w: Walker, axis: 'x' | 'y', d: number, free: Free): boolean {
-  const at = (t: number) => (axis === 'x' ? fits(w.x + d * t, w.y, free) : fits(w.x, w.y + d * t, free));
+  const at = (t: number) =>
+    axis === 'x' ? fits(w.x + d * t, w.y, free) : fits(w.x, w.y + d * t, free) && !climbsLedge(w.x, w.y, w.y + d * t, free);
   if (at(1)) {
     w[axis] += d;
     return true;
@@ -130,7 +152,7 @@ function nudge(w: Walker, side: 'x' | 'y', dir: number, along: 'x' | 'y', speed:
       p[side] = base + sign * off;
       if (!fits(p.x, p.y, free)) break;
       p[along] += dir * 0.08;
-      if (fits(p.x, p.y, free)) {
+      if (fits(p.x, p.y, free) && !(along === 'y' && climbsLedge(p.x, w.y, p.y, free))) {
         if (best === null || off < Math.abs(best)) best = sign * off;
         break;
       }
@@ -244,6 +266,8 @@ export function clearLine(a: Point, b: Point, free: Free): boolean {
   for (let k = 1; k <= n; k++) {
     const t = k / n;
     if (!fits(a.x + (b.x - a.x) * t, a.y + (b.y - a.y) * t, free)) return false;
+    const p = (t - 1 / n);
+    if (climbsLedge(a.x + (b.x - a.x) * t, a.y + (b.y - a.y) * p, a.y + (b.y - a.y) * t, free)) return false;
   }
   return true;
 }

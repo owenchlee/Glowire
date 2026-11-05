@@ -1,4 +1,5 @@
-// Little things that make a world feel alive: fireflies and falling leaves drifting across
+// Little things that make a world feel alive: fireflies at dusk and night, birds and sparkles
+// by day, and falling leaves drifting across
 // the screen, and a puff of dust at the hero's heels. Drawn as chunky square points, two
 // art pixels across, so they match the pixel art.
 
@@ -7,6 +8,7 @@ import { AdditiveBlending, BufferAttribute, BufferGeometry, type OrthographicCam
 
 import { type Walker, walkerPosition } from '../world/walker';
 import { useFrame } from '../render/r3f';
+import { currentPhase, daylight } from './daylight';
 
 const POINT_VERT = /* glsl */ `
   attribute vec3 aColor;
@@ -68,10 +70,12 @@ export const AMBIENT: Record<string, AmbientKind> = {
 };
 
 /** Fireflies blinking in place and leaves falling past, spread over whatever the camera sees. */
-export function Ambient({ kind }: { kind: AmbientKind }) {
+export function Ambient({ kind, underwater = false }: { kind: AmbientKind; underwater?: boolean }) {
   const FIREFLIES = 26;
   const LEAVES = kind.leaves ? 16 : 0;
-  const total = FIREFLIES + LEAVES;
+  const BIRDS = 4; // two points each (wings)
+  const SPARKLES = 10;
+  const total = FIREFLIES + LEAVES + BIRDS * 2 + SPARKLES;
   const ref = useRef<Points>(null);
   const geometry = useMemo(() => cloud(total), [total]);
   const material = useMemo(() => pointMaterial(false), []);
@@ -88,6 +92,9 @@ export function Ambient({ kind }: { kind: AmbientKind }) {
     const pos = geometry.getAttribute('position') as BufferAttribute;
     const col = geometry.getAttribute('aColor') as BufferAttribute;
     const alpha = geometry.getAttribute('aAlpha') as BufferAttribute;
+    const dl = underwater ? null : daylight(currentPhase());
+    const nightAmt = dl ? dl.fireflies : 1;
+    const dayAmt = dl ? dl.birds : 0;
     const wrap = (v: number, lo: number, span: number) => lo + ((((v - lo) % span) + span) % span);
     for (let i = 0; i < total; i++) {
       const s = seeds[i]!;
@@ -97,7 +104,28 @@ export function Ambient({ kind }: { kind: AmbientKind }) {
         const y = wrap(s.y * h * 5, cam.position.y - h / 2, h) + Math.cos(t * 0.27 * s.a + s.b * 1.3) * 0.6;
         pos.setXYZ(i, Math.round(x * 16) / 16, Math.round(y * 16) / 16, 6);
         col.setXYZ(i, ...kind.fireflies);
-        alpha.setX(i, Math.max(0, Math.sin(t * 1.3 * s.a + s.b * 3)) > 0.35 ? 1 : 0);
+        const out = i / FIREFLIES < nightAmt;
+        alpha.setX(i, out && Math.max(0, Math.sin(t * 1.3 * s.a + s.b * 3)) > 0.35 ? 1 : 0);
+      } else if (i >= FIREFLIES + LEAVES + BIRDS * 2) {
+        // By day a few sparkles glint over the grass and water, rising a little as they fade.
+        const k = i - (FIREFLIES + LEAVES + BIRDS * 2);
+        const x = wrap(s.x * w * 7, cam.position.x - w / 2, w);
+        const y = wrap(s.y * h * 7 + ((t * 0.12 * s.a) % 0.6), cam.position.y - h / 2, h);
+        pos.setXYZ(i, Math.round(x * 16) / 16, Math.round(y * 16) / 16, 6);
+        col.setXYZ(i, 1, 0.97, 0.7);
+        alpha.setX(i, k / SPARKLES < dayAmt && Math.sin(t * 1.1 * s.a + s.b * 5) > 0.82 ? 1 : 0);
+      } else if (i >= FIREFLIES + LEAVES) {
+        // Birds cross the screen in a slow glide, wings beating (the pair of points flaps).
+        const k = i - FIREFLIES - LEAVES;
+        const bird = k >> 1;
+        const sd = seeds[FIREFLIES + LEAVES + bird * 2]!;
+        const x = wrap(sd.x * w * 4 + t * (0.9 + sd.a * 0.5), cam.position.x - w / 2, w * 1.6) ;
+        const y = cam.position.y - h / 2 + ((sd.y * 3) % 1) * h + Math.sin(t * 0.7 + sd.b) * 0.6;
+        const flap = Math.sin(t * 9 + sd.b * 4) > 0 ? 1 / 16 : -1 / 16;
+        const wing = k & 1 ? 1 : -1;
+        pos.setXYZ(i, Math.round((x + wing * 0.16) * 16) / 16, Math.round((y + flap * 2 * (wing > 0 ? 1 : -1) * -1) * 16) / 16, 6);
+        col.setXYZ(i, 0.16, 0.16, 0.22);
+        alpha.setX(i, bird / BIRDS < dayAmt ? 1 : 0);
       } else {
         // A leaf tumbles down and sideways, wobbling as it goes.
         const k = i - FIREFLIES;

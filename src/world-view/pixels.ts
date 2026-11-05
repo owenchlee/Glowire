@@ -60,6 +60,8 @@ export function createLighting(ambient: string, fog: DataTexture = createFog(1, 
     uLightColors: { value: Array.from({ length: MAX_LIGHTS }, () => new Vector3()) },
     uLightCount: { value: 0 },
     uTime: { value: 0 },
+    /** 0 night … 1 full day: windows and bulbs glow less in daylight. */
+    uDay: { value: 0 },
     uFog: { value: fog },
     uFogSize: { value: new Vector2(img.width, img.height) },
   };
@@ -99,6 +101,7 @@ const fragment = /* glsl */ `
   uniform vec3 uLightColors[${MAX_LIGHTS}];
   uniform int uLightCount;
   uniform float uTime;
+  uniform float uDay;
   uniform float uLitAll;
   uniform sampler2D uFog;
   uniform vec2 uFogSize;
@@ -139,7 +142,7 @@ const fragment = /* glsl */ `
         ? mix(vTint, vec3(1.0), lum * 0.55)
         : mix(vec3(1.0, 0.62, 0.25), vec3(1.0, 0.95, 0.7), lum);
       float flicker = 0.94 + 0.06 * sin(uTime * 3.0 + vWorld.x * 1.7 + vWorld.y);
-      col = mix(c.rgb * uAmbient * 0.55, warm * (0.7 + 0.3 * lum) * flicker, lit);
+      col = mix(c.rgb * uAmbient * 0.55, warm * (0.7 + 0.3 * lum) * flicker, lit * mix(1.0, 0.3, uDay));
     }
 
     // Beyond the open part of the route: near-black, in a few hand-drawn-looking steps.

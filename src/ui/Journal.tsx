@@ -8,6 +8,7 @@ import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { CAST } from '../game/cast';
+import { GAMES, type GameId } from '../game/games';
 import { PERSON_SECRETS, SECRETS, type Secret, secretKey } from '../game/lore';
 import { NOTES, type Line } from '../game/story';
 import { speakerName } from './Dialog';
@@ -28,7 +29,7 @@ import {
 
 type Tab = 'notebook' | 'secrets' | 'people';
 
-const WORLD_NAMES = { glowtown: 'Glowtown', harbour: 'Driftwood Harbour', mossbell: 'Mossbell Hollow' } as const;
+const WORLD_NAMES = { glowtown: 'Glowtown', harbour: 'Driftwood Harbour', mossbell: 'Mossbell Hollow', deep: 'Brightwater Deep' } as const;
 
 /** People with a page in the journal: anyone with a secret to tell. */
 const PEOPLE = Object.keys(PERSON_SECRETS);
@@ -74,7 +75,7 @@ export function Journal() {
           <PixelText size={12} color={GOLD} shadow>
             {WORLD_NAMES[w]}
           </PixelText>
-          {here.map((s) => entry(s.id, seen(secretKey(s.id)), s.title, seen(secretKey(s.id)) ? 'Tap to read again' : 'Not found yet. Look closely…', s.lines))}
+          {here.map((s) => entry(s.id, seen(secretKey(s.id)), s.title, seen(secretKey(s.id)) ? 'Tap to read again' : s.unlock ? `Puzzle prize: score ${s.unlock.score} in ${GAMES[s.unlock.game as GameId]?.title ?? 'a puzzle'}` : 'Not found yet. Look closely…', s.lines))}
         </View>
       );
     });

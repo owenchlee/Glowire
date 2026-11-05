@@ -8,6 +8,7 @@
 //       Stop   │ 38, 39    │ 40, 41    │ 42, 43, 44   │ Tower 45, B
 
 import { MapBuilder } from './builder';
+import { ledgeTerrace, rockFill, rockPlug } from './puzzlekit';
 import type { WorldMap } from './types';
 
 const W = 136;
@@ -22,6 +23,7 @@ export function buildMossbell(): WorldMap {
   bellfield(b);
   bellTower(b);
 
+  puzzles(b);
   return b.finish({ id: 'mossbell', name: 'Mossbell Hollow', spawn: { x: 6, y: 24, facing: 'right' }, night: '#56628f' });
 }
 
@@ -522,4 +524,14 @@ function jobRuin(b: MapBuilder, id: number, who: string, style: Parameters<MapBu
   b.doorLight(door, group);
   b.resident(who, door.x + 1, door.y, 'down', { job: id });
   return door;
+}
+
+/** Tiny physical puzzles: boulders to push, ledges to hop, and fish in the mere. */
+function puzzles(b: MapBuilder) {
+  rockFill(b, 52, 15, 'mossbell-rock-bog', 25, 'A bog runs through this hedge room, with a chest beyond it. The boulder will slide if you lean on it. Bog is soft, but it isn’t bottomless.');
+  rockPlug(b, 116, 22, 'mossbell-rock-plug', 30, 'A boulder plugs the gap. Nobody remembers who put it there. Push it in, and walk round it.');
+  ledgeTerrace(b, 28, 22, 'mossbell-ledge-mill', 20, 'The miller built this terrace with a drop on its south side. In by the gap, out by the ledge. Never the other way.');
+  ledgeTerrace(b, 94, 5, 'mossbell-ledge-bell', 25, 'Step off a ledge going down, and there’s no climbing back. Remember that on the way in.');
+  b.fish('mossbell-mere', 36, 27);
+  b.fish('mossbell-bog', 12, 33);
 }

@@ -9,6 +9,7 @@
 //                                                                               16–18
 
 import { MapBuilder, hash, type BuildingSpec, type HouseStyle } from './builder';
+import { ledgeTerrace, rockFill, rockPlug } from './puzzlekit';
 import type { Point, WorldMap } from './types';
 
 const W = 180;
@@ -27,6 +28,7 @@ export function buildGlowtown(): WorldMap {
   clockPlaza(b);
   releaseClearings(b);
 
+  puzzles(b);
   return b.finish({ id: 'glowtown', name: 'Glowtown', spawn: { x: 9, y: 25, facing: 'right' } });
 }
 
@@ -838,4 +840,15 @@ function scatter(b: MapBuilder, x: number, y: number, w: number, h: number, n: n
     else if (kind === 'flowers') b.flowers(px, py);
     else b.prop(px, py, kind);
   }
+}
+
+/** Tiny physical puzzles: boulders to push, ledges to hop, and fish in the pond and brook. */
+function puzzles(b: MapBuilder) {
+  rockFill(b, 60, 18, 'glowtown-rock-brook', 25, 'A little hedge room with a stream through it, and a chest on the far bank. Boulders slide when you lean on them. What happens if one slides into water?');
+  rockPlug(b, 18, 29, 'glowtown-rock-plug', 20, 'A boulder is stuck in the hedge doorway. You can only push, never pull. So which way does it have to go?');
+  rockPlug(b, 106, 31, 'glowtown-rock-woods', 25, 'Something shiny behind that boulder. Lean on it: push it down and in, then squeeze round. (The little sign inside puts all boulders back.)');
+  ledgeTerrace(b, 22, 20, 'glowtown-ledge-lane', 20, 'A hedge terrace with a drop on its south side. Hop down, and you’re out. There’s no way back up that way. A bit like regret.');
+  ledgeTerrace(b, 122, 26, 'glowtown-ledge-market', 25, 'You can step off a ledge downward, but you can’t climb up it. Slip in through the gap at the top, and leave the quick way.');
+  b.fish('glowtown-pond', 42, 36);
+  b.fish('glowtown-brook', 50, 30);
 }

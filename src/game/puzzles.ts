@@ -77,6 +77,8 @@ export interface PipeBoard {
   tiles: Pipe[];
   /** Turns needed to fix it, if you turn every wrong tile the short way. */
   par: number;
+  /** The mask every tile has when solved (for tests and hints). */
+  solution?: number[];
 }
 
 const opposite = (side: number) => ((side << 2) | (side >> 2)) & 15;
@@ -188,7 +190,7 @@ export function pipeBoard(round: number, random: Random): PipeBoard {
     for (let k = 0; k < turns; k++) mask = turnMask(mask);
     return { ...t, mask };
   });
-  const board: PipeBoard = { w, h, tiles, par: 0 };
+  const board: PipeBoard = { w, h, tiles, par: 0, solution: solved.map((t) => t.mask) };
   // A board that came out already solved gets tiles nudged until it isn't.
   for (let i = 0; i < tiles.length && pipesSolved(board); i++) {
     const t = tiles[i]!;
@@ -362,3 +364,80 @@ export const LANTERN_RIGHT = 15;
 export const LANTERN_WRONG = 30;
 /** How fast the lantern burns down, per second, at this round. */
 export const lanternDrain = (round: number) => 3 + round * 0.35;
+
+// ── Brain jobs: solvers and stars ────────────────────────────────────────────
+
+/** A set of presses that solves a panel (Gaussian elimination over GF(2)), or null. */
+export function solvePanel(p: PanelBoard): number[] | null {
+  const cells = p.n * p.n;
+  // Column j of the matrix is the set of cells flipped by pressing j; we need sum = (not on).
+  const rows: number[][] = [];
+  for (let c = 0; c < cells; c++) {
+    const row = new Array<number>(cells + 1).fill(0);
+    for (let j = 0; j < cells; j++) {
+      const flipped = pressPanel(p.n, new Array<boolean>(cells).fill(false), j);
+      if (flipped[c]) row[j] = 1;
+    }
+    row[cells] = p.on[c] ? 0 : 1;
+    rows.push(row);
+  }
+  const pivotOf = new Array<number>(cells).fill(-1);
+  let r = 0;
+  for (let col = 0; col < cells && r < cells; col++) {
+    const at = rows.findIndex((row, i) => i >= r && row[col] === 1);
+    if (at < 0) continue;
+    [rows[r], rows[at]] = [rows[at]!, rows[r]!];
+    for (let i = 0; i < cells; i++) {
+      if (i !== r && rows[i]![col] === 1) rows[i] = rows[i]!.map((v, k) => v ^ rows[r]![k]!);
+    }
+    pivotOf[col] = r;
+    r++;
+  }
+  for (let i = r; i < cells; i++) if (rows[i]![cells] === 1) return null;
+  const base = new Array<number>(cells).fill(0);
+  for (let col = 0; col < cells; col++) if (pivotOf[col]! >= 0) base[col] = rows[pivotOf[col]!]![cells]!;
+  // Free columns give null-space vectors; try every combination for the fewest presses.
+  const frees = [...Array(cells).keys()].filter((c) => pivotOf[c]! < 0);
+  const nulls = frees.map((f) => {
+    const v = new Array<number>(cells).fill(0);
+    v[f] = 1;
+    for (let col = 0; col < cells; col++) if (pivotOf[col]! >= 0) v[col] = rows[pivotOf[col]!]![f]!;
+    return v;
+  });
+  let best: number[] | null = null;
+  for (let mask = 0; mask < 1 << nulls.length; mask++) {
+    const x = base.slice();
+    nulls.forEach((v, k) => {
+      if (mask & (1 << k)) v.forEach((bit, i) => (x[i]! ^= bit));
+    });
+    const presses = x.flatMap((bit, i) => (bit ? [i] : []));
+    if (!best || presses.length < best.length) best = presses;
+  }
+  return best;
+}
+
+/** The lamps to probe to find the dead one by halving the string: a list of [from, to] spans. */
+export function probeSearch(r: ProbeRound): { found: number; probes: number } {
+  let lo = 0;
+  let hi = r.lamps - 1;
+  let probes = 0;
+  while (lo < hi) {
+    const mid = Math.floor((lo + hi) / 2);
+    probes++;
+    if (probeReading(r, lo, mid) > 0) hi = mid;
+    else lo = mid + 1;
+  }
+  return { found: lo, probes };
+}
+
+/** Stars (0 to 3) for a finished brain job, from the game's score. 0 means try again. */
+export function brainStars(game: 'probe' | 'pipes' | 'panel' | 'lantern', score: number): number {
+  const bands: Record<string, [number, number, number]> = {
+    probe: [10, 45, 70],
+    pipes: [50, 60, 70],
+    panel: [50, 60, 70],
+    lantern: [3, 7, 12],
+  };
+  const [one, two, three] = bands[game]!;
+  return score >= three ? 3 : score >= two ? 2 : score >= one ? 1 : 0;
+}
