@@ -31,6 +31,11 @@ export function residentKey(r: Pick<Resident, 'who' | 'x' | 'y'>): string {
   return `${r.who}@${r.x},${r.y}`;
 }
 
+/** A resident's routine: the exact `who@x,y` entry, else one filed under just their id. */
+export function routineFor(routines: Record<string, Routine> | undefined, r: Pick<Resident, 'who' | 'x' | 'y'>): Routine | undefined {
+  return routines?.[residentKey(r)] ?? routines?.[r.who];
+}
+
 function hash(s: string): number {
   let h = 2166136261;
   for (let i = 0; i < s.length; i++) h = Math.imul(h ^ s.charCodeAt(i), 16777619);
@@ -64,6 +69,8 @@ export function placeResident(
   seconds: number,
   night: boolean,
   hero?: Point,
+  /** Seconds since night fell: someone heading for a lamp walks there rather than appearing. */
+  nightFor = Infinity,
 ): Placed | null {
   const key = residentKey(base);
   if (!routine) return { ...base, key };
@@ -71,7 +78,7 @@ export function placeResident(
     if (routine.night === 'hide') {
       if (base.job === undefined) return null;
     } else {
-      return { ...base, ...routine.night, key };
+      return walkToLamp(base, routine, routine.night, seconds, nightFor, key);
     }
   }
 
@@ -118,6 +125,36 @@ export function placeResident(
   return { ...base, x, y, facing, key, sitting: routine.sit !== undefined };
 }
 
+/** The cells from `a` to `b`, horizontal first and then vertical, both ends included. */
+export function lShape(a: Point, b: Point): Point[] {
+  const out: Point[] = [];
+  for (let x = a.x; x !== b.x; x += Math.sign(b.x - x)) out.push({ x, y: a.y });
+  for (let y = a.y; y !== b.y; y += Math.sign(b.y - y)) out.push({ x: b.x, y });
+  out.push({ x: b.x, y: b.y });
+  return out;
+}
+
+/** At night, walk from wherever the day routine had them when dusk fell to the lamp. */
+function walkToLamp(
+  base: Resident,
+  routine: Routine,
+  spot: { x: number; y: number; facing: Facing },
+  seconds: number,
+  nightFor: number,
+  key: string,
+): Placed {
+  const there: Placed = { ...base, ...spot, key };
+  if (!Number.isFinite(nightFor)) return there;
+  const from = placeResident(base, { ...routine, night: undefined }, seconds - nightFor, false);
+  if (!from) return there;
+  const cells = lShape(from, spot);
+  const at = Math.floor(Math.max(0, nightFor) * (routine.speed ?? 0.9));
+  if (at >= cells.length - 1) return there;
+  const c = cells[at]!;
+  const n = cells[at + 1]!;
+  return { ...base, x: c.x, y: c.y, facing: dir(c, n), key, sitting: false };
+}
+
 /** Everyone in the world, placed at this moment. */
 export function placeResidents(
   residents: Resident[],
@@ -125,10 +162,11 @@ export function placeResidents(
   seconds: number,
   night: boolean,
   hero?: Point,
+  nightFor = Infinity,
 ): Placed[] {
   const out: Placed[] = [];
   for (const r of residents) {
-    const p = placeResident(r, routines?.[residentKey(r)], seconds, night, hero);
+    const p = placeResident(r, routineFor(routines, r), seconds, night, hero, nightFor);
     if (p) out.push(p);
   }
   return out;
@@ -145,6 +183,11 @@ export function routineCells(routine: Routine): Point[] {
     for (let s = 0; s <= steps; s++)
       cells.push({ x: steps === 0 ? a.x : a.x + Math.sign(b.x - a.x) * s, y: steps === 0 ? a.y : a.y + Math.sign(b.y - a.y) * s });
   }
-  if (routine.night && routine.night !== 'hide') cells.push({ x: routine.night.x, y: routine.night.y });
+  if (routine.night && routine.night !== 'hide') {
+    // The evening walk starts from any cell the day routine can be in and goes to the lamp.
+    const starts = cells.slice();
+    for (const s of starts) cells.push(...lShape(s, routine.night));
+    cells.push({ x: routine.night.x, y: routine.night.y });
+  }
   return cells;
 }

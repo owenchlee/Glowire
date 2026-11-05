@@ -38,9 +38,7 @@ export const ROUTINES: Record<string, Record<string, Routine>> = {
     'rosa@89,19': { look: 3 },
   },
   mossbell: {
-    'hazel@21,20': pace(19, 20, 24, 20, { night: 'hide' }),
     'wren@47,26': pace(46, 26, 48, 26),
-    'moth@82,24': pace(83, 24, 88, 24, { night: 'hide' }),
     'wren@12,26': pace(9, 26, 14, 26),
     'moth@78,17': { look: 3 },
     'hazel@97,17': { look: 3 },

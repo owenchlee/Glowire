@@ -12,6 +12,7 @@ import { join } from 'node:path';
 import { PNG } from 'pngjs';
 import { test } from 'vitest';
 
+import { ROCK_TILE } from '../src/world/builder';
 import { PEOPLE } from '../src/world/people.generated';
 import { WORLDS, worldMap } from '../src/world/worlds';
 import type { WorldMap } from '../src/world/types';
@@ -61,6 +62,8 @@ function draw(map: WorldMap, opts: { scale: number; lit: boolean }) {
       draw: () => o.tiles.forEach((t, i) => t >= 0 && tile(t, o.x + (i % o.w), o.y + Math.floor(i / o.w))),
     });
   }
+  // Pushable rocks (the game tracks them in world/rocks.ts; here they sit where they start).
+  for (const r of map.rocks ?? []) items.push({ z: r.y + 1, draw: () => tile(ROCK_TILE, r.x, r.y) });
   for (const r of map.residents) {
     const col = Math.max(0, PEOPLE.indexOf(r.who as (typeof PEOPLE)[number]));
     const face = { down: 0, up: 1, left: 2, right: 3 }[r.facing];

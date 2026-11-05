@@ -38,15 +38,24 @@ import {
   targetAt,
 } from '../world/logic';
 import type { Facing, Point, WorldMap } from '../world/types';
-import { type Walker, facingCells, setLedges, newWalker, smoothPath, stepWalker, walkerCell } from '../world/walker';
+import {
+  type Walker,
+  facingCells,
+  setLedges,
+  newWalker,
+  smoothPath,
+  stepWalker,
+  walkerCell,
+} from '../world/walker';
 import { type Placed, placeResidents, residentKey } from '../world/routines';
 import { ROUTINES } from '../world/routines.data';
 import { WORLDS } from '../world/worlds';
 import { currentPhase, dayClockSeconds, daylight } from './daylight';
+import { secondsSinceNightFell } from './nightClock';
 import { Joystick } from './Joystick';
 import { chestKey, labelFor } from './targets';
 import { AreaBanner, ClockBadge, LanternGauge } from './WorldHud';
-import { type View as CameraView, WorldCanvas } from './WorldCanvas';
+import { type Puff, type View as CameraView, WorldCanvas } from './WorldCanvas';
 
 /** Where the hero was standing in each world, so coming back from a puzzle feels seamless. */
 const lastPlace = new Map<string, { x: number; y: number; facing: Facing }>();
@@ -91,9 +100,11 @@ const startingPlace = (worldId: string, map: WorldMap) => lastPlace.get(worldId)
 function pendingScene(map: WorldMap, save: SaveData, here: number): Scene | null {
   const solved = solvedIn(save);
   const seen = (id?: string) => !id || save.seen.includes(id);
-  for (const a of map.areas) if (areaDone(a, solved) && a.jobs.length && !seen(a.outro)) return SCENES[a.outro!] ?? null;
+  for (const a of map.areas)
+    if (areaDone(a, solved) && a.jobs.length && !seen(a.outro)) return SCENES[a.outro!] ?? null;
   const area = map.areas[here];
-  if (area && here < openAreas(map, solved) && !seen(area.intro)) return SCENES[area.intro!] ?? null;
+  if (area && here < openAreas(map, solved) && !seen(area.intro))
+    return SCENES[area.intro!] ?? null;
   return null;
 }
 
@@ -114,8 +125,9 @@ export function WorldScreen({ map, worldId }: { map: WorldMap; worldId: string }
   const routines = ROUTINES[worldId];
   const placeNow = useCallback(
     (hero?: Point): Placed[] => {
-      const night = !map.underwater && daylight(currentPhase()).night;
-      return placeResidents(presentBase, routines, dayClockSeconds(), night, hero);
+      const phase = currentPhase();
+      const night = !map.underwater && daylight(phase).night;
+      return placeResidents(presentBase, routines, dayClockSeconds(), night, hero, night ? secondsSinceNightFell(phase) : Infinity);
     },
     [presentBase, routines, map.underwater],
   );
@@ -139,7 +151,8 @@ export function WorldScreen({ map, worldId }: { map: WorldMap; worldId: string }
   const baseBlocked = useMemo(() => {
     const b = blockedCells(map, residents, solved);
     // Someone on a routine leaves their home cell (which the map marks solid) free.
-    if (routines) for (const r of presentBase) if (routines[residentKey(r)]) b[r.y * map.width + r.x] = 0;
+    if (routines)
+      for (const r of presentBase) if (routines[residentKey(r)]) b[r.y * map.width + r.x] = 0;
     for (const r of residents) b[r.y * map.width + r.x] = 1;
     return b;
   }, [map, residents, solved, presentBase, routines]);
@@ -149,11 +162,15 @@ export function WorldScreen({ map, worldId }: { map: WorldMap; worldId: string }
   const rocksNow = useRef(rockState);
   const baseBlockedNow = useRef(baseBlocked);
   const pushTime = useRef(0);
+  const puffs = useRef<Puff[]>([]);
   useEffect(() => {
     rocksNow.current = rockState;
     baseBlockedNow.current = baseBlocked;
   }, [rockState, baseBlocked]);
-  const blocked = useMemo(() => withRocks(map, baseBlocked, rockState), [map, baseBlocked, rockState]);
+  const blocked = useMemo(
+    () => withRocks(map, baseBlocked, rockState),
+    [map, baseBlocked, rockState],
+  );
   const [fishing, setFishing] = useState(false);
   const fog = useMemo(() => fogMask(map, solved), [map, solved]);
   const open = openAreas(map, solved);
@@ -170,12 +187,16 @@ export function WorldScreen({ map, worldId }: { map: WorldMap; worldId: string }
   const chestsFound = chests.filter((id) => save.seen.includes(chestKey(id))).length;
   const fishCaught = Object.values(save.fish ?? {}).reduce((a, b) => a + b, 0);
   const hasFish = useMemo(() => map.spots.some((s) => s.kind === 'fish'), [map]);
-  const areaIndex = useCallback((x: number, y: number) => map.areaOf[y * map.width + x] ?? 255, [map]);
+  const areaIndex = useCallback(
+    (x: number, y: number) => map.areaOf[y * map.width + x] ?? 255,
+    [map],
+  );
   // Secrets still to find twinkle, once their part of the route is open.
   const sparkles = useMemo(
     () =>
       map.spots.flatMap((sp) =>
-        (sp.kind === 'secret' && !found(sp.secret)) || (sp.kind === 'chest' && !save.seen.includes(chestKey(sp.id)))
+        (sp.kind === 'secret' && !found(sp.secret)) ||
+        (sp.kind === 'chest' && !save.seen.includes(chestKey(sp.id)))
           ? areaIndex(sp.x, sp.y) < open
             ? [{ x: sp.x, y: sp.y }]
             : []
@@ -259,7 +280,8 @@ export function WorldScreen({ map, worldId }: { map: WorldMap; worldId: string }
 
   // Dev only: let the browser console poke at the walk state.
   useEffect(() => {
-    if (__DEV__ && Platform.OS === 'web') (globalThis as Record<string, unknown>).__world = { walker, view, talking };
+    if (__DEV__ && Platform.OS === 'web')
+      (globalThis as Record<string, unknown>).__world = { walker, view, talking };
   }, []);
 
   const steer = useCallback((x: number, y: number) => {
@@ -325,7 +347,11 @@ export function WorldScreen({ map, worldId }: { map: WorldMap; worldId: string }
         },
       ],
       choices: [
-        { label: dailyDone ? 'Play it again' : 'On my way!', tone: dailyDone ? 'gold' : 'orange', onPress: () => go('/daily') },
+        {
+          label: dailyDone ? 'Play it again' : 'On my way!',
+          tone: dailyDone ? 'gold' : 'orange',
+          onPress: () => go('/daily'),
+        },
         { label: 'Brain teaser', tone: 'teal', onPress: () => go('/brain-daily') },
         ...askChoice('pip', true),
         { label: 'Later', tone: 'cream', onPress: close },
@@ -342,12 +368,20 @@ export function WorldScreen({ map, worldId }: { map: WorldMap; worldId: string }
         setChat({
           lines: [
             { who: 'pip', text: a.gate ?? 'It’s too dark to go on.' },
-            { who: 'pip', text: `${left} job${left === 1 ? '' : 's'} left in ${a.name}. Look for the “!”` },
+            {
+              who: 'pip',
+              text: `${left} job${left === 1 ? '' : 's'} left in ${a.name}. Look for the “!”`,
+            },
           ],
         });
         return;
       }
-      const job = target.kind === 'resident' ? target.resident.job : target.spot.kind === 'job' ? target.spot.job : undefined;
+      const job =
+        target.kind === 'resident'
+          ? target.resident.job
+          : target.spot.kind === 'job'
+            ? target.spot.job
+            : undefined;
       if (job !== undefined) {
         const level = levelById(job);
         const client = level.job!.client;
@@ -356,7 +390,11 @@ export function WorldScreen({ map, worldId }: { map: WorldMap; worldId: string }
           setChat({
             lines: [{ who: client, text: level.job!.thanks }],
             choices: [
-              { label: stars < 3 ? `Try for ${3 - stars} more ★` : 'Play again', tone: 'gold', onPress: () => startJob(level) },
+              {
+                label: stars < 3 ? `Try for ${3 - stars} more ★` : 'Play again',
+                tone: 'gold',
+                onPress: () => startJob(level),
+              },
               ...askChoice(client, true),
               { label: 'Bye!', tone: 'cream', onPress: close },
             ],
@@ -370,7 +408,14 @@ export function WorldScreen({ map, worldId }: { map: WorldMap; worldId: string }
             ],
           });
         } else {
-          setChat({ lines: [{ who: client, text: 'My lights are out too… but finish the jobs back down the road first.' }] });
+          setChat({
+            lines: [
+              {
+                who: client,
+                text: 'My lights are out too… but finish the jobs back down the road first.',
+              },
+            ],
+          });
         }
         return;
       }
@@ -381,7 +426,9 @@ export function WorldScreen({ map, worldId }: { map: WorldMap; worldId: string }
         const ask = askChoice(r.who, true);
         setChat({
           lines: lines ?? [{ who: r.who, text: 'Thank you for the lights!' }],
-          choices: ask.length ? [...ask, { label: 'Bye!', tone: 'cream', onPress: close }] : undefined,
+          choices: ask.length
+            ? [...ask, { label: 'Bye!', tone: 'cream', onPress: close }]
+            : undefined,
         });
         return;
       }
@@ -394,7 +441,10 @@ export function WorldScreen({ map, worldId }: { map: WorldMap; worldId: string }
         const first = !save.seen.includes(noteKey(n.id));
         setChat({
           lines: [
-            { who: 'pip', text: `${first ? 'A page of Marigold’s notebook!' : 'Marigold’s notebook.'} Page ${n.page}: “${n.title}”.` },
+            {
+              who: 'pip',
+              text: `${first ? 'A page of Marigold’s notebook!' : 'Marigold’s notebook.'} Page ${n.page}: “${n.title}”.`,
+            },
             ...n.lines,
           ],
           seenId: noteKey(n.id),
@@ -407,10 +457,22 @@ export function WorldScreen({ map, worldId }: { map: WorldMap; worldId: string }
         if (to?.build && ready) {
           setChat({
             lines: bubble
-              ? [{ who: 'glimmer', text: to.id === 'deep' ? 'Down the well, all the way to the sea? Hold on tight to my bubble.' : `Back up the well to ${to.name}? Hold on tight!` }]
+              ? [
+                  {
+                    who: 'glimmer',
+                    text:
+                      to.id === 'deep'
+                        ? 'Down the well, all the way to the sea? Hold on tight to my bubble.'
+                        : `Back up the well to ${to.name}? Hold on tight!`,
+                  },
+                ]
               : [{ who: 'pip', text: `The night bus to ${to.name}! Hop on?` }],
             choices: [
-              { label: bubble ? 'Hold on!' : 'All aboard!', tone: 'orange', onPress: () => go(`/world/${to.id}`) },
+              {
+                label: bubble ? 'Hold on!' : 'All aboard!',
+                tone: 'orange',
+                onPress: () => go(`/world/${to.id}`),
+              },
               { label: 'Not yet', tone: 'cream', onPress: close },
             ],
           });
@@ -439,22 +501,40 @@ export function WorldScreen({ map, worldId }: { map: WorldMap; worldId: string }
           ],
         });
       } else if (s.kind === 'chest') {
-        if (save.seen.includes(chestKey(s.id))) setChat({ lines: [{ who: 'pip', text: 'Empty now. It was a good one, though.' }] });
+        if (save.seen.includes(chestKey(s.id)))
+          setChat({ lines: [{ who: 'pip', text: 'Empty now. It was a good one, though.' }] });
         else {
-          commitSave({ ...save, sparks: save.sparks + s.sparks, seen: [...save.seen, chestKey(s.id)] });
+          commitSave({
+            ...save,
+            sparks: save.sparks + s.sparks,
+            seen: [...save.seen, chestKey(s.id)],
+          });
           buzz.win();
-          setChat({ lines: [{ who: 'pip', text: `A hidden chest! Inside: ⚡${s.sparks} sparks. Bzzt, what a find!` }] });
+          setChat({
+            lines: [
+              {
+                who: 'pip',
+                text: `A hidden chest! Inside: ⚡${s.sparks} sparks. Bzzt, what a find!`,
+              },
+            ],
+          });
         }
       } else if (s.kind === 'fish') setFishing(true);
       else if (s.kind === 'reset') {
         const c = walkerCell(walker.current);
         if (rockState.filled.has(c.y * map.width + c.x))
-          setChat({ lines: [{ who: 'pip', text: 'You’re standing on a stepping stone! Hop off first.' }] });
+          setChat({
+            lines: [{ who: 'pip', text: 'You’re standing on a stepping stone! Hop off first.' }],
+          });
         else {
           const rocks = newRocks(map);
           rocksNow.current = rocks;
           setRockState(rocks);
-          setChat({ lines: [{ who: 'pip', text: 'Clunk, rumble… every rock slid back to where it started.' }] });
+          setChat({
+            lines: [
+              { who: 'pip', text: 'Clunk, rumble… every rock slid back to where it started.' },
+            ],
+          });
         }
       } else if (s.kind === 'secret') {
         const sec = SECRETS[s.secret];
@@ -494,17 +574,30 @@ export function WorldScreen({ map, worldId }: { map: WorldMap; worldId: string }
       const ax = Math.abs(w.input.x) > 0.3 ? Math.sign(w.input.x) : 0;
       const ay = Math.abs(w.input.y) > 0.3 ? Math.sign(w.input.y) : 0;
       const step = STEP[w.facing];
-      const leaning = !talking.current && !w.moving && ((step.x !== 0 && ax === step.x) || (step.y !== 0 && ay === step.y));
-      const rock = leaning ? facingCells(w).find((c) => rockIndex(rocksNow.current, c.x, c.y) >= 0) : undefined;
+      const leaning =
+        !talking.current &&
+        !w.moving &&
+        ((step.x !== 0 && ax === step.x) || (step.y !== 0 && ay === step.y));
+      const rock = leaning
+        ? facingCells(w).find((c) => rockIndex(rocksNow.current, c.x, c.y) >= 0)
+        : undefined;
       if (rock) {
         pushTime.current += dt;
         if (pushTime.current > 0.3) {
           pushTime.current = 0;
-          const moved = pushRock(map, baseBlockedNow.current, rocksNow.current, rock.x, rock.y, w.facing);
+          const moved = pushRock(
+            map,
+            baseBlockedNow.current,
+            rocksNow.current,
+            rock.x,
+            rock.y,
+            w.facing,
+          );
           if (moved) {
             rocksNow.current = moved.state;
             setRockState(moved.state);
             buzz.thud();
+            puffs.current.push({ x: moved.to.x + 0.5, y: moved.to.y + 0.9 }, { x: rock.x + 0.5, y: rock.y + 0.9 });
           }
         }
       } else pushTime.current = 0;
@@ -534,7 +627,9 @@ export function WorldScreen({ map, worldId }: { map: WorldMap; worldId: string }
         setHere(a);
       }
       if (map.underwater && !talking.current) {
-        const inLight = litLightsNow.current.some((l) => Math.hypot(l.x - (w.x + 0.5), l.y - (w.y + 0.5)) < l.radius * 0.7);
+        const inLight = litLightsNow.current.some(
+          (l) => Math.hypot(l.x - (w.x + 0.5), l.y - (w.y + 0.5)) < l.radius * 0.7,
+        );
         if (inLight) {
           lantern.current = Math.min(1, lantern.current + dt / LANTERN_REFILL);
           lastLight.current = { x: w.x, y: w.y };
@@ -548,7 +643,9 @@ export function WorldScreen({ map, worldId }: { map: WorldMap; worldId: string }
           // Out of light: something in the dark nudges you back to the last lamp.
           lantern.current = 0.5;
           walker.current = newWalker(lastLight.current.x, lastLight.current.y, w.facing);
-          setChat({ lines: [{ who: 'pip', text: DARK_LINES[darkCount.current++ % DARK_LINES.length]! }] });
+          setChat({
+            lines: [{ who: 'pip', text: DARK_LINES[darkCount.current++ % DARK_LINES.length]! }],
+          });
         }
       }
     },
@@ -616,7 +713,9 @@ export function WorldScreen({ map, worldId }: { map: WorldMap; worldId: string }
     autoInteract.current = target !== null;
     const settled = Math.abs(w.x - from.x) + Math.abs(w.y - from.y) < 0.05;
     if (target && cells.length === 0 && settled) {
-      const f = (Object.keys(STEP) as Facing[]).find((k) => from.x + STEP[k].x === cell.x && from.y + STEP[k].y === cell.y);
+      const f = (Object.keys(STEP) as Facing[]).find(
+        (k) => from.x + STEP[k].x === cell.x && from.y + STEP[k].y === cell.y,
+      );
       if (f) w.facing = f;
       w.path = [];
       w.faceAtEnd = null;
@@ -628,15 +727,23 @@ export function WorldScreen({ map, worldId }: { map: WorldMap; worldId: string }
   const bubbles = useMemo(() => {
     const out: { who: string; x: number; y: number; kind: 'job' | 'chat' | 'heart' }[] = [];
     for (const r of residents) {
-      if (r.job !== undefined && !solved(r.job) && jobOpen(map, r.job, solved)) out.push({ who: r.who, x: r.x, y: r.y, kind: 'job' });
-      else if (r.who === 'pip' && !dailyDone) out.push({ who: r.who, x: r.x, y: r.y, kind: 'chat' });
-      else if (r.chat && r.job === undefined) out.push({ who: r.who, x: r.x, y: r.y, kind: 'chat' });
+      if (r.job !== undefined && !solved(r.job) && jobOpen(map, r.job, solved))
+        out.push({ who: r.who, x: r.x, y: r.y, kind: 'job' });
+      else if (r.who === 'pip' && !dailyDone)
+        out.push({ who: r.who, x: r.x, y: r.y, kind: 'chat' });
+      else if (r.chat && r.job === undefined)
+        out.push({ who: r.who, x: r.x, y: r.y, kind: 'chat' });
     }
     return out;
   }, [residents, solved, map, dailyDone]);
 
   const left = allJobs(area).filter((j) => !solved(j)).length;
-  const status = allJobs(area).length === 0 ? 'Home' : left === 0 ? 'All lit up!' : `${left} job${left === 1 ? '' : 's'} left here`;
+  const status =
+    allJobs(area).length === 0
+      ? 'Home'
+      : left === 0
+        ? 'All lit up!'
+        : `${left} job${left === 1 ? '' : 's'} left here`;
 
   return (
     <View style={styles.screen}>
@@ -651,18 +758,31 @@ export function WorldScreen({ map, worldId }: { map: WorldMap; worldId: string }
         bubbles={bubbles}
         sparkles={sparkles}
         rocks={rockState}
+        puffs={puffs}
         ghosts={ghosts}
         walker={walker}
         lantern={lantern}
         onTick={onTick}
         onView={onView}
       />
-      <Pressable accessibilityRole="button" accessibilityLabel="Walk here" style={StyleSheet.absoluteFill} onPress={(e) => onTap(e.nativeEvent.locationX, e.nativeEvent.locationY)} />
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Walk here"
+        style={StyleSheet.absoluteFill}
+        onPress={(e) => onTap(e.nativeEvent.locationX, e.nativeEvent.locationY)}
+      />
       {!talk && !travelling && <Joystick onInput={steer} />}
-      {!talk && !travelling && <AreaBanner key={`${map.id}:${here}`} name={area.name} world={map.name} />}
+      {!talk && !travelling && (
+        <AreaBanner key={`${map.id}:${here}`} name={area.name} world={map.name} />
+      )}
 
       <View style={styles.hud} pointerEvents="box-none">
-        <Pressable accessibilityRole="button" accessibilityLabel={`${area.name}. Open the travel map`} style={styles.title} onPress={() => setTravelling(true)}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`${area.name}. Open the travel map`}
+          style={styles.title}
+          onPress={() => setTravelling(true)}
+        >
           <PixelText size={18} color={GOLD} shadow>
             {area.name} ▾
           </PixelText>
@@ -671,17 +791,28 @@ export function WorldScreen({ map, worldId }: { map: WorldMap; worldId: string }
           </PixelText>
           {map.underwater && <LanternGauge value={lanternShown} />}
         </Pressable>
-        <View style={styles.flex} pointerEvents="none" />
-        {!map.underwater && <ClockBadge />}
-        <Counter icon="✦" value={`${litCount}/${worldJobs.length}`} color="#ffe58a" />
-        <Counter icon="✎" value={`${notesFound}/${notes.length}`} color="#c9e7ff" />
-        {(fishCaught > 0 || hasFish) && <Counter icon="≈" value={fishCaught} color="#8fd0e8" />}
-        {chests.length > 0 && <Counter icon="◆" value={`${chestsFound}/${chests.length}`} color="#f2b36b" />}
-        {worldSecrets.length > 0 && <Counter icon="◉" value={`${secretsFound}/${worldSecrets.length}`} color="#ffd27a" />}
-        <PixelButton label="Journal" tone="cream" size={13} onPress={() => go('/journal')} />
-        <Counter icon="⚡" value={save.sparks} />
-        <Counter icon="★" value={totalStars(save)} />
-        <PixelButton label="Worlds" tone="teal" size={13} onPress={() => go('/')} />
+        <View style={styles.right} pointerEvents="box-none">
+          <View style={styles.line} pointerEvents="box-none">
+            {!map.underwater && <ClockBadge />}
+            <Counter icon="✦" value={`${litCount}/${worldJobs.length}`} color="#ffe58a" />
+            <Counter icon="⚡" value={save.sparks} />
+            <Counter icon="★" value={totalStars(save)} />
+          </View>
+          <View style={styles.line} pointerEvents="box-none">
+            {notes.length > 0 && (
+              <Counter icon="✎" value={`${notesFound}/${notes.length}`} color="#c9e7ff" />
+            )}
+            {(fishCaught > 0 || hasFish) && <Counter icon="≈" value={fishCaught} color="#8fd0e8" />}
+            {chests.length > 0 && (
+              <Counter icon="◆" value={`${chestsFound}/${chests.length}`} color="#f2b36b" />
+            )}
+            {worldSecrets.length > 0 && (
+              <Counter icon="◉" value={`${secretsFound}/${worldSecrets.length}`} color="#ffd27a" />
+            )}
+            <PixelButton label="Journal" tone="cream" size={12} onPress={() => go('/journal')} />
+            <PixelButton label="Worlds" tone="teal" size={12} onPress={() => go('/')} />
+          </View>
+        </View>
       </View>
 
       {facingLabel && !talk && !travelling && (
@@ -717,7 +848,12 @@ export function WorldScreen({ map, worldId }: { map: WorldMap; worldId: string }
                 );
               })}
             </ScrollView>
-            <PixelButton label="Close" tone="cream" size={13} onPress={() => setTravelling(false)} />
+            <PixelButton
+              label="Close"
+              tone="cream"
+              size={13}
+              onPress={() => setTravelling(false)}
+            />
           </Panel>
         </View>
       )}
@@ -725,10 +861,23 @@ export function WorldScreen({ map, worldId }: { map: WorldMap; worldId: string }
       {fishing && !talk && (
         <Fishing
           onClose={() => setFishing(false)}
-          onCatch={(f) => commitSave({ ...save, sparks: save.sparks + f.sparks, fish: { ...save.fish, [f.id]: (save.fish[f.id] ?? 0) + 1 } })}
+          onCatch={(f) =>
+            commitSave({
+              ...save,
+              sparks: save.sparks + f.sparks,
+              fish: { ...save.fish, [f.id]: (save.fish[f.id] ?? 0) + 1 },
+            })
+          }
         />
       )}
-      {talk && <Dialog key={talk.seenId ?? talk.lines[0]!.text} lines={talk.lines} choices={talk.choices} onClose={close} />}
+      {talk && (
+        <Dialog
+          key={talk.seenId ?? talk.lines[0]!.text}
+          lines={talk.lines}
+          choices={talk.choices}
+          onClose={close}
+        />
+      )}
     </View>
   );
 }
@@ -742,13 +891,24 @@ const styles = StyleSheet.create({
     left: 14,
     right: 14,
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     gap: 8,
   },
-  title: { paddingHorizontal: 4 },
+  title: { paddingHorizontal: 4, flexShrink: 1 },
+  right: { alignItems: 'flex-end', gap: 4, flexShrink: 0 },
+  line: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   action: { position: 'absolute', right: 18, bottom: 16, alignItems: 'center', gap: 2 },
   hint: { marginTop: 2 },
-  travel: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(8,9,20,0.55)' },
+  travel: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(8,9,20,0.55)',
+  },
   travelPanel: { width: 340, maxHeight: '86%' },
   travelTitle: { marginBottom: 8, textAlign: 'center' },
   travelList: { gap: 6, paddingBottom: 8 },

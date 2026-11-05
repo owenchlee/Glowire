@@ -9,6 +9,7 @@
 
 import { MapBuilder } from './builder';
 import { ledgeTerrace, rockFill, rockPlug } from './puzzlekit';
+import { flushScenery, grove, meadow, woods } from './scenery';
 import type { WorldMap } from './types';
 
 const W = 136;
@@ -24,6 +25,8 @@ export function buildMossbell(): WorldMap {
   bellTower(b);
 
   puzzles(b);
+  meadow(b, 0, 0, W, H, 0.4);
+  flushScenery(b);
   return b.finish({ id: 'mossbell', name: 'Mossbell Hollow', spawn: { x: 6, y: 24, facing: 'right' }, night: '#56628f' });
 }
 
@@ -47,8 +50,8 @@ function hollowStop(b: MapBuilder) {
   b.spots.push({ kind: 'sign', x: 13, y: 21, text: 'MOSSBELL HOLLOW. Population: 3. Somebody has scratched out the 3 and written 4.' });
   b.prop(13, 21, 'sign');
   stopExtras(b);
-  b.treeLine(0, 16, 'top', 4, ['dead', 'pine', 'dead']);
-  b.treeLine(0, 16, 'bottom', 33, ['pine', 'dead', 'round']);
+  woods(b, 0, 16, 'top', 4, ['dead', 'pine', 'dead']);
+  woods(b, 0, 16, 'bottom', 33, ['pine', 'dead', 'round']);
   for (const [x, y] of [[6, 28], [14, 18], [2, 27]] as const) b.prop(x, y, 'mushroom');
   b.secret({ id: 'scratched-sign', x: 1, y: 25 });
   b.prop(1, 25, 'stump');
@@ -85,7 +88,10 @@ function millLane(b: MapBuilder) {
   b.spots.push({ kind: 'job', x: 26, y: 20, job: 38 });
   b.resident('hazel', 27, 20, 'left', { job: 38 });
   b.resident('hazel', 31, 18, 'down', { job: 39 });
-  b.resident('hazel', 21, 20, 'left', { chat: 'hazel-mill' });
+  // Hazel is only ever at her work (jobs 38 and 39 here, job 44 in Bellfield): the yard by her gate holds her washing line instead.
+  b.prop(21, 20, 'barrel');
+  b.flowers(20, 21);
+  b.flowers(22, 21);
   // Hazel's cottage, with a vegetable bed run wild.
   b.ruin('paleHouse', 20, 15, 'area:mill');
   b.bed(24, 16, 3, 2, 'meadow');
@@ -98,8 +104,8 @@ function millLane(b: MapBuilder) {
   b.mossy('bigTree', 17, 27);
   b.mossy('tree', 42, 12);
   millExtras(b);
-  b.treeLine(16, 44, 'top', 5, ['dead', 'pine', 'round']);
-  b.treeLine(16, 44, 'bottom', 33, ['pine', 'dead', 'round']);
+  woods(b, 16, 44, 'top', 5, ['dead', 'pine', 'round']);
+  woods(b, 16, 44, 'bottom', 33, ['pine', 'dead', 'round']);
   for (const [x, y] of [[25, 25], [33, 20], [28, 27], [42, 21]] as const) b.prop(x, y, 'fern');
   b.spots.push({ kind: 'note', x: 42, y: 25, note: 'valley' });
   b.sighting({ id: 'mill-lantern', who: 'glimmer', x: 42, y: 29 });
@@ -153,8 +159,8 @@ function theMere(b: MapBuilder) {
   // Will-o'-the-wisps over the water once the Mere is safe.
   for (const [x, y] of [[50, 31], [61, 37], [66, 32]] as const) b.glow(x, y, 'area:mere', 1.5, '#c6ff7a');
   mereExtras(b);
-  b.treeLine(44, 72, 'top', 0, ['dead', 'pine', 'dead']);
-  b.treeLine(44, 72, 'bottom', 39, ['pine']);
+  woods(b, 44, 72, 'top', 0, ['dead', 'pine', 'dead']);
+  woods(b, 44, 72, 'bottom', 39, ['pine']);
   b.secret({ id: 'mere-reflection', x: 60, y: 33 });
 }
 
@@ -195,13 +201,16 @@ function bellfield(b: MapBuilder) {
   b.ruin('kiln', 101, 15);
   b.mossy('tree2', 74, 28);
   b.lamp(78, 25, 'area:bellfield', 'post');
-  b.resident('moth', 82, 24, 'left', { chat: 'moth-bellfield' });
+  // Moth's tea table by the chapel path (she works at the schoolroom and chapel).
+  b.prop(82, 24, 'stump');
+  b.flowers(81, 25);
+  b.flowers(83, 25);
   b.lamp(93, 20, 'area:bellfield', 'post');
   b.lamp(100, 23, 'area:bellfield', 'post');
   for (const [x, y] of [[79, 21], [85, 19], [98, 20], [90, 25], [83, 24]] as const) b.prop(x, y, 'mushroom');
   bellfieldExtras(b);
-  b.treeLine(72, 104, 'top', 1, ['dead', 'dead', 'pine']);
-  b.treeLine(72, 104, 'bottom', 32, ['dead', 'pine']);
+  woods(b, 72, 104, 'top', 1, ['dead', 'dead', 'pine']);
+  woods(b, 72, 104, 'bottom', 32, ['dead', 'pine']);
   // Moth's game: her grandpa's old meter, nailed to a post by the schoolroom path.
   b.prop(84, 19, 'sign');
   b.spots.push({ kind: 'game', x: 84, y: 19, game: 'needle' });
@@ -254,8 +263,8 @@ function bellTower(b: MapBuilder) {
   b.mossy('bigTree2', 128, 29);
   b.mossy('tree', 109, 15);
   towerExtras(b);
-  b.treeLine(104, W, 'top', 3, ['dead', 'pine']);
-  b.treeLine(104, W, 'bottom', 36, ['dead', 'pine']);
+  woods(b, 104, W, 'top', 3, ['dead', 'pine']);
+  woods(b, 104, W, 'bottom', 36, ['dead', 'pine']);
   b.secret({ id: 'tower-clock', x: 124, y: 16 });
   // The old well behind the tower: Glimmer's bubble goes down it, all the way to the sea.
   b.prop(131, 22, 'well');
@@ -273,10 +282,9 @@ function sign(b: MapBuilder, x: number, y: number, text: string) {
 function say(b: MapBuilder, x: number, y: number, text: string) {
   b.spots.push({ kind: 'sign', x, y, text });
 }
-/** Keep trees off these cells (the builder keeps the set private, so reach in). */
+/** Keep trees off these cells. */
 function reserve(b: MapBuilder, x: number, y: number, w: number, h: number) {
-  const taken = (b as unknown as { taken: Set<number> }).taken;
-  for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) taken.add((y + j) * b.width + x + i);
+  b.reserve(x, y, w, h);
 }
 function walk(b: MapBuilder, x: number, y: number, w: number, h: number, along: 'h' | 'v' = 'h', rails = false) {
   b.boards(x, y, w, h, along, rails);
@@ -315,8 +323,8 @@ function stopExtras(b: MapBuilder) {
   b.secret({ id: 'mossbell-footprints', x: 9, y: 33 });
   put(b, 'reeds', [[5, 31], [13, 32], [4, 35], [14, 35], [7, 37]]);
   put(b, 'lily', [[6, 33], [12, 35]]);
-  b.forest(0, 0, 16, 21, ['dead', 'pine', 'dead'], 0.45);
-  b.forest(0, 26, 16, 14, ['dead', 'pine', 'round'], 0.55);
+  grove(b, 0, 0, 16, 21, ['dead', 'pine', 'dead'], 0.85);
+  grove(b, 0, 26, 16, 14, ['dead', 'pine', 'round'], 0.95);
   sign(b, 10, 27, 'Wet footprints on the planks. They come out of the pond and go up toward the bus stop. Small ones. Bare.');
 }
 
@@ -376,8 +384,8 @@ function millExtras(b: MapBuilder) {
   put(b, 'lily', [[19, 32], [24, 36], [20, 37]]);
   sign(b, 21, 26, 'There is a lamp burning out on the bog island, and no wire runs to it. A lamp is just a loop with a light in it. Where is this one’s loop?');
   b.mossy('boulder', 40, 34);
-  b.forest(16, 0, 28, 21, ['dead', 'pine', 'round'], 0.4);
-  b.forest(16, 26, 28, 14, ['dead', 'pine', 'round'], 0.5);
+  grove(b, 16, 0, 28, 21, ['dead', 'pine', 'round'], 0.8);
+  grove(b, 16, 26, 28, 14, ['dead', 'pine', 'round'], 0.9);
   for (const [x, y] of [[40, 24], [42, 20], [41, 32]] as const) b.prop(x, y, 'fern');
 }
 
@@ -420,8 +428,8 @@ function mereExtras(b: MapBuilder) {
   put(b, 'reeds', [[46, 30], [48, 36], [70, 30]]);
   b.mossy('boulder', 46, 27);
   b.mossy('tree2', 69, 33);
-  b.forest(44, 0, 28, 21, ['dead', 'dead', 'pine'], 0.45);
-  b.forest(44, 26, 28, 14, ['dead', 'pine'], 0.5);
+  grove(b, 44, 0, 28, 21, ['dead', 'dead', 'pine'], 0.85);
+  grove(b, 44, 26, 28, 14, ['dead', 'pine'], 0.9);
 }
 
 /** Bellfield: a churchyard hill, a boardwalk loop round a pond, and a hidden glade. */
@@ -474,8 +482,8 @@ function bellfieldExtras(b: MapBuilder) {
   sign(b, 76, 27, 'NOT THAT WAY. (Somebody has crossed this out. Somebody else has written: yes, that way.)');
   sign(b, 81, 24, 'A string of lamps on one wire is a series circuit: one burned-out bulb and the whole street goes dark. Bellfield’s lamps were wired like that.');
   put(b, 'rock', [[75, 34], [81, 33]]);
-  b.forest(72, 0, 32, 20, ['dead', 'dead', 'pine'], 0.4);
-  b.forest(72, 26, 32, 14, ['dead', 'dead', 'pine'], 0.55);
+  grove(b, 72, 0, 32, 20, ['dead', 'dead', 'pine'], 0.8);
+  grove(b, 72, 26, 32, 14, ['dead', 'dead', 'pine'], 0.95);
 }
 
 /** The bell tower: a lookout ridge, a cave breathing fog, and a pool the bell was cast beside. */
@@ -509,8 +517,8 @@ function towerExtras(b: MapBuilder) {
   put(b, 'lily', [[110, 34], [114, 35]]);
   sign(b, 114, 28, 'The bell was cast from the water in this pool, they say. Drop a pebble in and count: the ring comes back after thirteen.');
   b.mossy('boulder', 107, 21);
-  b.forest(104, 0, 32, 17, ['dead', 'pine'], 0.4);
-  b.forest(104, 27, 32, 13, ['dead', 'pine'], 0.5);
+  grove(b, 104, 0, 32, 17, ['dead', 'pine'], 0.8);
+  grove(b, 104, 27, 32, 13, ['dead', 'pine'], 0.9);
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────

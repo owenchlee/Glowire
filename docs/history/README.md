@@ -15,6 +15,7 @@ Each version is a git tag you can play again (see [Play an old version](#play-an
 | `v0.8-deep`        | Day 4 | Oct 13, 2026 | Capacitors, World 4 under the sea, a lantern that runs down     |
 | `v0.9-brain-games` | Day 5 | Nov 3, 2026  | A puzzle game for the whole brain, and maps worth exploring     |
 | `v0.10-living-worlds` | Day 6 | Nov 4, 2026 | Brain jobs, daily teaser, rocks, ledges, fishing, day and night |
+| `v0.11-polish` | Day 7 | Nov 5, 2026 | Sand shores, new stones and ledges, organic scenery, hands-on fixes |
 
 ---
 
@@ -516,3 +517,35 @@ You said: "yes finish all, this is a overnight run" (answering my list: walk the
 ![Harbour](v0.10/harbour.png)
 ![Mossbell](v0.10/mossbell.png)
 ![Deep](v0.10/deep.png)
+
+## v0.11 Polish: the weak spots
+
+**Day 7 (Nov 5, 2026)** · tag `v0.11-polish`
+
+You said: "go ahead and fix all the weak spots. Make sure it looks very, very good".
+
+**What changed**
+- **Sand shores:** rounded sand edges with a wet rim and foam line, picked automatically (94 new tiles).
+- **Stepping stones:** pale mossy slabs with a ripple ring, no longer like sea rocks.
+- **Ledges:** a grass or sand lip with a shadow and tufts, so they read as hop-downs.
+- **Deep mesas:** teal instead of peach.
+- **Scenery:** the tree grids are gone. Groves, clearings, mixed trees, flower drifts and beach clutter now fill free cells last, and keep a footpath open to every spot.
+- **Mossbell:** the duplicate Hazel and Moth are removed.
+- **Fishing:** a new overlay with a bobber, splash rings and a REEL IN button.
+- **Rocks and ledges:** dust puffs on pushes and a hop arc down ledges.
+- **Night routines:** residents now walk to their lamp.
+- **HUD:** two rows, so nothing overlaps the area name.
+- **Map preview:** it draws rocks.
+
+**Not done**
+- Chapter 8 stays out of the game: it is unfinished work in progress (missing clients, unsolvable boards, boss tests fail).
+- Not seen on screen: the brain job and daily end screens, the reset sign, and the ledge hop and puffs.
+- Deep's seabed is busy.
+- The open sea at the bottom of Harbour is plain.
+- Area borders still use straight bush and kelp walls.
+
+![HUD](v0.11/hud.png)
+![Glowtown](v0.11/map-glowtown.png)
+![Harbour](v0.11/map-harbour.png)
+![Mossbell](v0.11/map-mossbell.png)
+![Deep](v0.11/map-deep.png)

@@ -10,6 +10,7 @@
 
 import { MapBuilder, hash, type BuildingSpec, type HouseStyle } from './builder';
 import { ledgeTerrace, rockFill, rockPlug } from './puzzlekit';
+import { flushScenery, grove, meadow, woods } from './scenery';
 import type { Point, WorldMap } from './types';
 
 const W = 180;
@@ -29,6 +30,8 @@ export function buildGlowtown(): WorldMap {
   releaseClearings(b);
 
   puzzles(b);
+  meadow(b, 0, 0, W, H, 1);
+  flushScenery(b);
   return b.finish({ id: 'glowtown', name: 'Glowtown', spawn: { x: 9, y: 25, facing: 'right' } });
 }
 
@@ -66,9 +69,9 @@ function workshop(b: MapBuilder) {
   for (const x of [11, 15]) b.flowers(x, 20);
   b.tree(1, 19, 'oak');
   workshopExtras(b);
-  b.treeLine(0, 18, 'top', 8, ['oak', 'round', 'pine']);
-  b.treeLine(0, 18, 'bottom', 33, ['oak', 'round', 'pine']);
-  b.forest(0, 10, 18, 7, ['oak', 'round', 'pine'], 0.3);
+  woods(b, 0, 18, 'top', 8, ['oak', 'round', 'pine']);
+  woods(b, 0, 18, 'bottom', 33, ['oak', 'round', 'pine']);
+  grove(b, 0, 10, 18, 7, ['oak', 'round', 'pine'], 0.3);
   scatter(b, 0, 9, 18, 31, 40, ['bush', 'flowers', 'rock', 'daisy'], 3);
 }
 
@@ -158,10 +161,10 @@ function mapleLane(b: MapBuilder) {
   b.prop(34, 19, 'mailbox');
   for (const [x, y] of [[24, 25], [26, 25], [41, 25], [35, 18], [36, 18]] as const) b.flowers(x, y);
   mapleExtras(b);
-  b.treeLine(18, 45, 'top', 7, ['round', 'oak', 'cherry', 'lime']);
-  b.treeLine(18, 45, 'bottom', 36, ['round', 'oak', 'lime', 'bigGreen']);
-  b.forest(18, 11, 27, 4, ['round', 'oak', 'cherry', 'lime'], 0.55);
-  b.forest(18, 28, 27, 8, ['round', 'oak', 'lime', 'bigGreen'], 0.4);
+  woods(b, 18, 45, 'top', 7, ['round', 'oak', 'cherry', 'lime']);
+  woods(b, 18, 45, 'bottom', 36, ['round', 'oak', 'lime', 'bigGreen']);
+  grove(b, 18, 11, 27, 4, ['round', 'oak', 'cherry', 'lime'], 0.55);
+  grove(b, 18, 28, 27, 8, ['round', 'oak', 'lime', 'bigGreen'], 0.4);
   scatter(b, 18, 8, 27, 31, 90, ['bush', 'flowers', 'rock', 'daisy', 'clover'], 7);
   for (const [x, y] of [[20, 28], [29, 13], [42, 13], [24, 29], [39, 29]] as const) b.bush(x, y);
   for (const [x, y] of [[21, 14], [33, 14], [34, 14], [19, 29], [41, 30]] as const) b.flowers(x, y);
@@ -315,9 +318,9 @@ function willowBrook(b: MapBuilder) {
   b.lamp(65, 26, 'area:brook', 'park');
   b.prop(57, 24, 'bench');
   for (const [x, y] of [[57, 19], [58, 19], [64, 27], [55, 27]] as const) b.flowers(x, y);
-  b.treeLine(45, 67, 'top', 9, ['bigGreen', 'lime', 'round']);
-  b.treeLine(45, 67, 'bottom', 33, ['bigGreen', 'lime', 'round']);
-  b.forest(52, 12, 14, 3, ['lime', 'round'], 0.3);
+  woods(b, 45, 67, 'top', 9, ['bigGreen', 'lime', 'round']);
+  woods(b, 45, 67, 'bottom', 33, ['bigGreen', 'lime', 'round']);
+  grove(b, 52, 12, 14, 3, ['lime', 'round'], 0.3);
   scatter(b, 45, 0, 22, 40, 70, ['bush', 'flowers', 'reeds' as never, 'rock', 'daisy'].filter((k) => k !== 'reeds') as Bit[], 13);
   b.spots.push({ kind: 'note', x: 52, y: 27, note: 'storm' });
   b.prop(52, 27, 'sign');
@@ -367,10 +370,10 @@ function schoolhouseHill(b: MapBuilder) {
   b.lamp(79, 22, 'area:school', 'twin');
   b.lamp(89, 27, 'area:school', 'twin');
   schoolExtras(b);
-  b.treeLine(67, 91, 'top', 7, ['cherry', 'bigPink', 'round']);
-  b.treeLine(67, 91, 'bottom', 35, ['cherry', 'round', 'bigPink']);
-  b.forest(67, 10, 24, 3, ['cherry', 'round', 'bigPink'], 0.35);
-  b.forest(67, 29, 24, 5, ['cherry', 'round', 'bigPink'], 0.3);
+  woods(b, 67, 91, 'top', 7, ['cherry', 'bigPink', 'round']);
+  woods(b, 67, 91, 'bottom', 35, ['cherry', 'round', 'bigPink']);
+  grove(b, 67, 10, 24, 3, ['cherry', 'round', 'bigPink'], 0.35);
+  grove(b, 67, 29, 24, 5, ['cherry', 'round', 'bigPink'], 0.3);
   scatter(b, 67, 10, 24, 28, 60, ['bush', 'flowers', 'daisy', 'tulip', 'rock'], 19);
   b.spots.push({ kind: 'note', x: 86, y: 19, note: 'hides' });
   b.prop(86, 19, 'sign');
@@ -446,8 +449,8 @@ function whisperWoods(b: MapBuilder) {
   b.resident('grumble', 110, 18, 'down', { until: 'job:32', after: 'job:10' });
 
   woodsExtras(b);
-  b.treeLine(91, 115, 'top', 9, ['pine', 'pine', 'dead', 'round']);
-  b.treeLine(91, 115, 'bottom', 35, ['pine', 'dead', 'pine']);
+  woods(b, 91, 115, 'top', 9, ['pine', 'pine', 'dead', 'round']);
+  woods(b, 91, 115, 'bottom', 35, ['pine', 'dead', 'pine']);
   for (const [x, y] of [[95, 22], [101, 23], [107, 25], [113, 26], [97, 30]] as const) b.prop(x, y, 'mushroom');
   for (const [x, y] of [[94, 21], [103, 24], [108, 24], [112, 19]] as const) b.prop(x, y, 'fern');
   b.prop(105, 23, 'stump');
@@ -457,8 +460,8 @@ function whisperWoods(b: MapBuilder) {
   b.prop(93, 28, 'log');
   b.lamp(96, 24, 'area:woods', 'park');
   b.lamp(107, 24, 'area:woods', 'park');
-  b.forest(91, 11, 24, 8, ['pine', 'dead', 'pine', 'round'], 0.6);
-  b.forest(91, 27, 24, 8, ['pine', 'dead', 'pine'], 0.55);
+  grove(b, 91, 11, 24, 8, ['pine', 'dead', 'pine', 'round'], 0.6);
+  grove(b, 91, 27, 24, 8, ['pine', 'dead', 'pine'], 0.55);
   scatter(b, 91, 10, 24, 26, 70, ['mushroom', 'fern', 'stump', 'rock', 'bush'], 23);
   b.spots.push({ kind: 'note', x: 113, y: 20, note: 'sea' });
   b.prop(113, 20, 'sign');
@@ -542,8 +545,8 @@ function marketSquare(b: MapBuilder) {
   b.lamp(122, 25, 'area:market', 'twin');
   b.lamp(131, 24, 'area:market', 'twin');
   marketExtras(b);
-  b.treeLine(115, 139, 'bottom', 35, ['round', 'cherry', 'oak']);
-  b.treeLine(115, 139, 'top', 2, ['round', 'cherry', 'oak']);
+  woods(b, 115, 139, 'bottom', 35, ['round', 'cherry', 'oak']);
+  woods(b, 115, 139, 'top', 2, ['round', 'cherry', 'oak']);
   scatter(b, 115, 32, 24, 8, 26, ['bush', 'flowers', 'daisy', 'tulip'], 31);
   b.spots.push({ kind: 'note', x: 138, y: 26, note: 'colours' });
   b.prop(138, 26, 'sign');
@@ -627,8 +630,8 @@ function crossroads(b: MapBuilder) {
   b.lamp(145, 27, 'area:crossroads', 'post');
   b.lamp(156, 27, 'area:crossroads', 'post');
   crossroadsExtras(b);
-  b.treeLine(139, 161, 'bottom', 36, ['round', 'oak']);
-  b.treeLine(139, 161, 'top', 3, ['round', 'oak', 'lime']);
+  woods(b, 139, 161, 'bottom', 36, ['round', 'oak']);
+  woods(b, 139, 161, 'top', 3, ['round', 'oak', 'lime']);
   scatter(b, 139, 33, 22, 7, 30, ['bush', 'flowers', 'rock', 'daisy'], 37);
 }
 
@@ -714,9 +717,9 @@ function clockPlaza(b: MapBuilder) {
   b.lamp(163, 20, 'area:clock', 'twin');
   b.lamp(177, 20, 'area:clock', 'twin');
   clockExtras(b);
-  b.treeLine(161, W, 'bottom', 36, ['round', 'oak']);
-  b.treeLine(161, 166, 'top', 3, ['round', 'oak']);
-  b.treeLine(173, W, 'top', 3, ['round', 'oak']);
+  woods(b, 161, W, 'bottom', 36, ['round', 'oak']);
+  woods(b, 161, 166, 'top', 3, ['round', 'oak']);
+  woods(b, 173, W, 'top', 3, ['round', 'oak']);
   scatter(b, 161, 32, 19, 7, 26, ['bush', 'flowers', 'rock', 'daisy'], 41);
 }
 

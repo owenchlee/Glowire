@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { type Routine, cycle, placeResident, placeResidents, residentKey, routineCells } from './routines';
+import { type Routine, cycle, lShape, placeResident, placeResidents, residentKey, routineCells, routineFor } from './routines';
 import { ROUTINES } from './routines.data';
 import type { Resident } from './types';
 import { WORLDS, worldMap } from './worlds';
@@ -24,7 +24,8 @@ describe('routines data', () => {
 
       it('names real residents', () => {
         const keys = new Set(map.residents.map(residentKey));
-        for (const k of Object.keys(routines)) expect(keys.has(k), k).toBe(true);
+        const whos = new Set(map.residents.map((r) => r.who));
+        for (const k of Object.keys(routines)) expect(keys.has(k) || whos.has(k), k).toBe(true);
       });
 
       it('has routines that are walkable cell by cell', () => {
@@ -48,8 +49,8 @@ describe('routines data', () => {
 
       it('never puts anyone on a blocked cell, at any moment, day or night', () => {
         for (let t = 0; t < 500; t += 0.5)
-          for (const night of [false, true])
-            for (const p of placeResidents(map.residents, routines, t, night, { x: 0, y: 0 })) {
+          for (const [night, nightFor] of [[false, Infinity], [true, Infinity], [true, 0], [true, t % 40]] as const)
+            for (const p of placeResidents(map.residents, routines, t, night, { x: 0, y: 0 }, nightFor)) {
               const i = p.y * map.width + p.x;
               expect(open(i, p.key), `${p.key} at ${p.x},${p.y} t=${t}`).toBe(true);
               expect(gateCells.has(i)).toBe(false);
@@ -59,12 +60,42 @@ describe('routines data', () => {
       it('keeps residents with jobs outdoors at night', () => {
         for (const r of map.residents) {
           if (r.job === undefined) continue;
-          const placed = placeResident(r, routines[residentKey(r)], 0, true);
+          const placed = placeResident(r, routineFor(routines, r), 0, true);
           expect(placed, residentKey(r)).not.toBeNull();
         }
       });
     });
   }
+});
+
+describe('routineFor', () => {
+  const a: Routine = { look: 1 };
+  const b: Routine = { look: 2 };
+  it('prefers the exact key and falls back to the id alone', () => {
+    const r = { who: 'wren', x: 3, y: 4 };
+    expect(routineFor({ 'wren@3,4': a, wren: b }, r)).toBe(a);
+    expect(routineFor({ wren: b }, r)).toBe(b);
+    expect(routineFor({ 'wren@9,9': a }, r)).toBeUndefined();
+    expect(routineFor(undefined, r)).toBeUndefined();
+  });
+});
+
+describe('walking to a lamp at night', () => {
+  const base: Resident = { who: 'moth', x: 3, y: 5, facing: 'down' };
+  const r: Routine = { path: [{ x: 3, y: 5 }, { x: 6, y: 5 }], speed: 1, pause: 1000, night: { x: 8, y: 7, facing: 'left' } };
+  it('makes an L-shaped route', () => {
+    expect(lShape({ x: 3, y: 5 }, { x: 5, y: 6 })).toEqual([{ x: 3, y: 5 }, { x: 4, y: 5 }, { x: 5, y: 5 }, { x: 5, y: 6 }]);
+  });
+  it('moves one cell at a time and ends at the lamp', () => {
+    let last = placeResident(base, r, 100, true, undefined, 0)!;
+    expect(last).toMatchObject({ x: 3, y: 5 });
+    for (let n = 0.5; n < 12; n += 0.5) {
+      const p = placeResident(base, r, 100 + n, true, undefined, n)!;
+      expect(Math.abs(p.x - last.x) + Math.abs(p.y - last.y)).toBeLessThanOrEqual(1);
+      last = p;
+    }
+    expect(last).toMatchObject({ x: 8, y: 7, facing: 'left' });
+  });
 });
 
 describe('placeResident', () => {

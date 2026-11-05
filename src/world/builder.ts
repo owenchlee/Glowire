@@ -6,7 +6,7 @@
 // village pack's sheets, stacked by scripts/art.mjs. `at(sheet, i)` turns a tile number
 // in one source sheet into an atlas tile.
 
-import { ATLAS_COLS, SHEETS, type SheetId, TERRAIN_TILES, type TerrainId } from './atlas.generated';
+import { ATLAS_COLS, SHEETS, SHORE_PIECES, SHORE_TILES, type SheetId, TERRAIN_TILES, type TerrainId } from './atlas.generated';
 import type { Area, Facing, LightSource, Point, Puzzle, Rect, Resident, Sighting, Spot, WorldMap, WorldObject } from './types';
 
 export function at(sheet: SheetId, i: number): number {
@@ -635,7 +635,7 @@ export class MapBuilder {
   stones(cells: (readonly [number, number])[]) {
     for (const [x, y] of cells) {
       if (!this.inside(x, y)) continue;
-      this.object(x, y, 1, 1, [at('water', 12)], undefined, true);
+      this.object(x, y, 1, 1, [SHORE_PIECES.stone[Math.floor(hash(x + 0.3, y + 0.7) * 2)]!], undefined, true);
       this.walkable[y * this.width + x] = 1;
     }
   }
@@ -669,7 +669,9 @@ export class MapBuilder {
   ledge(x: number, y: number, w: number, style: ReliefStyle = 'green') {
     for (let i = 0; i < w; i++) {
       if (!this.inside(x + i, y)) continue;
-      this.setGround(x + i, y, RELIEF[style].slice[7]!);
+      // A grassy (or sandy) lip with a shadow under it, curled at the two ends: it reads as a hop-down, not a cliff.
+      const set = style === 'sand' ? SHORE_PIECES.ledgeSand : SHORE_PIECES.ledgeGreen;
+      this.setGround(x + i, y, w > 1 && i === 0 ? set[0] : w > 1 && i === w - 1 ? set[2] : set[1]);
       this.solid[y * this.width + x + i] = 0;
       this.ledges[y * this.width + x + i] = 1;
       this.taken.add(y * this.width + x + i);
@@ -987,6 +989,7 @@ export class MapBuilder {
   finish(meta: { id: string; name: string; spawn: Point & { facing: Facing }; night?: string; underwater?: boolean }): WorldMap {
     this.water = new Uint8Array(this.width * this.height);
     this.resolveGround();
+    if (meta.underwater) this.reefify();
     return {
       ...meta,
       width: this.width,
@@ -1010,11 +1013,39 @@ export class MapBuilder {
     };
   }
 
+  /** Under the sea the sand mesas are coral and teal, not peach: swap the relief tiles for the reef set. */
+  private reefify() {
+    const shift = (SHEETS.reef.row - SHEETS.relief.row) * ATLAS_COLS;
+    const swap = (t: number) => {
+      const row = Math.floor(t / ATLAS_COLS) - SHEETS.relief.row;
+      return t >= 0 && row >= 0 && row < 12 && t % ATLAS_COLS < SHEETS.relief.cols ? t + shift : t;
+    };
+    for (let i = 0; i < this.ground.length; i++) this.ground[i] = swap(this.ground[i]!);
+    for (const o of this.objects) o.tiles = o.tiles.map(swap);
+  }
+
   /** Turn painted terrain into tiles, picking edge pieces from the neighbours. */
   private resolveGround() {
     const { width, height } = this;
     const kind = (x: number, y: number) =>
       this.inside(x, y) ? GROUNDS[this.terrain[y * width + x]!]! : GROUNDS[this.terrain[Math.min(height - 1, Math.max(0, y)) * width + Math.min(width - 1, Math.max(0, x))]!]!;
+    const isWater = (x: number, y: number) => {
+      const k = kind(x, y);
+      return k === 'sea' || k === 'pond';
+    };
+    /** The rounded-shore tile for a sand cell, or a water cell beside sand (-1: nothing special). */
+    const shoreTile = (x: number, y: number, as: 'sand' | 'water'): number => {
+      const OFF: [number, number, number][] = [[N, 0, -1], [E, 1, 0], [S, 0, 1], [W, -1, 0], [NE, 1, -1], [SE, 1, 1], [SW, -1, 1], [NW, -1, -1]];
+      let mask = 0;
+      let sandNear = false;
+      for (const [bit, dx, dy] of OFF) {
+        if (isWater(x + dx, y + dy)) continue;
+        mask |= bit; // land (anything that isn't water)
+        if (kind(x + dx, y + dy) === 'sand') sandNear = true;
+      }
+      if (as === 'water' && !sandNear) return -1;
+      return SHORE_TILES[as][mask]!;
+    };
     for (let y = 0; y < height; y++)
       for (let x = 0; x < width; x++) {
         const i = y * width + x;
@@ -1023,8 +1054,12 @@ export class MapBuilder {
         if (g === 'paved') continue;
         if (g === 'grass') this.ground[i] = pick(GRASS);
         else if (g === 'meadow') this.ground[i] = pick(MEADOW);
-        else if (g === 'sand') this.ground[i] = pick(SAND);
-        else {
+        else if (g === 'sand') {
+          const t = shoreTile(x, y, 'sand');
+          this.ground[i] = t >= 0 ? t : pick(SAND);
+        } else if ((g === 'sea' || g === 'pond') && shoreTile(x, y, 'water') >= 0) {
+          this.ground[i] = shoreTile(x, y, 'water');
+        } else {
           const same = (dx: number, dy: number) => kind(x + dx, y + dy) === g;
           let mask = 0;
           if (same(0, -1)) mask |= N;

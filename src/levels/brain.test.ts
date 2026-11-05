@@ -93,6 +93,14 @@ describe('brain jobs', () => {
     }
   }
 
+  it('keep a leftover board and use the same 3-star scale as circuit jobs', () => {
+    expect(new Set(LEVELS.map((x) => x.id)).size).toBe(LEVELS.length);
+    for (const l of BRAIN) {
+      expect(l.board.length, `level ${l.id}`).toBeGreaterThan(0);
+      expect(brainStars(l.brain!.game, 1000), `level ${l.id}`).toBe(3);
+    }
+  });
+
   it('gives 0 stars for nothing and more for better play', () => {
     for (const game of ['probe', 'pipes', 'panel', 'lantern'] as const) {
       expect(brainStars(game, 0)).toBe(0);

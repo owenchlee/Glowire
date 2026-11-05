@@ -9,6 +9,7 @@
 
 import { MapBuilder, at, type HouseStyle, type PropName } from './builder';
 import { ledgeTerrace, rockFill, rockPlug } from './puzzlekit';
+import { beach, flushScenery, meadow, woods } from './scenery';
 import type { Point, WorldMap } from './types';
 
 const W = 150;
@@ -30,6 +31,9 @@ export function buildHarbour(): WorldMap {
   hilltop(b);
 
   puzzles(b);
+  meadow(b, 0, 0, W, H, 0.9);
+  beach(b, 0, SAND - 3, W, 10, 1);
+  flushScenery(b);
   return b.finish({ id: 'harbour', name: 'Driftwood Harbour', spawn: { x: 6, y: 26, facing: 'right' } });
 }
 
@@ -65,7 +69,7 @@ function busStop(b: MapBuilder) {
   b.spots.push({ kind: 'shop', x: 3, y: 20 });
   b.doorLight({ x: 3, y: 21 }, 'home');
   busExtras(b);
-  b.treeLine(0, 14, 'top', 15, ['pine', 'round', 'pine']);
+  woods(b, 0, 14, 'top', 15, ['pine', 'round', 'pine']);
   for (const [x, y] of [[11, 22], [12, 29], [3, 29]] as const) b.prop(x, y, 'reeds');
 }
 
@@ -121,7 +125,7 @@ function fishDocks(b: MapBuilder) {
   b.house('orange', 26, 17);
   b.house('tan', 32, 18);
   docksExtras(b);
-  b.treeLine(14, 38, 'top', 14, ['pine', 'round', 'bigGreen']);
+  woods(b, 14, 38, 'top', 14, ['pine', 'round', 'bigGreen']);
   b.lamp(19, 23, 'area:docks', 'post');
   b.spots.push({ kind: 'note', x: 36, y: 24, note: 'volts' });
   b.prop(36, 24, 'sign');
@@ -205,7 +209,7 @@ function lighthouse(b: MapBuilder) {
   b.spots.push({ kind: 'game', x: 48, y: 25, game: 'pipes' });
   b.prop(45, 20, 'well');
   pointExtras(b);
-  b.treeLine(38, 62, 'top', 14, ['pine', 'bigGreen', 'round']);
+  woods(b, 38, 62, 'top', 14, ['pine', 'bigGreen', 'round']);
   rocks(b, [[44, 34], [55, 37], [45, 38], [61, 36], [42, 36]]);
   b.lamp(42, 23, 'area:point', 'post');
   // Side job: Gus's control panel lamps, on a post by the path (job 54).
@@ -289,7 +293,7 @@ function ferryPier(b: MapBuilder) {
   b.house('orange', 74, 18);
   for (const x of [72, 73]) b.prop(x, 25, 'barrel');
   pierExtras(b);
-  b.treeLine(62, 84, 'top', 14, ['pine', 'round']);
+  woods(b, 62, 84, 'top', 14, ['pine', 'round']);
   rocks(b, [[75, 37], [64, 32], [65, 35], [73, 38], [78, 36]]);
   b.lamp(67, 26, 'area:pier', 'hook');
   b.lamp(80, 26, 'area:pier', 'hook');
@@ -379,7 +383,7 @@ function warehouses(b: MapBuilder) {
   b.lamp(91, 26, 'area:warehouses', 'twin');
   b.lamp(104, 22, 'area:warehouses', 'twin');
   warehouseExtras(b);
-  b.treeLine(84, 106, 'top', 9, ['pine', 'round']);
+  woods(b, 84, 106, 'top', 9, ['pine', 'round']);
 }
 
 /**
@@ -468,8 +472,8 @@ function clockHill(b: MapBuilder) {
   lumenJob(b, 29, 126, 21, 125, 21);
 
   hillExtras(b);
-  b.treeLine(106, 128, 'top', 4, ['pine', 'dead']);
-  b.treeLine(106, 128, 'bottom', 32, ['pine', 'round', 'dead']);
+  woods(b, 106, 128, 'top', 4, ['pine', 'dead']);
+  woods(b, 106, 128, 'bottom', 32, ['pine', 'round', 'dead']);
   for (const [x, y] of [[115, 27], [111, 11], [124, 17]] as const) b.tree(x, y, 'pine');
   rocks(b, [[109, 22], [126, 14], [114, 14]]);
   b.lamp(116, 24, 'area:hill', 'park');
@@ -538,8 +542,8 @@ function hilltop(b: MapBuilder) {
   b.block(131, 8, 1, 1);
   b.spots.push({ kind: 'exit', x: 131, y: 8, to: 'mossbell' });
   topExtras(b);
-  b.treeLine(128, W, 'top', 4, ['pine', 'dead']);
-  b.treeLine(128, W, 'bottom', 24, ['pine', 'round']);
+  woods(b, 128, W, 'top', 4, ['pine', 'dead']);
+  woods(b, 128, W, 'bottom', 24, ['pine', 'round']);
   rocks(b, [[139, 19], [148, 10], [131, 15]]);
 }
 

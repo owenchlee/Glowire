@@ -56,7 +56,7 @@ export function ClockBadge() {
 }
 
 const styles = StyleSheet.create({
-  banner: { position: 'absolute', top: 70, left: 0, right: 0, alignItems: 'center', gap: 2 },
+  banner: { position: 'absolute', top: 96, left: 0, right: 0, alignItems: 'center', gap: 2 },
   gauge: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 3 },
   gaugeBar: { width: 70, height: 10, borderWidth: 2, borderColor: '#141b1b', backgroundColor: '#2e2b30', borderRadius: 2 },
   gaugeFill: { height: '100%' },

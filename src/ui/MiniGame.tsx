@@ -86,6 +86,8 @@ export function MiniGame({ id, day }: { id: GameId; day?: string }) {
     [save, commitSave, id, best, teaser],
   );
 
+  const goBack = () => (router.canGoBack() ? router.back() : router.replace('/'));
+
   const start = () => {
     // A new seed every game (this runs on a tap, not while drawing).
     setRun(teaser ? teaser.seed : Date.now() & 0x7fffffff);
@@ -97,7 +99,7 @@ export function MiniGame({ id, day }: { id: GameId; day?: string }) {
     <SafeAreaView style={styles.screen} edges={['left', 'right']}>
       <View style={styles.side}>
         <View style={styles.row}>
-          <PixelButton label="‹" tone="cream" size={16} onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))} />
+          <PixelButton label="‹" tone="cream" size={16} onPress={goBack} />
           <PixelText size={18} color={GOLD} shadow style={styles.flex}>
             {teaser ? `Daily: ${info.title}` : info.title}
           </PixelText>
@@ -155,9 +157,10 @@ export function MiniGame({ id, day }: { id: GameId; day?: string }) {
               {done.earned > 0 ? `New best! ⚡${done.earned} sparks.` : `Your best is ${done.best}. So close!`}
             </PixelText>
             {done.stars !== undefined && (
-              <PixelText size={14} color={GOLD} shadow style={styles.centerText}>
+              <PixelText size={done.stars > 0 ? 24 : 14} color={GOLD} shadow style={styles.centerText}>
                 {done.stars > 0
-                  ? `Daily: ${'★'.repeat(done.stars)}${done.bonus ? `  ⚡${done.bonus} sparks` : ''}`
+                  ? `${'★'.repeat(done.stars)}${'☆'.repeat(3 - done.stars)}${done.bonus ? `
+⚡${done.bonus} sparks` : ''}`
                   : 'Daily: no stars yet. Try again, it is the same puzzle!'}
               </PixelText>
             )}
@@ -168,7 +171,7 @@ export function MiniGame({ id, day }: { id: GameId; day?: string }) {
             ))}
             <View style={styles.row}>
               <PixelButton label="Play again" tone="orange" size={15} onPress={start} />
-              <PixelButton label="Back to town" tone="cream" size={15} onPress={() => router.back()} />
+              <PixelButton label="Back to town" tone="cream" size={15} onPress={goBack} />
             </View>
           </View>
         )}

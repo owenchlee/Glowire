@@ -10,6 +10,7 @@
 
 import { MapBuilder, hash } from './builder';
 import { ledgeTerrace, rockPlug } from './puzzlekit';
+import { lump } from './scenery';
 import type { WorldMap } from './types';
 
 const W = 136;
@@ -29,6 +30,7 @@ export function buildDeep(): WorldMap {
   heartHall(b);
 
   puzzles(b);
+  seabedLife(b);
   return b.finish({
     id: 'deep',
     name: 'Brightwater Deep',
@@ -59,8 +61,8 @@ function wellBottom(b: MapBuilder) {
   for (const [x, y] of [[3, 18], [12, 29], [1, 24]] as const) b.deepProp(x, y, 'coral');
   b.deepProp(13, 18, 'bones');
   b.secret({ id: 'well-rope', x: 5, y: 20 });
-  b.reef(0, 16, 'top', 14);
-  b.reef(0, 16, 'bottom', 32);
+  reef(b, 0, 16, 'top', 14);
+  reef(b, 0, 16, 'bottom', 32);
   wellExtras(b);
 }
 
@@ -113,8 +115,8 @@ function jarStreet(b: MapBuilder) {
   b.spots.push({ kind: 'note', x: 43, y: 28, note: 'jars' });
   b.deepTall(43, 28, 'signpost');
   b.sighting({ id: 'street-shadow', who: 'hush', x: 38, y: 31 });
-  b.reef(16, 44, 'top', 9);
-  b.reef(16, 44, 'bottom', 34);
+  reef(b, 16, 44, 'top', 9);
+  reef(b, 16, 44, 'bottom', 34);
   jarsExtras(b);
 }
 
@@ -163,8 +165,8 @@ function nursery(b: MapBuilder) {
   b.sighting({ id: 'nursery-eyes', who: 'hush', x: 54, y: 34, after: 'job:49' });
   // Before you've met Echo: a brass diver, glimpsed walking the sea floor.
   b.sighting({ id: 'wreck-diver', who: 'echo', x: 69, y: 32 });
-  b.reef(44, 72, 'top', 9);
-  b.reef(44, 72, 'bottom', 35);
+  reef(b, 44, 72, 'top', 9);
+  reef(b, 44, 72, 'bottom', 35);
   nurseryExtras(b);
 }
 
@@ -208,8 +210,8 @@ function theWreck(b: MapBuilder) {
   b.jarLamp(88, 25, 'home');
   b.jarLamp(101, 23, 'area:wreck');
   b.sighting({ id: 'wreck-shadow', who: 'hush', x: 84, y: 34, after: 'job:51' });
-  b.reef(72, 104, 'top', 9);
-  b.reef(72, 104, 'bottom', 36);
+  reef(b, 72, 104, 'top', 9);
+  reef(b, 72, 104, 'bottom', 36);
   wreckExtras(b);
 }
 
@@ -252,8 +254,8 @@ function heartHall(b: MapBuilder) {
   b.spots.push({ kind: 'note', x: 132, y: 25, note: 'heart' });
   b.deepTall(132, 26, 'signpost');
   b.secret({ id: 'hall-names', x: 115, y: 12 });
-  b.reef(104, W, 'top', 3);
-  b.reef(104, W, 'bottom', 33);
+  reef(b, 104, W, 'top', 3);
+  reef(b, 104, W, 'bottom', 33);
   heartExtras(b);
 }
 
@@ -262,7 +264,61 @@ function gateCells(x: number) {
   return Array.from({ length: STREET_H }, (_, k) => ({ x, y: STREET + k }));
 }
 
+/**
+ * Drifts of sea grass and pebbles, a few coral heads and anemones in the thicker lumps, so
+ * the open seabed is never a flat sheet. Leaves spots, people and anything already there alone.
+ */
+function seabedLife(b: MapBuilder) {
+  const used = new Set<number>();
+  for (const o of b.objects)
+    for (let j = 0; j < o.h; j++) for (let i = 0; i < o.w; i++) used.add((o.y + j) * b.width + o.x + i);
+  const near = (x: number, y: number) =>
+    b.spots.some((s) => Math.abs(s.x - x) <= 1 && Math.abs(s.y - y) <= 1) ||
+    b.residents.some((r) => Math.abs(r.x - x) <= 1 && Math.abs(r.y - y) <= 1);
+  for (let y = 2; y < b.height - 2; y++)
+    for (let x = 0; x < b.width; x++) {
+      const i = y * b.width + x;
+      if (b.solid[i] || used.has(i) || near(x, y)) continue;
+      const c = lump(x, y, 3.4, 5);
+      const n = hash(x * 0.71 + 2, y * 1.31);
+      if (c > 0.66 && n < 0.5) b.deepProp(x, y, n < 0.3 ? 'seagrass' : 'pebbles');
+      else if (c > 0.84 && n < 0.6) b.deepProp(x, y, n < 0.3 ? 'coral' : n < 0.45 ? 'anemone' : 'brainCoral');
+      else if (c < 0.09 && n < 0.3) b.deepProp(x, y, 'rock');
+    }
+}
+
 // ── Geography: helpers ───────────────────────────────────────────────────────
+
+/**
+ * The reef along the top or bottom of the map over columns x0..x1: a ragged mass of kelp,
+ * coral trees, rocks and clumps that reaches in about `edge` rows. It has inlets and alcoves
+ * (bare seabed you can swim into), loose fingers at its fringe, and no two columns alike.
+ * Replaces MapBuilder.reef, whose every-cell kelp made a row of identical columns.
+ */
+function reef(b: MapBuilder, x0: number, x1: number, side: 'top' | 'bottom', edge: number) {
+  const seed = x0 * 0.31 + edge * 1.7 + (side === 'top' ? 0 : 40);
+  const lim = (x: number) => edge + Math.round((lump(x, 5, 6, seed) - 0.5) * 7 + (lump(x, 11, 2.2, seed + 4) - 0.5) * 2);
+  const small = ['rock', 'brainCoral', 'coral', 'anemone', 'rock'] as const;
+  const tall = ['kelp', 'kelpDark', 'kelp', 'kelpGold'] as const;
+  const free = (x: number, y: number) => b.inside(x, y) && !b.solid[y * b.width + x] && !occupied(b, x, y);
+  for (let y = 0; y < b.height; y++)
+    for (let x = x0; x < x1; x++) {
+      const l = lim(x);
+      const d = side === 'top' ? l - y : y - l;
+      if (d < -1 || !free(x, y)) continue;
+      const rim = y < 2 || y >= b.height - 2; // the very edge of the map is always solid reef
+      const cluster = lump(x, y, 4, seed + 9);
+      const n = hash(x * 1.3 + seed, y * 0.7);
+      if (!rim) {
+        if (d <= 0 && n > 0.5) continue; // loose fingers at the fringe
+        if (cluster < (d < 4 ? 0.22 : 0.3) && d < 7) continue; // an alcove of open seabed
+      }
+      const m = hash(x * 0.77 + seed, y * 1.9);
+      if (m < 0.14 && free(x + 1, y) && x + 1 < x1 && y > 0) b.deepTall(x, y, m < 0.07 ? 'coralTree' : 'coralTreeOrange');
+      else if (m < 0.62 || y === 0) b.deepProp(x, y, small[Math.floor(m * 100) % small.length]!);
+      else b.deepTall(x, y, tall[Math.floor(m * 1000) % tall.length]!);
+    }
+}
 
 type Cell = readonly [number, number];
 

@@ -47,6 +47,8 @@ interface Props {
   sparkles?: { x: number; y: number }[];
   /** Pushable rocks, and the water they've filled (world/rocks.ts). */
   rocks?: RockState;
+  /** Dust puffs to spawn (a rock pushed, a hop landed): drained every frame. Cell coordinates of the feet. */
+  puffs?: RefObject<Puff[]>;
   /** Figures glimpsed in the distance (the Lantern Lady): flickering, with a glow round them. */
   ghosts?: { who: string; x: number; y: number }[];
   /** Residents with a speech bubble over their head. */
@@ -107,6 +109,7 @@ function Scene({
   hero = 'hero',
   sparkles = [],
   rocks,
+  puffs,
   ghosts = [],
   lantern,
 }: Props & { sheets: { city: Texture; people: Texture } }) {
@@ -218,7 +221,8 @@ function Scene({
       {residents.map((r) => (
         <Person key={(r as Partial<Placed>).key ?? `${r.who}@${r.x},${r.y}`} who={r.who} x={r.x} y={r.y} facing={r.facing} sheet={peopleSheet} material={people} />
       ))}
-      <Hero key={hero} who={hero} walker={walker} sheet={peopleSheet} material={people} />
+      <Hero key={hero} who={hero} walker={walker} ledges={map.ledges} width={map.width} puffs={puffs} sheet={peopleSheet} material={people} />
+      {puffs && <Puffs queue={puffs} sheet={peopleSheet} material={people} />}
       {pet && <Pet key={pet} id={pet} walker={walker} sheet={peopleSheet} material={people} />}
       {ghosts.map((g) => (
         <Ghost key={`${g.who}@${g.x},${g.y}`} {...g} sheet={peopleSheet} material={people} />
@@ -495,11 +499,34 @@ function Person({
   );
 }
 
-function Hero({ who, walker, sheet, material }: { who: string; walker: RefObject<Walker>; sheet: Sheet; material: ShaderMaterial }) {
+export interface Puff {
+  x: number;
+  y: number;
+}
+
+function Hero({
+  who,
+  walker,
+  ledges,
+  width,
+  puffs,
+  sheet,
+  material,
+}: {
+  who: string;
+  walker: RefObject<Walker>;
+  ledges?: Uint8Array;
+  width: number;
+  puffs?: RefObject<Puff[]>;
+  sheet: Sheet;
+  material: ShaderMaterial;
+}) {
   const column = Math.max(0, PEOPLE.indexOf(who as (typeof PEOPLE)[number])) * 64;
   const g = useQuad(sheet, column, 0, T, T);
   const group = useRef<Mesh>(null);
+  const body = useRef<Mesh>(null);
   const last = useRef('');
+  const onLedge = useRef(false);
   useFrame(() => {
     const w = walker.current;
     const p = walkerPosition(w);
@@ -509,12 +536,22 @@ function Hero({ who, walker, sheet, material }: { who: string; walker: RefObject
       last.current = key;
       setQuadSource(g, sheet, column + FACING_COLUMN[w.facing] * T, frame * T, T, T);
     }
+    // Hopping down a one-way ledge: an arc over the ledge's cell, and a puff on landing.
+    const fx = Math.floor(p.x + 0.5);
+    const fy = p.y + 0.61;
+    const row = Math.floor(fy);
+    const on = !!ledges?.[row * width + fx];
+    let hop = 0;
+    if (on && w.facing === 'down') hop = Math.sin((fy - row) * Math.PI) * 0.45;
+    if (onLedge.current && !on && w.facing === 'down') puffs?.current?.push({ x: p.x + 0.5, y: p.y + 0.95 });
+    onLedge.current = on;
+    if (body.current) body.current.position.y = hop;
     if (group.current) group.current.position.set(p.x, -p.y, depth(p.y + 1) + 0.005);
   });
   return (
     <group ref={group}>
       <Shadow sheet={sheet} material={material} />
-      <mesh geometry={g} material={material} />
+      <mesh ref={body} geometry={g} material={material} />
     </group>
   );
 }
@@ -598,6 +635,50 @@ function Sparkle({ x, y, sheet, material }: { x: number; y: number; sheet: Sheet
     mesh.position.set(x + 0.5 - 0.25 * (0.4 + 0.6 * s), -y + 0.9, 3);
   });
   return <mesh ref={ref} geometry={g} material={material} />;
+}
+
+const PUFF_PARTS = 5;
+const PUFF_LIFE = 0.6;
+const PUFF_POOL = 8;
+
+/** Little dust clouds: each puff throws a few soft round specks outward that grow and fade. */
+function Puffs({ queue, sheet, material }: { queue: RefObject<Puff[]>; sheet: Sheet; material: ShaderMaterial }) {
+  const g = useQuad(sheet, EXTRAS.indexOf('bubble') * T, 112, T, T, 0.5, 0.5);
+  const group = useRef<Group>(null);
+  const live = useRef<{ x: number; y: number; age: number }[]>([]);
+  useFrame((_, delta) => {
+    const grp = group.current;
+    if (!grp) return;
+    const q = queue.current;
+    while (q.length) {
+      const n = q.shift()!;
+      if (live.current.length >= PUFF_POOL) live.current.shift();
+      live.current.push({ x: n.x, y: n.y, age: 0 });
+    }
+    const dt = Math.min(delta, 0.05);
+    live.current = live.current.filter((p) => (p.age += dt) < PUFF_LIFE);
+    grp.children.forEach((child, i) => {
+      const p = live.current[Math.floor(i / PUFF_PARTS)];
+      if (!p) {
+        child.visible = false;
+        return;
+      }
+      const k = p.age / PUFF_LIFE;
+      const part = i % PUFF_PARTS;
+      const side = (part - (PUFF_PARTS - 1) / 2) / ((PUFF_PARTS - 1) / 2);
+      child.visible = true;
+      const size = 0.55 * Math.sin(Math.min(1, k * 1.2) * Math.PI) + 0.1;
+      child.scale.setScalar(size);
+      child.position.set(p.x + side * 0.55 * Math.sqrt(k) - 0.25 * size, -p.y + 0.08 + 0.2 * k * (1 - Math.abs(side) * 0.4) + 0.25 * size, 3);
+    });
+  });
+  return (
+    <group ref={group}>
+      {Array.from({ length: PUFF_POOL * PUFF_PARTS }, (_, i) => (
+        <mesh key={i} geometry={g} material={material} visible={false} />
+      ))}
+    </group>
+  );
 }
 
 function Bubble({
