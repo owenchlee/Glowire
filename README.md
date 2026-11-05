@@ -1,10 +1,25 @@
 # Glowire
 
-A cozy isometric puzzle game about electricity. Place and rotate circuit tiles (wires, LEDs,
-resistors, a battery) on a small floating board, and watch current flow, all driven by a real
-DC circuit solver.
+A cozy pixel-art puzzle game about electricity, for ages 8 to 12. You are the apprentice at
+Gran Watts' Workshop. Grumble, a cranky thundercloud, has blacked out the towns, so you walk one
+hero around four worlds (Glowtown, Driftwood Harbour, Mossbell Hollow and Brightwater Deep),
+talk to the residents, and take jobs. Each job is a puzzle: draw wires and place parts on a
+board, and a real DC circuit solver (modified nodal analysis) decides whether the lamp lights.
 
-**Status:** Phase 1 in progress (circuit engine + tutorial board).
+**What is in it**
+
+- **Circuit jobs:** chapters of levels with three star goals each (wires, parts, turns, extra
+  conditions), covering LEDs, resistors, switches, changeovers, meters, transistors and
+  capacitors. Boss jobs end each district. A Daily Blackout puzzle is generated every day.
+- **Brain jobs and mini-games:** Dead Lamp Hunt, Dockyard Wiring, Clock Panel and Lantern Budget,
+  plus Colour Code, Signal Lamp, Needle Drop and Jar Catch around town.
+- **Worlds to explore:** 8-way walking, pushable rocks, one-way ledges, fishing, a day and night
+  cycle and residents with routines. Lore pages unlock from puzzle scores.
+- **Game layer:** sparks (coins), a shop with pets and cosmetics, a journal, a casino and a save
+  that migrates old versions. Everything is stored on the device.
+
+Every major version is kept as a git tag with screenshots and the decisions behind it in
+[docs/history](docs/history/README.md). The design is in [docs/DESIGN.md](docs/DESIGN.md).
 
 ## Requirements
 
@@ -38,27 +53,37 @@ npm start          # starts the Metro dev server and prints a QR code
 
 ## Scripts
 
-| Command                | What it does                                    |
-| ---------------------- | ----------------------------------------------- |
-| `npm start`            | Start the dev server (Expo Go / QR code)        |
-| `npm test`             | Run the engine and board tests once (Vitest)    |
-| `npm run test:watch`   | Run the tests in watch mode                     |
-| `npm run typecheck`    | TypeScript strict type check                    |
-| `npm run lint`         | ESLint (`eslint-config-expo` + Prettier compat) |
-| `npm run format`       | Format everything with Prettier                 |
-| `npm run format:check` | Check formatting without writing                |
+| Command                       | What it does                                             |
+| ----------------------------- | -------------------------------------------------------- |
+| `npm start`                   | Start the dev server (Expo Go / QR code)                 |
+| `npm run web`                 | Start the dev server for the web build                   |
+| `npm test`                    | Run all tests once (Vitest)                              |
+| `npm run test:watch`          | Run the tests in watch mode                              |
+| `npm run typecheck`           | TypeScript strict type check                             |
+| `npm run lint`                | ESLint (`eslint-config-expo` + Prettier compat)          |
+| `npm run format`              | Format everything with Prettier                          |
+| `npm run format:check`        | Check formatting without writing                         |
+| `npm run play-version <tag>`  | Play an old tagged version in a separate worktree        |
+| `npm run map-preview -- <id>` | Draw a world map to a PNG (see the header of the script) |
 
 ## Project layout
 
 ```
-app/          Expo Router screens (the tutorial screen)
-src/engine/   Circuit physics: tile model, board → circuit, MNA solver. Pure TypeScript,
-              no React / React Native (enforced by an ESLint rule). Tested with Vitest.
+app/          Expo Router routes: world select, world, level, game, daily, shop, journal, casino
+src/engine/   Circuit physics: tile model, board to circuit, MNA solver. Pure TypeScript, no
+              React / React Native (enforced by an ESLint rule). Tested with Vitest.
 src/board/    Board state and actions (place, rotate, remove), separate from rendering
-src/render/   3D scene: board, tile meshes, current-flow effects, LED glow
+src/levels/   Chapters of puzzle levels, star goals, boss jobs, and how a level is judged
+src/game/     Story, lore, shop, daily puzzles, mini-game rules and the save. Pure TypeScript.
+src/world/    World maps, walking, rocks, fishing and resident routines. Pure TypeScript.
+src/world-view/ The walkable world: pixel canvas, joystick, ambient effects, day and night
+src/puzzle-view/ and src/render/  The puzzle board (2D tiles and the 3D board view)
+src/ui/       Screens and widgets: level screen, shop, journal, dialogs, mini-games, storage
+scripts/      Art generators, the version player and the map preview
+docs/         Design notes and the version history
 ```
 
-## Tech choices (Expo SDK 57)
+## Tech choices (Expo SDK 57) (Expo SDK 57)
 
 | Package                        | Version | Why                                                      |
 | ------------------------------ | ------- | -------------------------------------------------------- |

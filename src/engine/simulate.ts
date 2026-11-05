@@ -11,10 +11,10 @@ import {
 } from './constants';
 import { type TimeStep, solveNetlist } from './mna';
 import { getChangeoverPorts, getTerminals, getTransistorPorts } from './tiles';
+import type { Board, ComponentStatus, Direction, SimulationResult, TileResult } from './types';
 
 /** A transistor passing more than this (0.1 mA) counts as switched on. */
 const TRANSISTOR_ON = 1e-4;
-import type { Board, ComponentStatus, Direction, SimulationResult, TileResult } from './types';
 
 /**
  * The board's circuit, settled. With a time step, capacitors start from the given charges
@@ -43,7 +43,8 @@ export function simulate(board: Board, step?: TimeStep): SimulationResult {
   };
   for (const el of circuit.elements) {
     const t = board.cells[el.cell];
-    if (t?.kind === 'wire' || (t?.kind === 'meter' && t.mode === 'A')) parent[find(el.a)] = find(el.b);
+    if (t?.kind === 'wire' || (t?.kind === 'meter' && t.mode === 'A'))
+      parent[find(el.a)] = find(el.b);
   }
 
   let batteryCurrent = 0;
@@ -110,7 +111,8 @@ export function simulate(board: Board, step?: TimeStep): SimulationResult {
         current,
         portCurrents,
         brightness: 0,
-        status: current > TRANSISTOR.maxCurrent ? 'BURNED_OUT' : current > TRANSISTOR_ON ? 'OK' : 'OFF',
+        status:
+          current > TRANSISTOR.maxCurrent ? 'BURNED_OUT' : current > TRANSISTOR_ON ? 'OK' : 'OFF',
       };
     }
 
@@ -145,7 +147,8 @@ export function simulate(board: Board, step?: TimeStep): SimulationResult {
     } else if (tile.kind === 'capacitor') {
       current = intoPlus;
       // "Working" while it holds a useful charge or current is flowing in or out of it.
-      status = Math.abs(voltage) > CAPACITOR_CHARGED || Math.abs(current) > CURRENT_EPSILON ? 'OK' : 'OFF';
+      status =
+        Math.abs(voltage) > CAPACITOR_CHARGED || Math.abs(current) > CURRENT_EPSILON ? 'OK' : 'OFF';
     } else if (tile.kind === 'diode') {
       current = intoPlus;
       if (bypassed) status = 'BYPASSED';
