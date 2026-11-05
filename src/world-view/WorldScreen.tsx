@@ -7,7 +7,7 @@
 
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Animated, Easing, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
 import { type SaveData, dayKey, totalStars } from '../game/save';
 import { outfitSprite } from '../game/shop';
@@ -42,8 +42,9 @@ import { type Walker, facingCells, setLedges, newWalker, smoothPath, stepWalker,
 import { type Placed, placeResidents, residentKey } from '../world/routines';
 import { ROUTINES } from '../world/routines.data';
 import { WORLDS } from '../world/worlds';
-import { clockText, currentPhase, dayClockSeconds, daylight } from './daylight';
+import { currentPhase, dayClockSeconds, daylight } from './daylight';
 import { Joystick } from './Joystick';
+import { AreaBanner, ClockBadge, LanternGauge } from './WorldHud';
 import { type View as CameraView, WorldCanvas } from './WorldCanvas';
 
 /** Where the hero was standing in each world, so coming back from a puzzle feels seamless. */
@@ -731,57 +732,6 @@ export function WorldScreen({ map, worldId }: { map: WorldMap; worldId: string }
   );
 }
 
-/** The name of the place you've just walked into, fading in over the picture and away again. */
-function AreaBanner({ name, world }: { name: string; world: string }) {
-  const [t] = useState(() => new Animated.Value(0));
-  useEffect(() => {
-    Animated.sequence([
-      Animated.timing(t, { toValue: 1, duration: 450, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
-      Animated.delay(1700),
-      Animated.timing(t, { toValue: 0, duration: 700, useNativeDriver: true }),
-    ]).start();
-  }, [t]);
-  return (
-    <Animated.View
-      pointerEvents="none"
-      style={[styles.banner, { opacity: t, transform: [{ translateY: t.interpolate({ inputRange: [0, 1], outputRange: [-10, 0] }) }] }]}
-    >
-      <PixelText size={12} color="#c9c3e6" shadow>
-        {world.toUpperCase()}
-      </PixelText>
-      <PixelText size={28} color={GOLD} shadow>
-        {name}
-      </PixelText>
-    </Animated.View>
-  );
-}
-
-/** How full the lantern is: a little jar that drains, gold when full and red when nearly out. */
-function LanternGauge({ value }: { value: number }) {
-  const color = value > 0.5 ? '#ffd27a' : value > 0.25 ? '#ef914f' : '#e0394c';
-  return (
-    <View style={styles.gauge} pointerEvents="none">
-      <PixelText size={11} color={color} shadow>
-        Lantern
-      </PixelText>
-      <View style={styles.gaugeBar}>
-        <View style={[styles.gaugeFill, { width: `${Math.round(value * 100)}%`, backgroundColor: color }]} />
-      </View>
-    </View>
-  );
-}
-
-/** Sun or moon and the time of day, in the HUD. Ticks on its own so the screen doesn't re-render. */
-function ClockBadge() {
-  const [phase, setPhase] = useState(() => currentPhase());
-  useEffect(() => {
-    const id = setInterval(() => setPhase(currentPhase()), 1000);
-    return () => clearInterval(id);
-  }, []);
-  const d = daylight(phase);
-  return <Counter icon={d.day > 0.45 ? '☀' : '☾'} value={clockText(phase)} color={d.day > 0.45 ? '#ffe58a' : '#c9d4ff'} />;
-}
-
 const chestKey = (id: string) => `chest:${id}`;
 
 function labelFor(t: Target): string {
@@ -814,7 +764,6 @@ function labelFor(t: Target): string {
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: '#0d0f1e', overflow: 'hidden' },
-  banner: { position: 'absolute', top: 70, left: 0, right: 0, alignItems: 'center', gap: 2 },
   flex: { flex: 1 },
   hud: {
     position: 'absolute',
@@ -826,9 +775,6 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   title: { paddingHorizontal: 4 },
-  gauge: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 3 },
-  gaugeBar: { width: 70, height: 10, borderWidth: 2, borderColor: '#141b1b', backgroundColor: '#2e2b30', borderRadius: 2 },
-  gaugeFill: { height: '100%' },
   action: { position: 'absolute', right: 18, bottom: 16, alignItems: 'center', gap: 2 },
   hint: { marginTop: 2 },
   travel: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(8,9,20,0.55)' },
