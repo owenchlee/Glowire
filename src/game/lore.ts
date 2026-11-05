@@ -39,7 +39,7 @@ const secret = (id: string, world: WorldId, title: string, lines: Line[], about?
   world,
   title,
   lines,
-  about,
+  ...(about !== undefined && { about }),
 });
 
 export const SECRETS: Record<string, Secret> = Object.fromEntries(
