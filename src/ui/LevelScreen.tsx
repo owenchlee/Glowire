@@ -45,7 +45,6 @@ import {
   goalWordsFor,
   isLedLabel,
   levelLabels,
-  meterReading,
   remainingParts,
 } from '../levels/evaluate';
 import { item } from '../game/shop';
@@ -66,11 +65,10 @@ import { BoardCanvas } from '../render/BoardScene';
 import type { BackdropSpec } from '../render/Backdrop';
 import { litGroups, presentResidents } from '../world/logic';
 import { jobPlace, worldMap } from '../world/worlds';
-import { LED_PALETTE, formatCurrent, formatOhms } from '../render/theme';
 import { speakerName } from './Dialog';
 import { useGame } from './game';
 import { useLiveCircuit } from './useLiveCircuit';
-import { PART_ORDER, formatSeconds, partLabel, tileForPart } from './levelParts';
+import { PART_ORDER, formatSeconds, partLabel, tileForPart, tileTag } from './levelParts';
 import { buzz } from './haptics';
 import { type Hint, HINTS, pickHint } from './hints';
 import {
@@ -954,35 +952,9 @@ function Labels({
   const tags: { key: number; x: number; y: number; text: string; tone?: string }[] = [];
   board.cells.forEach((placed, cell) => {
     if (!placed || placed.id === hiddenId) return;
-    const t = placed.tile;
-    const r = result.tiles[cell];
-    const name = nameAt.get(cell);
-    let text: string | null = null;
-    let tone: string | undefined;
-    if (t.kind === 'resistor') text = formatOhms(t.ohms);
-    else if (t.kind === 'battery') text = `${t.volts} V`;
-    else if (t.kind === 'switch') {
-      text = `${switchCount > 1 && name ? `${name} ` : ''}${t.closed ? 'ON' : 'OFF'}`;
-      tone = t.closed ? '#3f7a52' : undefined;
-    } else if (t.kind === 'changeover') {
-      text = `${switchCount > 1 && name ? `${name} ` : ''}${t.up ? 'UP' : 'DOWN'}`;
-      tone = '#3f5a7a';
-    } else if (t.kind === 'capacitor') {
-      const v = Math.abs(r?.voltage ?? 0);
-      text = v > 0.05 ? `${t.uf}µF ${v.toFixed(1)}V` : `${t.uf} µF`;
-      tone = v > 0.05 ? '#8a6a1f' : undefined;
-    } else if (t.kind === 'meter') {
-      const reading = meterReading(r, t.mode);
-      text = t.mode === 'A' ? `${reading < 10 ? reading.toFixed(1) : Math.round(reading)} mA` : `${reading.toFixed(2)} V`;
-      tone = t.mode === 'A' ? '#8a6a1f' : '#2d697b';
-    } else if (t.kind === 'led') {
-      // Show the current even when it is too faint to glow: that is how hogging shows up.
-      const flowing = r && r.current > 1e-4 && r.status !== 'BURNED_OUT';
-      const prefix = ledCount > 1 && name ? name : '';
-      text = flowing ? `${prefix ? `${prefix} · ` : ''}${formatCurrent(r.current)}` : prefix || null;
-      tone = r?.status === 'OK' ? LED_PALETTE[t.color].tag : undefined;
-    }
-    if (!text) return;
+    const tag = tileTag(placed.tile, result.tiles[cell], nameAt.get(cell), ledCount, switchCount);
+    if (!tag) return;
+    const { text, tone } = tag;
     const p = picker.current!.project(cell, 0.9);
     tags.push({ key: placed.id, x: p.x, y: p.y, text, tone });
   });
