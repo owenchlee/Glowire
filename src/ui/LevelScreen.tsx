@@ -31,11 +31,7 @@ import { historyReducer } from '../board/history';
 import {
   type SimulationResult,
   type Tile,
-  battery,
-  capacitor,
-  diode,
   isTwoTerminal,
-  led,
   parseToken,
   resistor,
   simulate,
@@ -64,7 +60,7 @@ import {
   starGoalMet,
   starGoalsFor,
 } from '../levels/stars';
-import type { Goal, LevelDef, PartKey } from '../levels/types';
+import type { LevelDef, PartKey } from '../levels/types';
 import type { GhostPreview, ScenePicker } from '../puzzle-view/types';
 import { BoardCanvas } from '../render/BoardScene';
 import type { BackdropSpec } from '../render/Backdrop';
@@ -74,6 +70,7 @@ import { LED_PALETTE, formatCurrent, formatOhms } from '../render/theme';
 import { speakerName } from './Dialog';
 import { useGame } from './game';
 import { useLiveCircuit } from './useLiveCircuit';
+import { PART_ORDER, formatSeconds, partLabel, tileForPart } from './levelParts';
 import { buzz } from './haptics';
 import { type Hint, HINTS, pickHint } from './hints';
 import {
@@ -103,47 +100,6 @@ type Hover = { kind: 'cell'; cell: number } | { kind: 'trash' } | { kind: 'off' 
 /** A dragged part floats this far above the finger so the finger doesn't hide it. */
 const LIFT = 56;
 const ICON = 52;
-
-const PART_ORDER: PartKey[] = [
-  'battery',
-  'led',
-  'ledGreen',
-  'ledBlue',
-  'r100',
-  'r220',
-  'r470',
-  'r1000',
-  'diode',
-  'c1000',
-  'c2200',
-  'c4700',
-];
-
-function tileForPart(key: PartKey): Tile {
-  if (key === 'battery') return battery(0);
-  if (key === 'led') return led(0);
-  if (key === 'ledGreen') return led(0, 'green');
-  if (key === 'ledBlue') return led(0, 'blue');
-  if (key === 'diode') return diode(0);
-  if (key[0] === 'c') return capacitor(Number(key.slice(1)), 0);
-  return resistor(Number(key.slice(1)), 0);
-}
-
-function partLabel(key: PartKey): string {
-  if (key === 'battery') return '3 V';
-  if (key === 'led') return 'Red';
-  if (key === 'ledGreen') return 'Green';
-  if (key === 'ledBlue') return 'Blue';
-  if (key === 'diode') return 'Diode';
-  if (key[0] === 'c') return `${key.slice(1)} µF`;
-  return formatOhms(Number(key.slice(1)));
-}
-
-/** "2.1 s", or how a lamp that never changed is described. */
-function formatSeconds(goal: Goal, seconds: number): string {
-  if (seconds === Infinity) return goal.kind === 'hold' ? 'stays on' : 'never lights';
-  return `${seconds.toFixed(1)} s`;
-}
 
 /**
  * The street behind the board: where the job is (the daily job happens outside Gran's
