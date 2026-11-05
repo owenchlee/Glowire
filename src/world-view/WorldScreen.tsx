@@ -44,6 +44,7 @@ import { ROUTINES } from '../world/routines.data';
 import { WORLDS } from '../world/worlds';
 import { currentPhase, dayClockSeconds, daylight } from './daylight';
 import { Joystick } from './Joystick';
+import { chestKey, labelFor } from './targets';
 import { AreaBanner, ClockBadge, LanternGauge } from './WorldHud';
 import { type View as CameraView, WorldCanvas } from './WorldCanvas';
 
@@ -730,36 +731,6 @@ export function WorldScreen({ map, worldId }: { map: WorldMap; worldId: string }
       {talk && <Dialog key={talk.seenId ?? talk.lines[0]!.text} lines={talk.lines} choices={talk.choices} onClose={close} />}
     </View>
   );
-}
-
-const chestKey = (id: string) => `chest:${id}`;
-
-function labelFor(t: Target): string {
-  if (t.kind === 'gate') return 'Look';
-  if (t.kind === 'resident') return t.resident.who === 'pip' ? 'Talk to Pip' : 'Talk';
-  switch (t.spot.kind) {
-    case 'job':
-      return 'Knock';
-    case 'shop':
-      return 'Enter shop';
-    case 'daily':
-      return 'Talk';
-    case 'exit':
-      return t.spot.via === 'bubble' ? 'The well' : 'Bus stop';
-    case 'sign':
-    case 'note':
-      return 'Read';
-    case 'secret':
-      return 'Look';
-    case 'chest':
-      return 'Open';
-    case 'game':
-      return 'Play';
-    case 'fish':
-      return 'Fish';
-    case 'reset':
-      return 'Reset rocks';
-  }
 }
 
 const styles = StyleSheet.create({
