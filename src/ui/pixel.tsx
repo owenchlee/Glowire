@@ -45,7 +45,7 @@ export function PixelText({
 }: {
   children: ReactNode;
   size?: number;
-  color?: string;
+  color?: string | undefined;
   style?: TextStyle;
   /** A hard 1px ink shadow, for text on dark or busy backgrounds. */
   shadow?: boolean;

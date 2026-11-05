@@ -798,7 +798,7 @@ function WinCard({
   payday: Payday;
   onKeepPlaying: () => void;
   onDone: () => void;
-  day?: string;
+  day?: string | undefined;
 }) {
   const [shownStars, setShownStars] = useState(0);
   const [sparks, setSparks] = useState(0);
@@ -970,7 +970,7 @@ function Labels({
 }) {
   if (!picker.current || version === 0) return null;
   const nameAt = new Map(Object.entries(labels).map(([name, cell]) => [cell, name]));
-  const tags: { key: number; x: number; y: number; text: string; tone?: string }[] = [];
+  const tags: { key: number; x: number; y: number; text: string; tone?: string | undefined }[] = [];
   board.cells.forEach((placed, cell) => {
     if (!placed || placed.id === hiddenId) return;
     const t = placed.tile;
