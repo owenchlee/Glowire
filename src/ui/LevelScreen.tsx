@@ -65,7 +65,6 @@ import { BoardCanvas } from '../render/BoardScene';
 import type { BackdropSpec } from '../render/Backdrop';
 import { litGroups, presentResidents } from '../world/logic';
 import { jobPlace, worldMap } from '../world/worlds';
-import { speakerName } from './Dialog';
 import { useGame } from './game';
 import { useLiveCircuit } from './useLiveCircuit';
 import { PART_ORDER, formatSeconds, partLabel, tileForPart, tileTag } from './levelParts';
@@ -75,7 +74,6 @@ import {
   CREAM,
   CREAM_SHADE,
   GOLD,
-  GOLD_DARK,
   GREEN,
   INK,
   NIGHT,
@@ -89,6 +87,7 @@ import {
   TEXT_SOFT,
 } from './pixel';
 import { PartIcon } from '../puzzle-view/PartIcon';
+import { GrumbleStrike, MUTED, type Payday, WinCard, cardStyles } from './LevelCards';
 
 type Drag =
   { source: 'tray'; tile: Tile } | { source: 'board'; tile: Tile; from: number; id: number };
@@ -111,13 +110,6 @@ function backdropFor(id: number, day: string | undefined, save: { stars: Record<
   const at = place ?? map.spots.find((s) => s.kind === 'daily') ?? map.spawn;
   const lit = litGroups(map, solved);
   return { map, x: at.x, y: at.y, lit, residents: presentResidents(map, solved, lit) };
-}
-
-interface Payday {
-  stars: number;
-  earned: number;
-  firstClear: boolean;
-  surge: number;
 }
 
 /**
@@ -671,12 +663,12 @@ export function LevelScreen({ level, day }: { level: LevelDef; day?: string }) {
       {showWin && payday && <WinCard level={level} payday={payday} onKeepPlaying={() => setShowWin(false)} onDone={goBack} day={day} />}
 
       {showIntro && level.newPart && (
-        <View style={styles.cover}>
-          <Panel style={styles.modal}>
+        <View style={cardStyles.cover}>
+          <Panel style={cardStyles.modal}>
             <PixelText size={11} color={TEXT_SOFT}>
               NEW PART
             </PixelText>
-            <View style={styles.introRow}>
+            <View style={cardStyles.introRow}>
               <View style={styles.partFrame}>
                 <PartIcon tile={parseToken(level.newPart.token) ?? resistor(220)} size={64} />
               </View>
@@ -685,7 +677,7 @@ export function LevelScreen({ level, day }: { level: LevelDef; day?: string }) {
                 <PixelText size={13}>{level.newPart.text}</PixelText>
               </View>
             </View>
-            <View style={styles.modalButtons}>
+            <View style={cardStyles.modalButtons}>
               <PixelButton label="Got it!" onPress={() => setShowIntro(false)} />
             </View>
           </Panel>
@@ -712,147 +704,6 @@ function PetFace({ id, hopKey }: { id: string; hopKey: number }) {
   );
 }
 
-/** Between boss rounds: Grumble (or whoever the villain is) gloats and sabotages the board. */
-function GrumbleStrike({
-  who,
-  line,
-  round,
-  rounds,
-  onFight,
-}: {
-  who: string;
-  line: string;
-  round: number;
-  rounds: number;
-  onFight: () => void;
-}) {
-  const shake = useRef(new Animated.Value(0)).current;
-  useEffect(() => {
-    buzz.oops();
-    Animated.sequence(
-      [8, -8, 6, -6, 3, 0].map((x) => Animated.timing(shake, { toValue: x, duration: 60, useNativeDriver: true })),
-    ).start();
-  }, [shake]);
-  return (
-    <View style={styles.cover}>
-      <Animated.View style={{ transform: [{ translateX: shake }] }}>
-        <Panel style={styles.modal} tone="night">
-          <View style={styles.introRow}>
-            <Portrait who={who} size={84} />
-            <View style={styles.flex}>
-              <PixelText size={11} color={MUTED} shadow>
-                ROUND {round} CLEARED · {rounds - round} TO GO
-              </PixelText>
-              <View style={styles.hearts}>
-                {Array.from({ length: rounds }, (_, i) => (
-                  <View key={i} style={[styles.heart, i < round && styles.heartGone]} />
-                ))}
-              </View>
-              <PixelText size={13} color={GOLD} shadow>
-                {speakerName(who)}
-              </PixelText>
-              <PixelText size={15} color={CREAM} shadow>
-                “{line}”
-              </PixelText>
-            </View>
-          </View>
-          <View style={styles.modalButtons}>
-            <PixelButton label="Bring it on! ⚡" onPress={onFight} />
-          </View>
-        </Panel>
-      </Animated.View>
-    </View>
-  );
-}
-
-/** Payday: the client says thanks, the stars pop in one by one, and the sparks count up. */
-function WinCard({
-  level,
-  payday,
-  onKeepPlaying,
-  onDone,
-  day,
-}: {
-  level: LevelDef;
-  payday: Payday;
-  onKeepPlaying: () => void;
-  onDone: () => void;
-  day?: string;
-}) {
-  const [shownStars, setShownStars] = useState(0);
-  const [sparks, setSparks] = useState(0);
-  const rise = useRef(new Animated.Value(0)).current;
-  useEffect(() => {
-    Animated.spring(rise, { toValue: 1, friction: 7, useNativeDriver: true }).start();
-    const timers = [1, 2, 3]
-      .filter((s) => s <= payday.stars)
-      .map((s) =>
-        setTimeout(
-          () => {
-            setShownStars(s);
-            buzz.thud();
-          },
-          250 + s * 300,
-        ),
-      );
-    const steps = 20;
-    let i = 0;
-    const counter = setInterval(() => {
-      i++;
-      setSparks(Math.round((payday.earned * i) / steps));
-      if (i >= steps) clearInterval(counter);
-    }, 40);
-    return () => {
-      timers.forEach(clearTimeout);
-      clearInterval(counter);
-    };
-  }, [payday, rise]);
-  const translateY = rise.interpolate({ inputRange: [0, 1], outputRange: [300, 0] });
-  return (
-    <View style={styles.cover}>
-      <Animated.View style={[styles.winWrap, { transform: [{ translateY }] }]}>
-        <Panel style={styles.modal}>
-          <View style={styles.winTop}>
-            <PixelText size={22}>
-              {payday.firstClear ? (level.boss ? 'Boss beaten!' : 'Job done!') : 'New best!'}
-            </PixelText>
-            <View style={styles.flex} />
-            <View style={styles.starsRow}>
-              {[1, 2, 3].map((s) => (
-                <PixelText key={s} size={30} color={s <= shownStars ? GOLD : CREAM_SHADE} shadow={s <= shownStars}>
-                  ★
-                </PixelText>
-              ))}
-            </View>
-          </View>
-          {level.job && !day && (
-            <View style={styles.introRow}>
-              <Portrait who={level.job.client} size={52} />
-              <PixelText size={13} style={styles.flex}>
-                “{level.job.thanks}”
-              </PixelText>
-            </View>
-          )}
-          <View style={styles.winTop}>
-            <PixelText size={18} color={payday.earned > 0 ? GOLD_DARK : TEXT_SOFT}>
-              {payday.earned > 0 ? `+⚡ ${sparks} sparks${payday.surge > 1 && sparks >= payday.earned ? `  SURGE ×${payday.surge}!` : ''}` : 'No new stars this time'}
-            </PixelText>
-            <View style={styles.flex} />
-            {payday.stars < 3 && (
-              <PixelText size={11} color={TEXT_SOFT}>
-                Missing a star? Check the ☆ goals.
-              </PixelText>
-            )}
-          </View>
-          <View style={styles.modalButtons}>
-            <PixelButton label="Keep playing" tone="cream" onPress={onKeepPlaying} />
-            <PixelButton label={day ? 'Back to town' : 'Back outside ›'} onPress={onDone} />
-          </View>
-        </Panel>
-      </Animated.View>
-    </View>
-  );
-}
 
 function TraySlot({
   size,
@@ -974,8 +825,6 @@ function Labels({
   );
 }
 
-const MUTED = '#b9b2db';
-
 const styles = StyleSheet.create({
   screen: { flex: 1, flexDirection: 'row', backgroundColor: NIGHT_DEEP },
   flex: { flex: 1 },
@@ -1056,24 +905,4 @@ const styles = StyleSheet.create({
     borderRadius: 3,
     alignItems: 'center',
   },
-  cover: {
-    position: 'absolute',
-    top: 0,
-    right: 0,
-    bottom: 0,
-    left: 0,
-    backgroundColor: 'rgba(13,15,30,0.55)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 16,
-  },
-  modal: { width: 460, maxWidth: '100%' },
-  introRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginVertical: 6 },
-  modalButtons: { flexDirection: 'row', justifyContent: 'flex-end', gap: 10, marginTop: 8 },
-  hearts: { flexDirection: 'row', gap: 6, marginVertical: 4 },
-  heart: { width: 30, height: 9, backgroundColor: RED, borderWidth: 1.5, borderColor: INK, borderRadius: 2 },
-  heartGone: { backgroundColor: '#3a3656' },
-  winWrap: { width: 460, maxWidth: '100%' },
-  winTop: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  starsRow: { flexDirection: 'row', gap: 2 },
 });
