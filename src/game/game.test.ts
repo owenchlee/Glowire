@@ -38,6 +38,24 @@ describe('save file', () => {
     expect(save.stars).toEqual({ '2': 3 });
   });
 
+  it('only keeps equipped items that are owned and of the right kind', () => {
+    const save = migrate({
+      version: 2,
+      owned: ['gold', 'scout', 'crown'],
+      equipped: { pet: 'hoot', wire: 'gold', board: 'gold', hat: 'nope', outfit: 7 },
+    });
+    expect(save.equipped).toEqual({
+      pet: null,
+      wire: 'gold',
+      board: 'wood',
+      hat: 'nohat',
+      outfit: 'uniform',
+    });
+    expect(migrate({ version: 2, owned: ['scout'], equipped: { pet: 'scout' } }).equipped.pet).toBe(
+      'scout',
+    );
+  });
+
   it('round-trips through JSON', () => {
     let save = recordJob(fresh(), 1, 3).save;
     save = recordDaily(save, '2026-10-08', 2).save;

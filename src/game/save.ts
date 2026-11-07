@@ -1,7 +1,7 @@
 // The save file and the rules for sparks, stars, the shop and the daily streak.
 // Pure TypeScript: the UI only calls these and writes the result to disk.
 
-import { item } from './shop';
+import { item, itemOf, type ItemKind } from './shop';
 
 export interface SaveData {
   version: 2;
@@ -55,18 +55,28 @@ export function migrate(raw: unknown): SaveData {
   const base = structuredClone(NEW_SAVE);
   const daily = isRecord(raw.daily) ? raw.daily : {};
   const equipped = isRecord(raw.equipped) ? raw.equipped : {};
-  const owned = Array.isArray(raw.owned) ? raw.owned.filter((x) => typeof x === 'string') : [];
+  const owned = [
+    ...new Set([
+      ...base.owned,
+      ...(Array.isArray(raw.owned) ? raw.owned.filter((x) => typeof x === 'string') : []),
+    ]),
+  ];
+  // An equipped item must be owned and of that slot's kind, else the slot falls back.
+  const worn = (kind: ItemKind, fallback: string) => {
+    const id = equipped[kind];
+    return typeof id === 'string' && owned.includes(id) && itemOf(kind, id) ? id : fallback;
+  };
   return {
     version: 2,
     stars: isRecord(raw.stars) ? numbers(raw.stars) : {},
     sparks: typeof raw.sparks === 'number' ? Math.max(0, Math.floor(raw.sparks)) : 0,
-    owned: [...new Set([...base.owned, ...owned])],
+    owned,
     equipped: {
-      pet: typeof equipped.pet === 'string' ? equipped.pet : null,
-      wire: typeof equipped.wire === 'string' ? equipped.wire : base.equipped.wire,
-      board: typeof equipped.board === 'string' ? equipped.board : base.equipped.board,
-      hat: typeof equipped.hat === 'string' ? equipped.hat : base.equipped.hat,
-      outfit: typeof equipped.outfit === 'string' ? equipped.outfit : base.equipped.outfit,
+      pet: worn('pet', '') || null,
+      wire: worn('wire', base.equipped.wire),
+      board: worn('board', base.equipped.board),
+      hat: worn('hat', base.equipped.hat),
+      outfit: worn('outfit', base.equipped.outfit),
     },
     daily: {
       last: typeof daily.last === 'string' ? daily.last : null,
