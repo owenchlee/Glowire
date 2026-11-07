@@ -248,6 +248,11 @@ export function clearLine(a: Point, b: Point, free: Free): boolean {
   const n = Math.max(1, Math.ceil(d / 0.2));
   // Quick reject: the cell under the middle of the feet is always inside the feet box, so
   // checking just that cell first throws out most blocked lines cheaply (same result).
+  // A coarse pass about one cell apart finds most walls in a fifth of the samples.
+  for (let k = 5; k <= n; k += 5) {
+    const t = k / n;
+    if (!free(Math.floor(a.x + (b.x - a.x) * t + MID_X), Math.floor(a.y + (b.y - a.y) * t + MID_Y))) return false;
+  }
   let pcx = NaN;
   let pcy = NaN;
   for (let k = 1; k <= n; k++) {
