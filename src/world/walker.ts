@@ -103,7 +103,9 @@ function moveBy(w: Walker, dx: number, dy: number, free: Free): boolean {
 function slide(w: Walker, axis: 'x' | 'y', d: number, free: Free): boolean {
   // The full step almost always fits: check it before building the bisection closure.
   if (axis === 'x' ? fits(w.x + d, w.y, free) : fits(w.x, w.y + d, free)) {
-    w[axis] += d;
+    // Named stores: a computed w[axis] store is much slower in this hot path.
+    if (axis === 'x') w.x += d;
+    else w.y += d;
     return true;
   }
   const at = (t: number) => (axis === 'x' ? fits(w.x + d * t, w.y, free) : fits(w.x, w.y + d * t, free));
@@ -115,7 +117,8 @@ function slide(w: Walker, axis: 'x' | 'y', d: number, free: Free): boolean {
     else hi = mid;
   }
   if (Math.abs(d * lo) < 1e-3) return false;
-  w[axis] += d * lo;
+  if (axis === 'x') w.x += d * lo;
+  else w.y += d * lo;
   return true;
 }
 
