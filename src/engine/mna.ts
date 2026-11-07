@@ -36,6 +36,24 @@ const CURRENT_TOLERANCE = 1e-12;
 /** exp() argument cap; beyond it the diode curve continues as a straight line. */
 const MAX_EXPONENT = 80;
 
+// Reusable scratch buffers for solveNetlist's internal arrays (it runs on every board
+// edit, and allocating ~15 typed arrays per call dominated small boards). Each slot
+// grows on demand; the first `len` entries are reset to `value` on every request.
+const i32Pool: Int32Array[] = [];
+const f64Pool: Float64Array[] = [];
+function scratchI32(slot: number, len: number, value: number): Int32Array {
+  let b = i32Pool[slot];
+  if (b === undefined || b.length < len) i32Pool[slot] = b = new Int32Array(Math.max(len, 2 * (b?.length ?? 32)));
+  b.fill(value, 0, len);
+  return b;
+}
+function scratchF64(slot: number, len: number): Float64Array {
+  let b = f64Pool[slot];
+  if (b === undefined || b.length < len) f64Pool[slot] = b = new Float64Array(Math.max(len, 2 * (b?.length ?? 32)));
+  else b.fill(0, 0, len);
+  return b;
+}
+
 /** Diode current and its derivative (small-signal conductance) at voltage v, including GMIN. */
 export function diodeEval(v: number, d: DiodeModel): { i: number; g: number } {
   const x = v / d.nVt;
@@ -82,22 +100,23 @@ export function solveNetlist(circuit: Circuit): NetlistSolution {
   //    Element lists per node in CSR form (typed arrays: this runs on every board edit),
   //    each list in ascending element order.
   const elementCount = elements.length;
-  const degree = new Int32Array(nodeCount);
+  const degree = scratchI32(0, nodeCount, 0);
   for (let i = 0; i < elementCount; i++) {
     const el = elements[i]!;
     degree[el.a]!++;
     degree[el.b]!++;
   }
-  const start = new Int32Array(nodeCount + 1);
+  const start = scratchI32(1, nodeCount + 1, 0);
   for (let node = 0; node < nodeCount; node++) start[node + 1] = start[node]! + degree[node]!;
-  const fill = start.slice(0, nodeCount);
-  const touching = new Int32Array(2 * elementCount);
+  const fill = scratchI32(2, nodeCount, 0);
+  for (let node = 0; node < nodeCount; node++) fill[node] = start[node]!;
+  const touching = scratchI32(3, 2 * elementCount, 0);
   for (let i = 0; i < elementCount; i++) {
     const el = elements[i]!;
     touching[fill[el.a]!++] = i;
     touching[fill[el.b]!++] = i;
   }
-  const active = new Uint8Array(elementCount).fill(1);
+  const active = scratchI32(4, elementCount, 1);
   const prunedElement: number[] = [];
   const prunedLeaf: number[] = [];
   const leaves: number[] = [];
@@ -122,7 +141,7 @@ export function solveNetlist(circuit: Circuit): NetlistSolution {
 
   // 2. Find connected circuits among what's left; only those with a battery get solved.
   //    Each one is grounded at the − node of its first battery.
-  const parent = new Int32Array(nodeCount);
+  const parent = scratchI32(5, nodeCount, 0);
   for (let k = 0; k < nodeCount; k++) parent[k] = k;
   const find = (k: number): number => {
     while (parent[k] !== k) k = parent[k] = parent[parent[k]!]!;
@@ -132,14 +151,14 @@ export function solveNetlist(circuit: Circuit): NetlistSolution {
     const el = elements[i]!;
     if (active[i]) parent[find(el.a)] = find(el.b);
   }
-  const groundOf = new Int32Array(nodeCount).fill(-1); // root -> ground node
+  const groundOf = scratchI32(6, nodeCount, -1); // root -> ground node
   for (let i = 0; i < elementCount; i++) {
     const el = elements[i]!;
     if (active[i] && el.type === 'V' && groundOf[find(el.a)] === -1) groundOf[find(el.a)] = el.b;
   }
 
   // Matrix index for every powered, non-ground node; then one row per voltage source.
-  const index = new Int32Array(nodeCount).fill(-1);
+  const index = scratchI32(7, nodeCount, -1);
   let n = 0;
   for (let node = 0; node < nodeCount; node++) {
     const ground = groundOf[find(node)]!;
@@ -159,11 +178,11 @@ export function solveNetlist(circuit: Circuit): NetlistSolution {
   // 3. Newton–Raphson. With no diodes the system is linear and one pass is exact.
   //    Resistors and sources don't change between iterations, so they are stamped once
   //    into `base` and copied in; only the diode tangents are re-stamped each pass.
-  const vd = new Float64Array(diodes.length); // linearisation point per diode
-  const A = new Float64Array(size * size);
-  const base = new Float64Array(size * size);
-  const zBase = new Float64Array(size);
-  const z = new Float64Array(size);
+  const vd = scratchF64(0, diodes.length); // linearisation point per diode
+  const A = scratchF64(1, size * size);
+  const base = scratchF64(2, size * size);
+  const zBase = scratchF64(3, size);
+  const z = scratchF64(4, size);
   const resistors: number[] = [];
   for (let i = 0; i < elements.length; i++) {
     const el = elements[i]!;
@@ -198,8 +217,8 @@ export function solveNetlist(circuit: Circuit): NetlistSolution {
   }
   // Diode current/conductance at the current linearisation point vd. The value at the
   // next point is computed during the convergence test, so each pass evaluates exp once.
-  const di0 = new Float64Array(diodeEls.length);
-  const dg0 = new Float64Array(diodeEls.length);
+  const di0 = scratchF64(5, diodeEls.length);
+  const dg0 = scratchF64(6, diodeEls.length);
   for (let k = 0; k < diodeEls.length; k++) {
     const e = diodeEval(0, diodeEls[k]!.model);
     di0[k] = e.i;
@@ -211,8 +230,8 @@ export function solveNetlist(circuit: Circuit): NetlistSolution {
   let iterations = 0;
   while (!converged && iterations < MAX_ITERATIONS) {
     iterations++;
-    A.set(base);
-    z.set(zBase);
+    for (let k = 0; k < size * size; k++) A[k] = base[k]!;
+    for (let k = 0; k < size; k++) z[k] = zBase[k]!;
     for (let k = 0; k < diodeEls.length; k++) {
       const el = diodeEls[k]!;
       const i = di0[k]!;
