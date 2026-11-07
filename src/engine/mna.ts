@@ -8,9 +8,11 @@
 //              (a conductance plus a current source) and the system is re-solved until
 //              the guess stops moving: Newton–Raphson.
 
-import type { Circuit, DiodeModel } from './circuit';
+import type { Circuit, DiodeModel, Element } from './circuit';
 import { GMIN } from './constants';
 import { solveLinear } from './linear';
+
+type DiodeElement = Extract<Element, { type: 'D' }>;
 
 export interface NetlistSolution {
   /** Node voltages, volts. Nodes not connected to any battery read 0. */
@@ -130,67 +132,84 @@ export function solveNetlist(circuit: Circuit): NetlistSolution {
   const size = n + sources.length;
 
   // 3. Newton–Raphson. With no diodes the system is linear and one pass is exact.
+  //    Resistors and sources don't change between iterations, so they are stamped once
+  //    into `base` and copied in; only the diode tangents are re-stamped each pass.
   const vd = new Float64Array(diodes.length); // linearisation point per diode
   const A = new Float64Array(size * size);
+  const base = new Float64Array(size * size);
+  const zBase = new Float64Array(size);
   const z = new Float64Array(size);
-  const V = (node: number, x: Float64Array) => (index[node]! < 0 ? 0 : x[index[node]!]!);
-  const stampG = (a: number, b: number, g: number) => {
-    const ia = index[a]!;
-    const ib = index[b]!;
-    if (ia >= 0) A[ia * size + ia]! += g;
-    if (ib >= 0) A[ib * size + ib]! += g;
-    if (ia >= 0 && ib >= 0) {
-      A[ia * size + ib]! -= g;
-      A[ib * size + ia]! -= g;
+  const resistors: number[] = [];
+  for (let i = 0; i < elements.length; i++) {
+    const el = elements[i]!;
+    if (!active[i] || !powered[el.a]) continue;
+    if (el.type === 'R') {
+      resistors.push(i);
+      const g = 1 / el.ohms;
+      const ia = index[el.a]!;
+      const ib = index[el.b]!;
+      if (ia >= 0) base[ia * size + ia]! += g;
+      if (ib >= 0) base[ib * size + ib]! += g;
+      if (ia >= 0 && ib >= 0) {
+        base[ia * size + ib]! -= g;
+        base[ib * size + ia]! -= g;
+      }
     }
-  };
-  const stampI = (a: number, b: number, i: number) => {
-    // Current i flowing a → b through the element leaves node a and enters node b.
-    if (index[a]! >= 0) z[index[a]!]! -= i;
-    if (index[b]! >= 0) z[index[b]!]! += i;
-  };
+  }
+  for (let k = 0; k < sources.length; k++) {
+    const el = elements[sources[k]!]!;
+    if (el.type !== 'V') continue;
+    const row = n + k;
+    const ia = index[el.a]!;
+    const ib = index[el.b]!;
+    if (ia >= 0) base[ia * size + row] = base[row * size + ia] = 1;
+    if (ib >= 0) base[ib * size + row] = base[row * size + ib] = -1;
+    zBase[row] = el.volts;
+  }
+  const diodeEls: DiodeElement[] = [];
+  for (const d of diodes) {
+    const el = elements[d]!;
+    if (el.type === 'D') diodeEls.push(el);
+  }
+  const V = (node: number, x: Float64Array) => (index[node]! < 0 ? 0 : x[index[node]!]!);
 
   let converged = size === 0;
   let iterations = 0;
   while (!converged && iterations < MAX_ITERATIONS) {
     iterations++;
-    A.fill(0);
-    z.fill(0);
-    elements.forEach((el, i) => {
-      if (!active[i] || !powered[el.a]) return;
-      if (el.type === 'R') stampG(el.a, el.b, 1 / el.ohms);
-    });
-    sources.forEach((s, k) => {
-      const el = elements[s]!;
-      if (el.type !== 'V') return;
-      const row = n + k;
-      if (index[el.a]! >= 0) A[index[el.a]! * size + row] = A[row * size + index[el.a]!] = 1;
-      if (index[el.b]! >= 0) A[index[el.b]! * size + row] = A[row * size + index[el.b]!] = -1;
-      z[row] = el.volts;
-    });
-    diodes.forEach((d, k) => {
-      const el = elements[d]!;
-      if (el.type !== 'D') return;
+    A.set(base);
+    z.set(zBase);
+    for (let k = 0; k < diodeEls.length; k++) {
+      const el = diodeEls[k]!;
       const { i, g } = diodeEval(vd[k]!, el.model);
-      stampG(el.a, el.b, g);
-      stampI(el.a, el.b, i - g * vd[k]!); // tangent line: I ≈ g·v + (i − g·vd)
-    });
+      const ia = index[el.a]!;
+      const ib = index[el.b]!;
+      if (ia >= 0) A[ia * size + ia]! += g;
+      if (ib >= 0) A[ib * size + ib]! += g;
+      if (ia >= 0 && ib >= 0) {
+        A[ia * size + ib]! -= g;
+        A[ib * size + ia]! -= g;
+      }
+      const ieq = i - g * vd[k]!; // tangent line: I ≈ g·v + (i − g·vd)
+      // Current flowing a → b through the element leaves node a and enters node b.
+      if (ia >= 0) z[ia]! -= ieq;
+      if (ib >= 0) z[ib]! += ieq;
+    }
     solveLinear(A, z, size);
 
     // Record currents at this solution before moving the linearisation point.
-    elements.forEach((el, i) => {
-      if (!active[i] || !powered[el.a]) return;
-      if (el.type === 'R') currents[i] = (V(el.a, z) - V(el.b, z)) / el.ohms;
-    });
-    sources.forEach((s, k) => (currents[s] = z[n + k]!));
+    for (const r of resistors) {
+      const el = elements[r]!;
+      if (el.type === 'R') currents[r] = (V(el.a, z) - V(el.b, z)) / el.ohms;
+    }
+    for (let k = 0; k < sources.length; k++) currents[sources[k]!] = z[n + k]!;
 
     converged = true;
-    diodes.forEach((d, k) => {
-      const el = elements[d]!;
-      if (el.type !== 'D') return;
+    for (let k = 0; k < diodeEls.length; k++) {
+      const el = diodeEls[k]!;
       const raw = V(el.a, z) - V(el.b, z);
       const { i, g } = diodeEval(vd[k]!, el.model);
-      currents[d] = i + g * (raw - vd[k]!);
+      currents[diodes[k]!] = i + g * (raw - vd[k]!);
       const next = limitJunctionStep(raw, vd[k]!, el.model);
       const dv = Math.abs(next - vd[k]!);
       const di = Math.abs(diodeEval(next, el.model).i - i);
@@ -198,7 +217,7 @@ export function solveNetlist(circuit: Circuit): NetlistSolution {
       const iSettled = di <= CURRENT_TOLERANCE + RELATIVE_TOLERANCE * Math.abs(i);
       if (next !== raw || !(vSettled || iSettled)) converged = false;
       vd[k] = next;
-    });
+    }
   }
 
   for (let node = 0; node < nodeCount; node++) voltages[node] = V(node, z);
