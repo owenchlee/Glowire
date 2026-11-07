@@ -81,6 +81,14 @@ describe('save file', () => {
     expect(stars).toEqual({ '2026-10-08': 2, '2024-02-29': 3 });
   });
 
+  it('keeps only integer job ids with 1-3 stars', () => {
+    const stars = migrate({
+      version: 2,
+      stars: { 1: 2, 2: 0, 3: 4, 4: 2.5, abc: 3, '-5': 1, '1.5': 2, 6: 3 },
+    }).stars;
+    expect(stars).toEqual({ 1: 2, 6: 3 });
+  });
+
   it('round-trips through JSON', () => {
     let save = recordJob(fresh(), 1, 3).save;
     save = recordDaily(save, '2026-10-08', 2).save;

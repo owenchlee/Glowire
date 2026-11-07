@@ -69,7 +69,7 @@ export function migrate(raw: unknown): SaveData {
   const streak = count(daily.streak);
   return {
     version: 2,
-    stars: isRecord(raw.stars) ? numbers(raw.stars) : {},
+    stars: isRecord(raw.stars) ? starsBy(raw.stars, (k) => /^\d+$/.test(k)) : {},
     sparks: typeof raw.sparks === 'number' ? Math.max(0, Math.floor(raw.sparks)) : 0,
     owned,
     equipped: {
