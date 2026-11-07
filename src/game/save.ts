@@ -48,7 +48,7 @@ export function migrate(raw: unknown): SaveData {
     // v1 only knew which levels were solved: each one counts as one star.
     const ids = Array.isArray(raw.completed) ? raw.completed : [];
     const stars: Record<string, number> = {};
-    for (const id of ids) if (Number.isInteger(id)) stars[String(id)] = 1;
+    for (const id of ids) if (Number.isInteger(id) && id >= 0) stars[String(id)] = 1;
     return { ...structuredClone(NEW_SAVE), stars };
   }
   if (raw.version !== 2) return structuredClone(NEW_SAVE);
@@ -70,7 +70,7 @@ export function migrate(raw: unknown): SaveData {
   return {
     version: 2,
     stars: isRecord(raw.stars) ? starsBy(raw.stars, (k) => /^\d+$/.test(k)) : {},
-    sparks: typeof raw.sparks === 'number' ? Math.max(0, Math.floor(raw.sparks)) : 0,
+    sparks: count(raw.sparks),
     owned,
     equipped: {
       pet: worn('pet', '') || null,

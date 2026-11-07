@@ -38,6 +38,11 @@ describe('save file', () => {
     expect(save.stars).toEqual({ '2': 3 });
   });
 
+  it('drops non-finite sparks and negative v1 job ids', () => {
+    for (const sparks of [NaN, Infinity, -Infinity]) expect(migrate({ version: 2, sparks }).sparks).toBe(0);
+    expect(migrate({ version: 1, completed: [2, -1, 2.5] }).stars).toEqual({ '2': 1 });
+  });
+
   it('only keeps equipped items that are owned and of the right kind', () => {
     const save = migrate({
       version: 2,
