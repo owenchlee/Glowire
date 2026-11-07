@@ -161,26 +161,45 @@ export function findPath(map: WorldMap, blocked: Uint8Array, from: Point, to: Po
 
   const start = from.y * map.width + from.x;
   if (goals.has(start)) return [];
-  const prev = new Int32Array(map.width * map.height).fill(-1);
+  const w = map.width;
+  const h = map.height;
+  const size = w * h;
+  const isGoal = new Uint8Array(size);
+  for (const g of goals) if (g >= 0 && g < size) isGoal[g] = 1;
+  const prev = new Int32Array(size).fill(-1);
   prev[start] = start;
-  const queue = [start];
-  for (let head = 0; head < queue.length; head++) {
+  const queue = new Int32Array(size);
+  queue[0] = start;
+  let tail = 1;
+  // Hot loop: neighbours inlined in STEP order (down, up, left, right) so paths stay identical.
+  for (let head = 0; head < tail; head++) {
     const cur = queue[head]!;
-    if (goals.has(cur)) {
+    if (isGoal[cur]) {
       const path: Point[] = [];
-      for (let c = cur; c !== start; c = prev[c]!) path.push({ x: c % map.width, y: Math.floor(c / map.width) });
+      for (let c = cur; c !== start; c = prev[c]!) path.push({ x: c % w, y: Math.floor(c / w) });
       return path.reverse();
     }
-    const cx = cur % map.width;
-    const cy = Math.floor(cur / map.width);
-    for (const d of Object.values(STEP)) {
-      const x = cx + d.x;
-      const y = cy + d.y;
-      if (!canWalk(map, blocked, x, y)) continue;
-      const n = y * map.width + x;
-      if (prev[n] !== -1) continue;
+    const cx = cur % w;
+    const cy = (cur - cx) / w;
+    let n = cur + w;
+    if (cy + 1 < h && !blocked[n] && prev[n] === -1) {
       prev[n] = cur;
-      queue.push(n);
+      queue[tail++] = n;
+    }
+    n = cur - w;
+    if (cy > 0 && !blocked[n] && prev[n] === -1) {
+      prev[n] = cur;
+      queue[tail++] = n;
+    }
+    n = cur - 1;
+    if (cx > 0 && !blocked[n] && prev[n] === -1) {
+      prev[n] = cur;
+      queue[tail++] = n;
+    }
+    n = cur + 1;
+    if (cx + 1 < w && !blocked[n] && prev[n] === -1) {
+      prev[n] = cur;
+      queue[tail++] = n;
     }
   }
   return null;
