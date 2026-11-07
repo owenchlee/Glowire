@@ -24,7 +24,7 @@ import {
   THERMAL_VOLTAGE,
   WIRE_RESISTANCE,
 } from './constants';
-import { getChangeoverPorts, getPorts, getTerminals, isConnected, neighbourIndex, opposite } from './tiles';
+import { getChangeoverPorts, getPorts, getTerminals, neighbourIndex, opposite } from './tiles';
 import type { Board, Direction } from './types';
 
 export interface DiodeModel {
@@ -75,31 +75,38 @@ export function diodeModel(): DiodeModel {
 
 export function buildCircuit(board: Board): Circuit {
   // 1. Union-find over port keys (cell * 4 + dir) to merge facing ports.
-  const parent = new Map<number, number>();
+  //    Typed arrays instead of Maps: this runs on every board edit.
+  const cellCount = board.cells.length;
+  const portsOf: Direction[][] = new Array(cellCount);
+  const portMask = new Uint8Array(cellCount);
+  for (let cell = 0; cell < cellCount; cell++) {
+    const tile = board.cells[cell];
+    const dirs = tile ? getPorts(tile) : [];
+    portsOf[cell] = dirs;
+    for (const d of dirs) portMask[cell]! |= 1 << d;
+  }
+  const parent = new Int32Array(cellCount * 4);
+  for (let k = 0; k < parent.length; k++) parent[k] = k;
   const findRoot = (k: number): number => {
     let r = k;
-    while (parent.get(r) !== r) r = parent.get(r)!;
-    parent.set(k, r);
+    while (parent[r] !== r) r = parent[r]!;
+    parent[k] = r;
     return r;
   };
-  board.cells.forEach((tile, cell) => {
-    if (tile) for (const d of getPorts(tile)) parent.set(cell * 4 + d, cell * 4 + d);
-  });
-  board.cells.forEach((tile, cell) => {
-    if (!tile) return;
-    for (const d of getPorts(tile)) {
-      if (!isConnected(board, cell, d)) continue;
-      const other = neighbourIndex(board, cell, d) * 4 + opposite(d);
-      parent.set(findRoot(cell * 4 + d), findRoot(other));
+  for (let cell = 0; cell < cellCount; cell++) {
+    for (const d of portsOf[cell]!) {
+      const other = neighbourIndex(board, cell, d);
+      if (other < 0 || !(portMask[other]! & (1 << opposite(d)))) continue;
+      parent[findRoot(cell * 4 + d)] = findRoot(other * 4 + opposite(d));
     }
-  });
+  }
 
   let nodeCount = 0;
-  const nodeOfRoot = new Map<number, number>();
+  const nodeOfRoot = new Int32Array(cellCount * 4).fill(-1);
   const portNode = (cell: number, d: Direction): number => {
     const root = findRoot(cell * 4 + d);
-    let n = nodeOfRoot.get(root);
-    if (n === undefined) nodeOfRoot.set(root, (n = nodeCount++));
+    let n = nodeOfRoot[root]!;
+    if (n < 0) nodeOfRoot[root] = n = nodeCount++;
     return n;
   };
 
@@ -113,7 +120,7 @@ export function buildCircuit(board: Board): Circuit {
   board.cells.forEach((tile, cell) => {
     if (!tile || tile.kind === 'block') return;
     if (tile.kind === 'wire') {
-      const dirs = getPorts(tile);
+      const dirs = portsOf[cell]!;
       if (dirs.length === 2) {
         const [d0, d1] = dirs as [Direction, Direction];
         const e = add({
