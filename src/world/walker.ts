@@ -73,6 +73,21 @@ export function fits(x: number, y: number, free: Free): boolean {
   return true;
 }
 
+/** fits(x, y + dy), given fits(x, y) is already true: only rows outside the old box need a look. */
+function fitsAfterY(x: number, y: number, dy: number, free: Free): boolean {
+  const x0 = Math.floor(x + FEET.left);
+  const x1 = Math.floor(x + FEET.right - EPS);
+  const oy0 = Math.floor(y + FEET.top);
+  const oy1 = Math.floor(y + FEET.bottom - EPS);
+  const y0 = Math.floor(y + dy + FEET.top);
+  const y1 = Math.floor(y + dy + FEET.bottom - EPS);
+  for (let cy = y0; cy <= y1; cy++) {
+    if (cy >= oy0 && cy <= oy1) continue;
+    for (let cx = x0; cx <= x1; cx++) if (!free(cx, cy)) return false;
+  }
+  return true;
+}
+
 /**
  * Move by (dx, dy), one axis at a time so a blocked axis doesn't stop the other one (that's
  * what makes the hero slide along walls). Brushing a corner nudges them round it.
@@ -90,7 +105,10 @@ function moveBy(w: Walker, dx: number, dy: number, free: Free): boolean {
       else if (sy === 0) any = nudge(w, 'y', Math.sign(sx), 'x', Math.abs(sx), free);
     }
     if (sy !== 0) {
-      if (slide(w, 'y', sy, free)) any = true;
+      // After a successful x slide the hero fits where they stand, so the full y step only needs
+      // the newly covered rows checked (same result as slide).
+      if (any && fitsAfterY(w.x, w.y, sy, free)) w.y += sy;
+      else if (slide(w, 'y', sy, free)) any = true;
       else if (sx === 0) any = nudge(w, 'x', Math.sign(sy), 'y', Math.abs(sy), free);
     }
     if (!any) break;
