@@ -24,8 +24,8 @@ import {
   THERMAL_VOLTAGE,
   WIRE_RESISTANCE,
 } from './constants';
-import { getChangeoverPorts, getPorts, getTerminals, neighbourIndex, opposite } from './tiles';
-import type { Board, Direction } from './types';
+import { getChangeoverPorts, getTerminals, neighbourIndex, opposite } from './tiles';
+import type { Board, Direction, LedColor, Tile } from './types';
 
 export interface DiodeModel {
   /** Saturation current Is, amps. */
@@ -73,17 +73,31 @@ export function diodeModel(): DiodeModel {
   return { nVt, is: m.ratedCurrent / Math.expm1(junctionVoltage / nVt) };
 }
 
+// Fitted once: the fits are pure functions of the constants.
+const LED_DIODE_MODELS: Record<LedColor, DiodeModel> = {
+  red: ledDiodeModel('red'),
+  green: ledDiodeModel('green'),
+  blue: ledDiodeModel('blue'),
+};
+const DIODE_DIODE_MODEL = diodeModel();
+
+/** Bit mask of the ports the tile exposes after rotation (bit d = direction d), as getPorts. */
+function portMaskOf(tile: Tile): number {
+  if (tile.kind === 'block') return 0;
+  const r = tile.rotation;
+  // Rotation-0 masks: wire arms; changeover W, N, S; two-terminal W, E.
+  const m = tile.kind === 'wire' ? tile.arms & 15 : tile.kind === 'changeover' ? 0b1101 : 0b1010;
+  return ((m << r) | (m >> (4 - r))) & 15;
+}
+
 export function buildCircuit(board: Board): Circuit {
   // 1. Union-find over port keys (cell * 4 + dir) to merge facing ports.
-  //    Typed arrays instead of Maps: this runs on every board edit.
+  //    Typed arrays and port bit masks instead of Maps/arrays: this runs on every board edit.
   const cellCount = board.cells.length;
-  const portsOf: Direction[][] = new Array(cellCount);
   const portMask = new Uint8Array(cellCount);
   for (let cell = 0; cell < cellCount; cell++) {
     const tile = board.cells[cell];
-    const dirs = tile ? getPorts(tile) : [];
-    portsOf[cell] = dirs;
-    for (const d of dirs) portMask[cell]! |= 1 << d;
+    if (tile) portMask[cell] = portMaskOf(tile);
   }
   const parent = new Int32Array(cellCount * 4);
   for (let k = 0; k < parent.length; k++) parent[k] = k;
@@ -94,7 +108,10 @@ export function buildCircuit(board: Board): Circuit {
     return r;
   };
   for (let cell = 0; cell < cellCount; cell++) {
-    for (const d of portsOf[cell]!) {
+    const mask = portMask[cell]!;
+    for (let k = 0; k < 4; k++) {
+      if (!(mask & (1 << k))) continue;
+      const d = k as Direction;
       const other = neighbourIndex(board, cell, d);
       if (other < 0 || !(portMask[other]! & (1 << opposite(d)))) continue;
       parent[findRoot(cell * 4 + d)] = findRoot(other * 4 + opposite(d));
@@ -117,12 +134,16 @@ export function buildCircuit(board: Board): Circuit {
   const port = (cell: number, dir: Direction, element: number, terminal: 'a' | 'b') =>
     ports.push({ cell, dir, node: portNode(cell, dir), element, terminal });
 
-  board.cells.forEach((tile, cell) => {
-    if (!tile || tile.kind === 'block') return;
+  for (let cell = 0; cell < cellCount; cell++) {
+    const tile = board.cells[cell];
+    if (!tile || tile.kind === 'block') continue;
     if (tile.kind === 'wire') {
-      const dirs = portsOf[cell]!;
-      if (dirs.length === 2) {
-        const [d0, d1] = dirs as [Direction, Direction];
+      const mask = portMask[cell]!;
+      const low = mask & -mask;
+      if (mask !== low && (mask ^ low) === ((mask ^ low) & -(mask ^ low))) {
+        // Exactly two arms, in ascending direction order as armDirections lists them.
+        const d0 = (31 - Math.clz32(low)) as Direction;
+        const d1 = (31 - Math.clz32(mask)) as Direction;
         const e = add({
           type: 'R',
           a: portNode(cell, d0),
@@ -134,7 +155,9 @@ export function buildCircuit(board: Board): Circuit {
         port(cell, d1, e, 'b');
       } else {
         const centre = nodeCount++;
-        for (const d of dirs) {
+        for (let k = 0; k < 4; k++) {
+          if (!(mask & (1 << k))) continue;
+          const d = k as Direction;
           const e = add({
             type: 'R',
             a: portNode(cell, d),
@@ -145,7 +168,7 @@ export function buildCircuit(board: Board): Circuit {
           port(cell, d, e, 'a');
         }
       }
-      return;
+      continue;
     }
 
     if (tile.kind === 'changeover') {
@@ -161,7 +184,7 @@ export function buildCircuit(board: Board): Circuit {
         const e = add({ type: 'R', a: portNode(cell, dir), b: centre, ohms, cell });
         port(cell, dir, e, 'a');
       }
-      return;
+      continue;
     }
 
     const [plus, minus] = getTerminals(tile);
@@ -190,7 +213,7 @@ export function buildCircuit(board: Board): Circuit {
         ohms: tile.kind === 'led' ? LED_MODELS[tile.color].seriesResistance : DIODE_MODEL.seriesResistance,
         cell,
       });
-      const model = tile.kind === 'led' ? ledDiodeModel(tile.color) : diodeModel();
+      const model = tile.kind === 'led' ? LED_DIODE_MODELS[tile.color] : DIODE_DIODE_MODEL;
       const d = add({ type: 'D', a: x, b: m, model, cell });
       port(cell, plus, rs, 'a');
       port(cell, minus, d, 'b');
@@ -201,7 +224,7 @@ export function buildCircuit(board: Board): Circuit {
       port(cell, plus, r, 'b');
       port(cell, minus, v, 'b');
     }
-  });
+  }
 
   return { nodeCount, elements, ports };
 }
