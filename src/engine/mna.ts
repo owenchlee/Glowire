@@ -79,46 +79,71 @@ export function solveNetlist(circuit: Circuit): NetlistSolution {
 
   // 1. Prune dangling elements. A node touched by only one element terminal can't
   //    carry current (KCL), so that element's current is zero. Repeat until stable.
-  const touching: number[][] = Array.from({ length: nodeCount }, () => []);
-  elements.forEach((el, i) => {
-    touching[el.a]!.push(i);
-    touching[el.b]!.push(i);
-  });
-  const degree = touching.map((list) => list.length);
-  const active = new Uint8Array(elements.length).fill(1);
-  const pruned: { element: number; leaf: number }[] = [];
-  const leaves = degree.flatMap((deg, node) => (deg === 1 ? [node] : []));
+  //    Element lists per node in CSR form (typed arrays: this runs on every board edit),
+  //    each list in ascending element order.
+  const elementCount = elements.length;
+  const degree = new Int32Array(nodeCount);
+  for (let i = 0; i < elementCount; i++) {
+    const el = elements[i]!;
+    degree[el.a]!++;
+    degree[el.b]!++;
+  }
+  const start = new Int32Array(nodeCount + 1);
+  for (let node = 0; node < nodeCount; node++) start[node + 1] = start[node]! + degree[node]!;
+  const fill = start.slice(0, nodeCount);
+  const touching = new Int32Array(2 * elementCount);
+  for (let i = 0; i < elementCount; i++) {
+    const el = elements[i]!;
+    touching[fill[el.a]!++] = i;
+    touching[fill[el.b]!++] = i;
+  }
+  const active = new Uint8Array(elementCount).fill(1);
+  const prunedElement: number[] = [];
+  const prunedLeaf: number[] = [];
+  const leaves: number[] = [];
+  for (let node = 0; node < nodeCount; node++) if (degree[node] === 1) leaves.push(node);
   while (leaves.length) {
     const leaf = leaves.pop()!;
     if (degree[leaf] !== 1) continue;
-    const element = touching[leaf]!.find((i) => active[i])!;
+    let element = touching[start[leaf]!]!;
+    for (let k = start[leaf]!; k < start[leaf + 1]!; k++) {
+      if (active[touching[k]!]) {
+        element = touching[k]!;
+        break;
+      }
+    }
     active[element] = 0;
-    pruned.push({ element, leaf });
+    prunedElement.push(element);
+    prunedLeaf.push(leaf);
     const el = elements[element]!;
-    for (const n of [el.a, el.b]) if (--degree[n]! === 1) leaves.push(n);
+    if (--degree[el.a]! === 1) leaves.push(el.a);
+    if (--degree[el.b]! === 1) leaves.push(el.b);
   }
 
   // 2. Find connected circuits among what's left; only those with a battery get solved.
   //    Each one is grounded at the − node of its first battery.
-  const parent = Array.from({ length: nodeCount }, (_, i) => i);
+  const parent = new Int32Array(nodeCount);
+  for (let k = 0; k < nodeCount; k++) parent[k] = k;
   const find = (k: number): number => {
     while (parent[k] !== k) k = parent[k] = parent[parent[k]!]!;
     return k;
   };
-  elements.forEach((el, i) => {
+  for (let i = 0; i < elementCount; i++) {
+    const el = elements[i]!;
     if (active[i]) parent[find(el.a)] = find(el.b);
-  });
-  const groundOf = new Map<number, number>();
-  elements.forEach((el, i) => {
-    if (active[i] && el.type === 'V' && !groundOf.has(find(el.a))) groundOf.set(find(el.a), el.b);
-  });
+  }
+  const groundOf = new Int32Array(nodeCount).fill(-1); // root -> ground node
+  for (let i = 0; i < elementCount; i++) {
+    const el = elements[i]!;
+    if (active[i] && el.type === 'V' && groundOf[find(el.a)] === -1) groundOf[find(el.a)] = el.b;
+  }
 
   // Matrix index for every powered, non-ground node; then one row per voltage source.
   const index = new Int32Array(nodeCount).fill(-1);
   let n = 0;
   for (let node = 0; node < nodeCount; node++) {
-    const ground = groundOf.get(find(node));
-    if (ground === undefined || degree[node] === 0) continue;
+    const ground = groundOf[find(node)]!;
+    if (ground === -1 || degree[node] === 0) continue;
     powered[node] = 1;
     if (node !== ground) index[node] = n++;
   }
@@ -238,8 +263,9 @@ export function solveNetlist(circuit: Circuit): NetlistSolution {
 
   // 4. Pruned elements carry no current, so the voltage across them is 0 (or the EMF
   //    for a battery's source). Walk back out to the leaves to give them voltages.
-  for (let k = pruned.length - 1; k >= 0; k--) {
-    const { element, leaf } = pruned[k]!;
+  for (let k = prunedElement.length - 1; k >= 0; k--) {
+    const element = prunedElement[k]!;
+    const leaf = prunedLeaf[k]!;
     const el = elements[element]!;
     currents[element] = 0;
     const emf = el.type === 'V' ? el.volts : 0;
