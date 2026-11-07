@@ -64,6 +64,14 @@ describe('save file', () => {
     expect(d({ streak: 2, best: 9 })).toMatchObject({ streak: 2, best: 9 });
   });
 
+  it('keeps daily.last only when it is a real day', () => {
+    const last = (v: unknown) => migrate({ version: 2, daily: { last: v } }).daily.last;
+    expect(last('2026-11-06')).toBe('2026-11-06');
+    expect(last('2026-02-30')).toBeNull();
+    expect(last('yesterday')).toBeNull();
+    expect(last(20261106)).toBeNull();
+  });
+
   it('keeps only real days with 1-3 stars in the daily record', () => {
     const stars = migrate({
       version: 2,

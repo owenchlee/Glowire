@@ -80,7 +80,7 @@ export function migrate(raw: unknown): SaveData {
       outfit: worn('outfit', base.equipped.outfit),
     },
     daily: {
-      last: typeof daily.last === 'string' ? daily.last : null,
+      last: typeof daily.last === 'string' && isDay(daily.last) ? daily.last : null,
       streak,
       best: Math.max(count(daily.best), streak),
       stars: isRecord(daily.stars) ? starsBy(daily.stars, isDay) : {},
