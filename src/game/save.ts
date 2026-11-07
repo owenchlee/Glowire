@@ -113,9 +113,12 @@ function starsBy(r: Record<string, unknown>, validKey: (k: string) => boolean) {
   return out;
 }
 
+/** Mini-game best scores; NaN, Infinity and negative scores are dropped. */
 function numbers(r: Record<string, unknown>): Record<string, number> {
   const out: Record<string, number> = {};
-  for (const [k, v] of Object.entries(r)) if (typeof v === 'number') out[k] = v;
+  for (const [k, v] of Object.entries(r)) {
+    if (typeof v === 'number' && Number.isFinite(v) && v >= 0) out[k] = v;
+  }
   return out;
 }
 

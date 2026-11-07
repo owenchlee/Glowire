@@ -97,6 +97,14 @@ describe('save file', () => {
     expect(stars).toEqual({ 1: 2, 6: 3 });
   });
 
+  it('keeps only finite, non-negative game scores', () => {
+    const games = migrate({
+      version: 2,
+      games: { colours: 17, a: NaN, b: Infinity, c: -5, d: '7', e: 0, f: 1.5 },
+    }).games;
+    expect(games).toEqual({ colours: 17, e: 0, f: 1.5 });
+  });
+
   it('round-trips through JSON', () => {
     let save = recordJob(fresh(), 1, 3).save;
     save = recordDaily(save, '2026-10-08', 2).save;
