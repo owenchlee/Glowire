@@ -66,6 +66,7 @@ export function migrate(raw: unknown): SaveData {
     const id = equipped[kind];
     return typeof id === 'string' && owned.includes(id) && itemOf(kind, id) ? id : fallback;
   };
+  const streak = count(daily.streak);
   return {
     version: 2,
     stars: isRecord(raw.stars) ? numbers(raw.stars) : {},
@@ -80,14 +81,19 @@ export function migrate(raw: unknown): SaveData {
     },
     daily: {
       last: typeof daily.last === 'string' ? daily.last : null,
-      streak: typeof daily.streak === 'number' ? daily.streak : 0,
-      best: typeof daily.best === 'number' ? daily.best : 0,
+      streak,
+      best: Math.max(count(daily.best), streak),
       stars: isRecord(daily.stars) ? numbers(daily.stars) : {},
     },
     seen: Array.isArray(raw.seen) ? raw.seen.filter((x) => typeof x === 'string') : [],
     games: isRecord(raw.games) ? numbers(raw.games) : {},
     unlockAll: raw.unlockAll === true,
   };
+}
+
+/** A non-negative whole number, or 0 for anything else (NaN, Infinity, strings). */
+function count(v: unknown): number {
+  return typeof v === 'number' && Number.isFinite(v) ? Math.max(0, Math.floor(v)) : 0;
 }
 
 function numbers(r: Record<string, unknown>): Record<string, number> {

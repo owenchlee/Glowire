@@ -56,6 +56,14 @@ describe('save file', () => {
     );
   });
 
+  it('repairs the daily streak to whole numbers with best >= streak', () => {
+    const d = (daily: unknown) => migrate({ version: 2, daily }).daily;
+    expect(d({ streak: 4.7, best: 2 })).toMatchObject({ streak: 4, best: 4 });
+    expect(d({ streak: -3, best: 'x' })).toMatchObject({ streak: 0, best: 0 });
+    expect(d({ streak: null, best: Infinity })).toMatchObject({ streak: 0, best: 0 });
+    expect(d({ streak: 2, best: 9 })).toMatchObject({ streak: 2, best: 9 });
+  });
+
   it('round-trips through JSON', () => {
     let save = recordJob(fresh(), 1, 3).save;
     save = recordDaily(save, '2026-10-08', 2).save;
