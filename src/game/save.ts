@@ -83,7 +83,7 @@ export function migrate(raw: unknown): SaveData {
       last: typeof daily.last === 'string' ? daily.last : null,
       streak,
       best: Math.max(count(daily.best), streak),
-      stars: isRecord(daily.stars) ? numbers(daily.stars) : {},
+      stars: isRecord(daily.stars) ? starsBy(daily.stars, isDay) : {},
     },
     seen: Array.isArray(raw.seen) ? raw.seen.filter((x) => typeof x === 'string') : [],
     games: isRecord(raw.games) ? numbers(raw.games) : {},
@@ -94,6 +94,23 @@ export function migrate(raw: unknown): SaveData {
 /** A non-negative whole number, or 0 for anything else (NaN, Infinity, strings). */
 function count(v: unknown): number {
   return typeof v === 'number' && Number.isFinite(v) ? Math.max(0, Math.floor(v)) : 0;
+}
+
+/** A real calendar day written as YYYY-MM-DD (no 2026-02-30). */
+function isDay(k: string): boolean {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(k)) return false;
+  const [y, m, d] = k.split('-').map(Number) as [number, number, number];
+  const date = new Date(Date.UTC(y, m - 1, d));
+  return date.getUTCFullYear() === y && date.getUTCMonth() === m - 1 && date.getUTCDate() === d;
+}
+
+/** Star ratings (whole numbers 1-3) under keys that pass `validKey`; anything else is dropped. */
+function starsBy(r: Record<string, unknown>, validKey: (k: string) => boolean) {
+  const out: Record<string, number> = {};
+  for (const [k, v] of Object.entries(r)) {
+    if (validKey(k) && typeof v === 'number' && Number.isInteger(v) && v >= 1 && v <= 3) out[k] = v;
+  }
+  return out;
 }
 
 function numbers(r: Record<string, unknown>): Record<string, number> {

@@ -64,6 +64,23 @@ describe('save file', () => {
     expect(d({ streak: 2, best: 9 })).toMatchObject({ streak: 2, best: 9 });
   });
 
+  it('keeps only real days with 1-3 stars in the daily record', () => {
+    const stars = migrate({
+      version: 2,
+      daily: {
+        stars: {
+          '2026-10-08': 2,
+          '2026-02-30': 1,
+          x: 3,
+          '2026-10-09': 4,
+          '2026-10-10': 1.5,
+          '2024-02-29': 3,
+        },
+      },
+    }).daily.stars;
+    expect(stars).toEqual({ '2026-10-08': 2, '2024-02-29': 3 });
+  });
+
   it('round-trips through JSON', () => {
     let save = recordJob(fresh(), 1, 3).save;
     save = recordDaily(save, '2026-10-08', 2).save;
@@ -113,7 +130,13 @@ describe('shop', () => {
     save = equip(save, 'midnight');
     save = equip(save, 'crown');
     save = equip(save, 'hoot');
-    expect(save.equipped).toEqual({ pet: 'hoot', wire: 'neon', board: 'midnight', hat: 'crown', outfit: 'uniform' });
+    expect(save.equipped).toEqual({
+      pet: 'hoot',
+      wire: 'neon',
+      board: 'midnight',
+      hat: 'crown',
+      outfit: 'uniform',
+    });
     expect(equip(save, 'hoot').equipped.pet).toBeNull();
     expect(equip(save, 'gold')).toBe(save); // not owned
   });
@@ -172,11 +195,14 @@ describe('story', () => {
 
   it('every speaker in every scene and note exists', () => {
     const lines = [...Object.values(SCENES), ...Object.values(NOTES)].flatMap((s) => s.lines);
-    for (const line of lines) expect(line.who === 'pip' || line.who === 'grumble' || !!CAST[line.who], line.who).toBe(true);
+    for (const line of lines)
+      expect(line.who === 'pip' || line.who === 'grumble' || !!CAST[line.who], line.who).toBe(true);
   });
 
   it('numbers the notebook pages 1, 2, 3… with no gaps', () => {
-    const pages = Object.values(NOTES).map((n) => n.page).sort((a, b) => a - b);
+    const pages = Object.values(NOTES)
+      .map((n) => n.page)
+      .sort((a, b) => a - b);
     expect(pages).toEqual(pages.map((_, i) => i + 1));
   });
 });
@@ -185,6 +211,7 @@ describe('outfits', () => {
   it('every outfit in the shop has a hero sprite and a portrait', async () => {
     const { OUTFITS, outfitSprite } = await import('./shop');
     const { PEOPLE } = await import('../world/people.generated');
-    for (const o of OUTFITS) expect(PEOPLE as readonly string[], o.id).toContain(outfitSprite(o.id));
+    for (const o of OUTFITS)
+      expect(PEOPLE as readonly string[], o.id).toContain(outfitSprite(o.id));
   });
 });
