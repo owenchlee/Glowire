@@ -101,11 +101,12 @@ function moveBy(w: Walker, dx: number, dy: number, free: Free): boolean {
 
 /** Move along one axis as far as possible (up to `d`), stopping flush against a wall. */
 function slide(w: Walker, axis: 'x' | 'y', d: number, free: Free): boolean {
-  const at = (t: number) => (axis === 'x' ? fits(w.x + d * t, w.y, free) : fits(w.x, w.y + d * t, free));
-  if (at(1)) {
+  // The full step almost always fits: check it before building the bisection closure.
+  if (axis === 'x' ? fits(w.x + d, w.y, free) : fits(w.x, w.y + d, free)) {
     w[axis] += d;
     return true;
   }
+  const at = (t: number) => (axis === 'x' ? fits(w.x + d * t, w.y, free) : fits(w.x, w.y + d * t, free));
   let lo = 0;
   let hi = 1;
   for (let i = 0; i < 10; i++) {
