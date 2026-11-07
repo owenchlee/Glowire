@@ -241,9 +241,25 @@ export function smoothPath(from: Point, cells: Point[], free: Free): Point[] {
 export function clearLine(a: Point, b: Point, free: Free): boolean {
   const d = Math.hypot(b.x - a.x, b.y - a.y);
   const n = Math.max(1, Math.ceil(d / 0.2));
+  // Neighbouring samples usually cover the same cells: only check a box once (same result as fits).
+  let px0 = NaN;
+  let px1 = NaN;
+  let py0 = NaN;
+  let py1 = NaN;
   for (let k = 1; k <= n; k++) {
     const t = k / n;
-    if (!fits(a.x + (b.x - a.x) * t, a.y + (b.y - a.y) * t, free)) return false;
+    const x = a.x + (b.x - a.x) * t;
+    const y = a.y + (b.y - a.y) * t;
+    const x0 = Math.floor(x + FEET.left);
+    const x1 = Math.floor(x + FEET.right - EPS);
+    const y0 = Math.floor(y + FEET.top);
+    const y1 = Math.floor(y + FEET.bottom - EPS);
+    if (x0 === px0 && x1 === px1 && y0 === py0 && y1 === py1) continue;
+    for (let cy = y0; cy <= y1; cy++) for (let cx = x0; cx <= x1; cx++) if (!free(cx, cy)) return false;
+    px0 = x0;
+    px1 = x1;
+    py0 = y0;
+    py1 = y1;
   }
   return true;
 }
