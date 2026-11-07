@@ -171,6 +171,15 @@ export function solveNetlist(circuit: Circuit): NetlistSolution {
     const el = elements[d]!;
     if (el.type === 'D') diodeEls.push(el);
   }
+  // Diode current/conductance at the current linearisation point vd. The value at the
+  // next point is computed during the convergence test, so each pass evaluates exp once.
+  const di0 = new Float64Array(diodeEls.length);
+  const dg0 = new Float64Array(diodeEls.length);
+  for (let k = 0; k < diodeEls.length; k++) {
+    const e = diodeEval(0, diodeEls[k]!.model);
+    di0[k] = e.i;
+    dg0[k] = e.g;
+  }
   const V = (node: number, x: Float64Array) => (index[node]! < 0 ? 0 : x[index[node]!]!);
 
   let converged = size === 0;
@@ -181,7 +190,8 @@ export function solveNetlist(circuit: Circuit): NetlistSolution {
     z.set(zBase);
     for (let k = 0; k < diodeEls.length; k++) {
       const el = diodeEls[k]!;
-      const { i, g } = diodeEval(vd[k]!, el.model);
+      const i = di0[k]!;
+      const g = dg0[k]!;
       const ia = index[el.a]!;
       const ib = index[el.b]!;
       if (ia >= 0) A[ia * size + ia]! += g;
@@ -208,15 +218,19 @@ export function solveNetlist(circuit: Circuit): NetlistSolution {
     for (let k = 0; k < diodeEls.length; k++) {
       const el = diodeEls[k]!;
       const raw = V(el.a, z) - V(el.b, z);
-      const { i, g } = diodeEval(vd[k]!, el.model);
+      const i = di0[k]!;
+      const g = dg0[k]!;
       currents[diodes[k]!] = i + g * (raw - vd[k]!);
       const next = limitJunctionStep(raw, vd[k]!, el.model);
       const dv = Math.abs(next - vd[k]!);
-      const di = Math.abs(diodeEval(next, el.model).i - i);
+      const e = diodeEval(next, el.model);
+      const di = Math.abs(e.i - i);
       const vSettled = dv <= VOLTAGE_TOLERANCE + RELATIVE_TOLERANCE * Math.abs(next);
       const iSettled = di <= CURRENT_TOLERANCE + RELATIVE_TOLERANCE * Math.abs(i);
       if (next !== raw || !(vSettled || iSettled)) converged = false;
       vd[k] = next;
+      di0[k] = e.i;
+      dg0[k] = e.g;
     }
   }
 
