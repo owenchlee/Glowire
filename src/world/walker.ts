@@ -16,6 +16,9 @@ const FEET = { left: 0.2, right: 0.8, top: 0.3, bottom: 0.92 };
 /** How far the hero will be nudged sideways around a corner they're brushing past. */
 const NUDGE = 0.45;
 const EPS = 1e-6;
+/** The middle of the feet box, as an offset from the hero's position. */
+const MID_X = (FEET.left + FEET.right) / 2;
+const MID_Y = (FEET.top + FEET.bottom) / 2;
 
 export interface Walker {
   x: number;
@@ -242,6 +245,19 @@ export function smoothPath(from: Point, cells: Point[], free: Free): Point[] {
 export function clearLine(a: Point, b: Point, free: Free): boolean {
   const d = Math.hypot(b.x - a.x, b.y - a.y);
   const n = Math.max(1, Math.ceil(d / 0.2));
+  // Quick reject: the cell under the middle of the feet is always inside the feet box, so
+  // checking just that cell first throws out most blocked lines cheaply (same result).
+  let pcx = NaN;
+  let pcy = NaN;
+  for (let k = 1; k <= n; k++) {
+    const t = k / n;
+    const cx = Math.floor(a.x + (b.x - a.x) * t + MID_X);
+    const cy = Math.floor(a.y + (b.y - a.y) * t + MID_Y);
+    if (cx === pcx && cy === pcy) continue;
+    if (!free(cx, cy)) return false;
+    pcx = cx;
+    pcy = cy;
+  }
   // Neighbouring samples usually cover the same cells: only check a box once (same result as fits).
   let px0 = NaN;
   let px1 = NaN;
