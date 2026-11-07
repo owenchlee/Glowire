@@ -164,43 +164,65 @@ export function findPath(map: WorldMap, blocked: Uint8Array, from: Point, to: Po
   const w = map.width;
   const h = map.height;
   const size = w * h;
-  const isGoal = new Uint8Array(size);
-  for (const g of goals) if (g >= 0 && g < size) isGoal[g] = 1;
-  const prev = new Int32Array(size).fill(-1);
-  prev[start] = start;
-  const queue = new Int32Array(size);
+  if (bfs.seen.length < size || bfs.stamp > 0xfffffff0) {
+    bfs.seen = new Uint32Array(size);
+    bfs.prev = new Int32Array(size);
+    bfs.queue = new Int32Array(size);
+    bfs.stamp = 0;
+  }
+  // Buffers are reused between walks; a cell counts as visited only if it carries this walk's stamp.
+  const stamp = ++bfs.stamp;
+  const { seen, prev, queue } = bfs;
+  const goalStamp = stamp + 1;
+  bfs.stamp = goalStamp;
+  for (const g of goals) if (g >= 0 && g < size) seen[g] = goalStamp;
+  seen[start] = stamp;
   queue[0] = start;
   let tail = 1;
+  const pathTo = (end: number, from: number): Point[] => {
+    prev[end] = from;
+    const path: Point[] = [];
+    for (let c = end; c !== start; c = prev[c]!) path.push({ x: c % w, y: Math.floor(c / w) });
+    return path.reverse();
+  };
   // Hot loop: neighbours inlined in STEP order (down, up, left, right) so paths stay identical.
+  // The queue is first-in first-out, so the first goal reached is the one the search would take
+  // out first: stopping as soon as it's reached gives the same path.
   for (let head = 0; head < tail; head++) {
     const cur = queue[head]!;
-    if (isGoal[cur]) {
-      const path: Point[] = [];
-      for (let c = cur; c !== start; c = prev[c]!) path.push({ x: c % w, y: Math.floor(c / w) });
-      return path.reverse();
-    }
     const cx = cur % w;
     const cy = (cur - cx) / w;
     let n = cur + w;
-    if (cy + 1 < h && !blocked[n] && prev[n] === -1) {
+    if (cy + 1 < h && !blocked[n] && seen[n] !== stamp) {
+      if (seen[n] === goalStamp) return pathTo(n, cur);
+      seen[n] = stamp;
       prev[n] = cur;
       queue[tail++] = n;
     }
     n = cur - w;
-    if (cy > 0 && !blocked[n] && prev[n] === -1) {
+    if (cy > 0 && !blocked[n] && seen[n] !== stamp) {
+      if (seen[n] === goalStamp) return pathTo(n, cur);
+      seen[n] = stamp;
       prev[n] = cur;
       queue[tail++] = n;
     }
     n = cur - 1;
-    if (cx > 0 && !blocked[n] && prev[n] === -1) {
+    if (cx > 0 && !blocked[n] && seen[n] !== stamp) {
+      if (seen[n] === goalStamp) return pathTo(n, cur);
+      seen[n] = stamp;
       prev[n] = cur;
       queue[tail++] = n;
     }
     n = cur + 1;
-    if (cx + 1 < w && !blocked[n] && prev[n] === -1) {
+    if (cx + 1 < w && !blocked[n] && seen[n] !== stamp) {
+      if (seen[n] === goalStamp) return pathTo(n, cur);
+      seen[n] = stamp;
       prev[n] = cur;
       queue[tail++] = n;
     }
   }
   return null;
 }
+
+/** Scratch space for findPath, kept between calls so each walk doesn't allocate and clear it. */
+const bfs = { seen: new Uint32Array(0), prev: new Int32Array(0), queue: new Int32Array(0), stamp: 0 };
