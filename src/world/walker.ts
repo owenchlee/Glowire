@@ -158,7 +158,8 @@ function faceFor(w: Walker, dx: number, dy: number): Facing {
 export function stepWalker(w: Walker, dt: number, free: Free): StepResult {
   let arrived = false;
   let { x: ix, y: iy } = w.input;
-  const len = Math.hypot(ix, iy);
+  // Math.hypot is slow and tapped walks have no input, so skip it when there's none (same result).
+  const len = ix === 0 && iy === 0 ? 0 : Math.hypot(ix, iy);
 
   if (len > 0.15) {
     // Steering by hand cancels a tapped path.
@@ -255,7 +256,11 @@ export function clearLine(a: Point, b: Point, free: Free): boolean {
     const y0 = Math.floor(y + FEET.top);
     const y1 = Math.floor(y + FEET.bottom - EPS);
     if (x0 === px0 && x1 === px1 && y0 === py0 && y1 === py1) continue;
-    for (let cy = y0; cy <= y1; cy++) for (let cx = x0; cx <= x1; cx++) if (!free(cx, cy)) return false;
+    // Cells inside the last box already passed, so only the newly covered ones need a look.
+    for (let cy = y0; cy <= y1; cy++) {
+      const seenRow = cy >= py0 && cy <= py1;
+      for (let cx = x0; cx <= x1; cx++) if (!(seenRow && cx >= px0 && cx <= px1) && !free(cx, cy)) return false;
+    }
     px0 = x0;
     px1 = x1;
     py0 = y0;
