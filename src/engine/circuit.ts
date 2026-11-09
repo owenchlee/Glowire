@@ -109,7 +109,8 @@ export function buildCircuit(board: Board): Circuit {
   };
   for (let cell = 0; cell < cellCount; cell++) {
     const mask = portMask[cell]!;
-    for (let k = 0; k < 4; k++) {
+    // Only E (1) and S (2): each facing pair is seen from both sides, one union suffices.
+    for (let k = 1; k < 3; k++) {
       if (!(mask & (1 << k))) continue;
       const d = k as Direction;
       const other = neighbourIndex(board, cell, d);
