@@ -6,6 +6,11 @@ import { solveNetlist } from './mna';
 import { getChangeoverPorts, getTerminals } from './tiles';
 import type { Board, ComponentStatus, Direction, SimulationResult, TileResult } from './types';
 
+function findIn(parent: Int32Array, k: number): number {
+  while (parent[k] !== k) k = parent[k] = parent[parent[k]!]!;
+  return k;
+}
+
 export function simulate(board: Board): SimulationResult {
   const circuit = buildCircuit(board);
   const sol = solveNetlist(circuit);
@@ -21,16 +26,20 @@ export function simulate(board: Board): SimulationResult {
   }
 
   // Nodes joined purely by wire tiles: if both legs of a part are, it is bypassed.
-  const parent = new Int32Array(circuit.nodeCount);
-  for (let i = 0; i < parent.length; i++) parent[i] = i;
+  // Built lazily: only powered parts need it.
+  let parent: Int32Array | null = null;
   const find = (k: number): number => {
-    while (parent[k] !== k) k = parent[k] = parent[parent[k]!]!;
-    return k;
+    if (!parent) {
+      const p = (parent = new Int32Array(circuit.nodeCount));
+      for (let i = 0; i < p.length; i++) p[i] = i;
+      for (const el of circuit.elements) {
+        const t = board.cells[el.cell];
+        if (t?.kind === 'wire' || (t?.kind === 'meter' && t.mode === 'A'))
+          p[findIn(p, el.a)] = findIn(p, el.b);
+      }
+    }
+    return findIn(parent, k);
   };
-  for (const el of circuit.elements) {
-    const t = board.cells[el.cell];
-    if (t?.kind === 'wire' || (t?.kind === 'meter' && t.mode === 'A')) parent[find(el.a)] = find(el.b);
-  }
 
   let batteryCurrent = 0;
   const tiles = board.cells.map((tile, cell): TileResult | null => {
