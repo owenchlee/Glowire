@@ -182,10 +182,11 @@ export function solveNetlist(circuit: Circuit): NetlistSolution {
   //    Resistors and sources don't change between iterations, so they are stamped once
   //    into `base` and copied in; only the diode tangents are re-stamped each pass.
   const vd = scratchF64(0, diodes.length); // linearisation point per diode
-  const A = scratchF64(1, size * size);
   const base = scratchF64(2, size * size);
   const zBase = scratchF64(3, size);
   const z = scratchF64(4, size);
+  // Linear circuit: one pass, so solve in place on base and skip the matrix copy.
+  const A = diodes.length === 0 ? base : scratchF64(1, size * size);
   const resistors: number[] = [];
   for (let i = 0; i < elements.length; i++) {
     const el = elements[i]!;
@@ -235,8 +236,8 @@ export function solveNetlist(circuit: Circuit): NetlistSolution {
   let iterations = 0;
   while (!converged && iterations < MAX_ITERATIONS) {
     iterations++;
-    for (let k = 0; k < size * size; k++) A[k] = base[k]!;
-    for (let k = 0; k < size; k++) z[k] = zBase[k]!;
+    if (A !== base) A.set(base.subarray(0, size * size));
+    z.set(zBase.subarray(0, size));
     for (let k = 0; k < diodeEls.length; k++) {
       const el = diodeEls[k]!;
       const i = di0[k]!;
