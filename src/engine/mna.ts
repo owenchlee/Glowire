@@ -77,8 +77,11 @@ export function diodeEval(v: number, d: DiodeModel): { i: number; g: number } {
  * instead move along the log of the step, so each iteration changes the current by a
  * sane factor and the iteration converges from any starting point.
  */
-export function limitJunctionStep(vNew: number, vOld: number, d: DiodeModel): number {
-  const vcrit = d.nVt * Math.log(d.nVt / (Math.SQRT2 * d.is));
+function criticalVoltage(d: DiodeModel): number {
+  return d.nVt * Math.log(d.nVt / (Math.SQRT2 * d.is));
+}
+
+export function limitJunctionStep(vNew: number, vOld: number, d: DiodeModel, vcrit = criticalVoltage(d)): number {
   if (vNew > vcrit && Math.abs(vNew - vOld) > 2 * d.nVt) {
     if (vOld > 0) {
       const arg = 1 + (vNew - vOld) / d.nVt;
@@ -219,10 +222,12 @@ export function solveNetlist(circuit: Circuit): NetlistSolution {
   // next point is computed during the convergence test, so each pass evaluates exp once.
   const di0 = scratchF64(5, diodeEls.length);
   const dg0 = scratchF64(6, diodeEls.length);
+  const vcrit = scratchF64(7, diodeEls.length);
   for (let k = 0; k < diodeEls.length; k++) {
     const e = diodeEval(0, diodeEls[k]!.model);
     di0[k] = e.i;
     dg0[k] = e.g;
+    vcrit[k] = criticalVoltage(diodeEls[k]!.model);
   }
   const V = (node: number, x: Float64Array) => (index[node]! < 0 ? 0 : x[index[node]!]!);
 
@@ -265,7 +270,7 @@ export function solveNetlist(circuit: Circuit): NetlistSolution {
       const i = di0[k]!;
       const g = dg0[k]!;
       currents[diodes[k]!] = i + g * (raw - vd[k]!);
-      const next = limitJunctionStep(raw, vd[k]!, el.model);
+      const next = limitJunctionStep(raw, vd[k]!, el.model, vcrit[k]!);
       const dv = Math.abs(next - vd[k]!);
       const e = diodeEval(next, el.model);
       const di = Math.abs(e.i - i);
