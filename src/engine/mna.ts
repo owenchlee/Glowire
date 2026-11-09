@@ -56,6 +56,14 @@ function scratchF64(slot: number, len: number): Float64Array {
 
 /** Diode current and its derivative (small-signal conductance) at voltage v, including GMIN. */
 export function diodeEval(v: number, d: DiodeModel): { i: number; g: number } {
+  evalInto(v, d);
+  return { i: evalI, g: evalG };
+}
+
+// Result slots for evalInto: the Newton loop reads these instead of allocating an object per call.
+let evalI = 0;
+let evalG = 0;
+function evalInto(v: number, d: DiodeModel): void {
   const x = v / d.nVt;
   let i: number;
   let g: number;
@@ -68,7 +76,8 @@ export function diodeEval(v: number, d: DiodeModel): { i: number; g: number } {
     i = d.is * (e - 1);
     g = (d.is * e) / d.nVt;
   }
-  return { i: i + GMIN * v, g: g + GMIN };
+  evalI = i + GMIN * v;
+  evalG = g + GMIN;
 }
 
 /**
@@ -225,9 +234,9 @@ export function solveNetlist(circuit: Circuit): NetlistSolution {
   const dg0 = scratchF64(6, diodeEls.length);
   const vcrit = scratchF64(7, diodeEls.length);
   for (let k = 0; k < diodeEls.length; k++) {
-    const e = diodeEval(0, diodeEls[k]!.model);
-    di0[k] = e.i;
-    dg0[k] = e.g;
+    evalInto(0, diodeEls[k]!.model);
+    di0[k] = evalI;
+    dg0[k] = evalG;
     vcrit[k] = criticalVoltage(diodeEls[k]!.model);
   }
   const V = (node: number, x: Float64Array) => (index[node]! < 0 ? 0 : x[index[node]!]!);
@@ -273,14 +282,14 @@ export function solveNetlist(circuit: Circuit): NetlistSolution {
       currents[diodes[k]!] = i + g * (raw - vd[k]!);
       const next = limitJunctionStep(raw, vd[k]!, el.model, vcrit[k]!);
       const dv = Math.abs(next - vd[k]!);
-      const e = diodeEval(next, el.model);
-      const di = Math.abs(e.i - i);
+      evalInto(next, el.model);
+      const di = Math.abs(evalI - i);
       const vSettled = dv <= VOLTAGE_TOLERANCE + RELATIVE_TOLERANCE * Math.abs(next);
       const iSettled = di <= CURRENT_TOLERANCE + RELATIVE_TOLERANCE * Math.abs(i);
       if (next !== raw || !(vSettled || iSettled)) converged = false;
       vd[k] = next;
-      di0[k] = e.i;
-      dg0[k] = e.g;
+      di0[k] = evalI;
+      dg0[k] = evalG;
     }
   }
 
