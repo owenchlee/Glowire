@@ -10,10 +10,11 @@ export function solveLinear(a: Float64Array, b: Float64Array, n: number): void {
   if (nzCols.length < n) nzCols = new Int32Array(Math.max(n, 2 * nzCols.length));
   for (let col = 0; col < n; col++) {
     // Pivot: largest magnitude in this column, for numerical stability.
+    const co = col * n;
     let pivotRow = col;
-    let best = Math.abs(a[col * n + col]!);
-    for (let r = col + 1; r < n; r++) {
-      const v = Math.abs(a[r * n + col]!);
+    let best = Math.abs(a[co + col]!);
+    for (let r = col + 1, ro = co + n; r < n; r++, ro += n) {
+      const v = Math.abs(a[ro + col]!);
       if (v > best) {
         best = v;
         pivotRow = r;
@@ -30,17 +31,17 @@ export function solveLinear(a: Float64Array, b: Float64Array, n: number): void {
       b[col] = b[pivotRow]!;
       b[pivotRow] = t;
     }
-    const pivot = a[col * n + col]!;
+    const pivot = a[co + col]!;
     // Circuit matrices are sparse: only the pivot row's nonzero columns change other rows
     // (x - f * 0 is x). Entries left of the diagonal are never read again, so skip them.
     let nz = 0;
-    for (let c = col + 1; c < n; c++) if (a[col * n + c] !== 0) nzCols[nz++] = c;
-    for (let r = col + 1; r < n; r++) {
-      const f = a[r * n + col]! / pivot;
+    for (let c = col + 1; c < n; c++) if (a[co + c] !== 0) nzCols[nz++] = c;
+    for (let r = col + 1, ro = co + n; r < n; r++, ro += n) {
+      const f = a[ro + col]! / pivot;
       if (f === 0) continue;
       for (let k = 0; k < nz; k++) {
         const c = nzCols[k]!;
-        a[r * n + c]! -= f * a[col * n + c]!;
+        a[ro + c]! -= f * a[co + c]!;
       }
       b[r]! -= f * b[col]!;
     }
