@@ -266,13 +266,6 @@ export function solveNetlist(circuit: Circuit): NetlistSolution {
     }
     solveLinear(A, z, size);
 
-    // Record currents at this solution before moving the linearisation point.
-    for (const r of resistors) {
-      const el = elements[r]!;
-      if (el.type === 'R') currents[r] = (V(el.a, z) - V(el.b, z)) / el.ohms;
-    }
-    for (let k = 0; k < sources.length; k++) currents[sources[k]!] = z[n + k]!;
-
     converged = true;
     for (let k = 0; k < diodeEls.length; k++) {
       const el = diodeEls[k]!;
@@ -291,6 +284,15 @@ export function solveNetlist(circuit: Circuit): NetlistSolution {
       di0[k] = evalI;
       dg0[k] = evalG;
     }
+  }
+
+  // Linear-element currents only matter at the final solution, still held in z.
+  if (iterations > 0) {
+    for (const r of resistors) {
+      const el = elements[r]!;
+      if (el.type === 'R') currents[r] = (V(el.a, z) - V(el.b, z)) / el.ohms;
+    }
+    for (let k = 0; k < sources.length; k++) currents[sources[k]!] = z[n + k]!;
   }
 
   for (let node = 0; node < nodeCount; node++) voltages[node] = V(node, z);
