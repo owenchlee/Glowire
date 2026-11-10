@@ -5,6 +5,7 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { deflateSync, crc32, constants } from 'node:zlib';
 import { PNG } from 'pngjs';
+import { deflateOptimal } from './zopfli-lite.mjs';
 
 const chunk = (type, data) => {
   const body = Buffer.concat([Buffer.from(type, 'ascii'), data]);
@@ -125,14 +126,16 @@ export function encodePacked(png, byAppearance) {
     });
     return out;
   };
-  let idat;
+  let idat, idatRaw;
   for (const raw of [build(false), build(true), buildDict(), ...[1, 2, 3, 4].map((t) => build(false, t))])
     for (const strategy of [constants.Z_DEFAULT_STRATEGY, constants.Z_FILTERED])
      for (const memLevel of [5, 6, 7, 8, 9])
       for (const level of [7, 8, 9]) {
       const z = deflateSync(raw, { level, memLevel, strategy });
-      if (!idat || z.length < idat.length) idat = z;
+      if (!idat || z.length < idat.length) ((idat = z), (idatRaw = raw));
     }
+  const opt = deflateOptimal(idatRaw); // optimal-parse deflate beats zlib level 9; null if its round trip failed
+  if (opt && opt.length < idat.length) idat = opt;
   const ihdr = Buffer.alloc(13);
   ihdr.writeUInt32BE(w, 0);
   ihdr.writeUInt32BE(h, 4);
