@@ -23,8 +23,22 @@ import {
 
 export const MAX_LIGHTS = 24;
 
-/** Load a bundled PNG (a `require(...)`) as a crisp, unfiltered texture. */
-export async function loadPixelTexture(module: number): Promise<Texture> {
+// One decode per sheet for the life of the app. Screens must not dispose these: three.js
+// re-uploads a disposed texture on next use, so sharing is safe.
+const textureCache = new Map<number, Promise<Texture>>();
+
+/** Load a bundled PNG (a `require(...)`) as a crisp, unfiltered texture, decoded once. */
+export function loadPixelTexture(module: number): Promise<Texture> {
+  const cached = textureCache.get(module);
+  if (cached) return cached;
+  const pending = decodePixelTexture(module);
+  textureCache.set(module, pending);
+  // A failed load must not stick, so a retry decodes again.
+  pending.catch(() => textureCache.delete(module));
+  return pending;
+}
+
+async function decodePixelTexture(module: number): Promise<Texture> {
   // On web the loader needs a URL; on iOS/Android R3F's loader takes the module itself.
   const source = Platform.OS === 'web' ? Asset.fromModule(module).uri : module;
   const texture = await new TextureLoader().loadAsync(source as string);
