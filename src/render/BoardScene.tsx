@@ -312,7 +312,8 @@ function Celebration({ position: [x, z] }: { position: [number, number] }) {
     const grp = group.current;
     if (!grp) return;
     grp.visible = t < 1.6;
-    grp.children.forEach((child, i) => {
+    for (let i = 0; i < grp.children.length; i++) {
+      const child = grp.children[i]!;
       const b = bits[i]!;
       const r = b.speed * t;
       (child as Mesh).position.set(
@@ -321,7 +322,7 @@ function Celebration({ position: [x, z] }: { position: [number, number] }) {
         Math.sin(b.angle) * r,
       );
       b.material.opacity = Math.max(0, 1 - t / 1.6);
-    });
+    }
   });
 
   return (
