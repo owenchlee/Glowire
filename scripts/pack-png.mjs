@@ -17,7 +17,7 @@ const chunk = (type, data) => {
 
 export function encodePacked(png, byAppearance) {
   if (byAppearance === undefined) {
-    const all = [false, true, 'asc'].map((o) => encodePacked(png, o));
+    const all = [false, true, 'asc', 'rev'].map((o) => encodePacked(png, o));
     return all.reduce((m, x) => (x.length < m.length ? x : m));
   }
   const { width: w, height: h, data } = png;
@@ -37,7 +37,7 @@ export function encodePacked(png, byAppearance) {
   const count = new Array(ids.size).fill(0);
   for (let i = 0; i < idx.length; i++) count[idx[i]]++;
   const order =
-    byAppearance === true
+    byAppearance === 'rev' ? [...count.keys()].reverse() : byAppearance === true
       ? [...count.keys()]
       : [...count.keys()].sort((a, b) => (byAppearance === 'asc' ? count[a] - count[b] : count[b] - count[a]));
   const remap = new Array(ids.size);
