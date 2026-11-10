@@ -11,6 +11,7 @@
 import { copyFileSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { PNG } from 'pngjs';
+import { encodePacked } from './pack-png.mjs';
 
 import { blobTable } from './autotile.mjs';
 import { circuitSheet } from './circuit-art.mjs';
@@ -21,7 +22,7 @@ const OUT = 'assets/art';
 const NINJA = join(SRC, 'ninja-adventure');
 
 const read = (p) => PNG.sync.read(readFileSync(p));
-const write = (p, png) => writeFileSync(p, PNG.sync.write(png));
+const write = (p, png) => writeFileSync(p, encodePacked(png));
 
 // --- colour maths (OKLab: nearest colour that looks nearest) -------------------------
 const lin = (c) => ((c /= 255) <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4);
