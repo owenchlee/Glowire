@@ -85,8 +85,24 @@ export function encodePacked(png, byAppearance) {
         return Buffer.concat([Buffer.from([best[0]]), best[1]]);
       }),
     );
+  // greedy: per row keep the filter whose deflate output is smallest given the previous 32K as dictionary
+  const buildDict = () => {
+    let out = Buffer.alloc(0);
+    rows.forEach((cur, y) => {
+      const prev = y ? rows[y - 1] : zero;
+      const dict = out.subarray(Math.max(0, out.length - 32768));
+      let best;
+      for (let t = 0; t < 5; t++) {
+        const line = Buffer.concat([Buffer.from([t]), filtered(t, prev, cur)]);
+        const len = deflateSync(line, { level: 9, dictionary: dict.length ? dict : undefined }).length;
+        if (!best || len < best[0]) best = [len, line];
+      }
+      out = Buffer.concat([out, best[1]]);
+    });
+    return out;
+  };
   let idat;
-  for (const raw of [build(false), build(true), ...[1, 2, 3, 4].map((t) => build(false, t))])
+  for (const raw of [build(false), build(true), buildDict(), ...[1, 2, 3, 4].map((t) => build(false, t))])
     for (const strategy of [constants.Z_DEFAULT_STRATEGY, constants.Z_FILTERED]) {
       const z = deflateSync(raw, { level: 9, memLevel: 9, strategy });
       if (!idat || z.length < idat.length) idat = z;
