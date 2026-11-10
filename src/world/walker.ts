@@ -44,10 +44,14 @@ export function walkerPosition(w: Walker): Point {
 
 /** The cell the hero is standing in. */
 export function walkerCell(w: Point): Point {
-  return {
-    x: Math.floor(w.x + (FEET.left + FEET.right) / 2),
-    y: Math.floor(w.y + (FEET.top + FEET.bottom) / 2),
-  };
+  return walkerCellInto(w, { x: 0, y: 0 });
+}
+
+/** Same as walkerCell, written into `out` (no allocation, for per-frame use). */
+export function walkerCellInto(w: Point, out: Point): Point {
+  out.x = Math.floor(w.x + (FEET.left + FEET.right) / 2);
+  out.y = Math.floor(w.y + (FEET.top + FEET.bottom) / 2);
+  return out;
 }
 
 export interface StepResult {

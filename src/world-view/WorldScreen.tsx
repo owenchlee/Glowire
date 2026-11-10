@@ -34,13 +34,16 @@ import {
   targetAt,
 } from '../world/logic';
 import type { Facing, Point, WorldMap } from '../world/types';
-import { type Walker, facingCells, newWalker, smoothPath, stepWalker, walkerCell } from '../world/walker';
+import { type Walker, facingCells, newWalker, smoothPath, stepWalker, walkerCell, walkerCellInto } from '../world/walker';
 import { WORLDS } from '../world/worlds';
 import { Joystick } from './Joystick';
 import { type View as CameraView, WorldCanvas } from './WorldCanvas';
 
 /** Where the hero was standing in each world, so coming back from a puzzle feels seamless. */
 const lastPlace = new Map<string, { x: number; y: number; facing: Facing }>();
+
+// Scratch cell for onTick, reused every frame.
+const TICK_CELL = { x: 0, y: 0 };
 
 const KEYS: Record<string, Facing> = {
   ArrowUp: 'up',
@@ -388,7 +391,7 @@ export function WorldScreen({ map, worldId }: { map: WorldMap; worldId: string }
             if (sec) setChat({ lines: sec.lines, seenId: secretKey(sec.id) });
             break;
           }
-      const c = walkerCell(w);
+      const c = walkerCellInto(w, TICK_CELL);
       const a = areaAt(c.x, c.y);
       if (a !== 255 && a !== lastArea.current) {
         lastArea.current = a;

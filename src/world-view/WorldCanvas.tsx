@@ -237,6 +237,9 @@ const nearD: number[] = [];
  * Per frame: zoom and follow the hero with the camera, and hand the shader the lights near
  * the camera (plus a little lantern glow around the hero). Returns where the camera is.
  */
+// Reused every frame; WorldScreen reads it live and never keeps its fields.
+const frameView: View = { x: 0, y: 0, zoom: 48, width: 1, height: 1 };
+
 function frame(
   state: RootState,
   hero: { x: number; y: number },
@@ -294,7 +297,12 @@ function frame(
     uc[i + 1]!.set(l.color[0], l.color[1], l.color[2]);
   }
   lighting.uLightCount.value = n + 1;
-  return { x: cx, y: cy, zoom, width: size.width, height: size.height };
+  frameView.x = cx;
+  frameView.y = cy;
+  frameView.zoom = zoom;
+  frameView.width = size.width;
+  frameView.height = size.height;
+  return frameView;
 }
 
 /** Depth for something whose feet are on row `feet`: further down the map is in front. */
