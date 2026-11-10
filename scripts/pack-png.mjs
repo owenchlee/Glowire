@@ -37,16 +37,56 @@ export function encodePacked(png) {
     plte[id * 3 + 2] = (key >>> 8) & 255;
     trns[id] = key & 255;
   }
-  const raw = Buffer.alloc(h * (w + 1));
-  for (let y = 0; y < h; y++) idx.copy(raw, y * (w + 1) + 1, y * w, (y + 1) * w);
+  const depth = ids.size <= 2 ? 1 : ids.size <= 4 ? 2 : ids.size <= 16 ? 4 : 8;
+  const stride = Math.ceil((w * depth) / 8);
+  const rows = [];
+  for (let y = 0; y < h; y++) {
+    const r = Buffer.alloc(stride);
+    for (let x = 0; x < w; x++) r[(x * depth) >> 3] |= idx[y * w + x] << (8 - depth - ((x * depth) & 7));
+    rows.push(r);
+  }
+  const paeth = (a, b, c) => {
+    const p = a + b - c, pa = Math.abs(p - a), pb = Math.abs(p - b), pc = Math.abs(p - c);
+    return pa <= pb && pa <= pc ? a : pb <= pc ? b : c;
+  };
+  // filter distance is one byte for every indexed depth
+  const filtered = (t, prev, cur) => {
+    const o = Buffer.alloc(stride);
+    for (let i = 0; i < stride; i++) {
+      const a = i ? cur[i - 1] : 0, b = prev[i], c = i ? prev[i - 1] : 0;
+      o[i] = (cur[i] - [0, a, b, (a + b) >> 1, paeth(a, b, c)][t]) & 255;
+    }
+    return o;
+  };
+  const score = (f) => f.reduce((n, v) => n + (v < 128 ? v : 256 - v), 0);
+  const zero = Buffer.alloc(stride);
+  const build = (adaptive) =>
+    Buffer.concat(
+      rows.map((cur, y) => {
+        const prev = y ? rows[y - 1] : zero;
+        let best = [0, filtered(0, prev, cur)];
+        if (adaptive)
+          for (let t = 1; t < 5; t++) {
+            const f = filtered(t, prev, cur);
+            if (score(f) < score(best[1])) best = [t, f];
+          }
+        return Buffer.concat([Buffer.from([best[0]]), best[1]]);
+      }),
+    );
+  let idat;
+  for (const raw of [build(false), build(true)])
+    for (const strategy of [constants.Z_DEFAULT_STRATEGY, constants.Z_FILTERED]) {
+      const z = deflateSync(raw, { level: 9, memLevel: 9, strategy });
+      if (!idat || z.length < idat.length) idat = z;
+    }
   const ihdr = Buffer.alloc(13);
   ihdr.writeUInt32BE(w, 0);
   ihdr.writeUInt32BE(h, 4);
-  ihdr[8] = 8;
+  ihdr[8] = depth;
   ihdr[9] = 3;
   const parts = [Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]), chunk('IHDR', ihdr), chunk('PLTE', plte)];
   if (trns.some((a) => a !== 255)) parts.push(chunk('tRNS', trns));
-  parts.push(chunk('IDAT', deflateSync(raw, { level: 9, memLevel: 9, strategy: constants.Z_DEFAULT_STRATEGY })), chunk('IEND', Buffer.alloc(0)));
+  parts.push(chunk('IDAT', idat), chunk('IEND', Buffer.alloc(0)));
   return Buffer.concat(parts);
 }
 
