@@ -97,7 +97,9 @@ export function encodePacked(png, byAppearance) {
   ihdr[8] = depth;
   ihdr[9] = 3;
   const parts = [Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]), chunk('IHDR', ihdr), chunk('PLTE', plte)];
-  if (trns.some((a) => a !== 255)) parts.push(chunk('tRNS', trns));
+  let tn = trns.length;
+  while (tn && trns[tn - 1] === 255) tn--; // tRNS may stop early: missing entries are opaque
+  if (tn) parts.push(chunk('tRNS', trns.subarray(0, tn)));
   parts.push(chunk('IDAT', idat), chunk('IEND', Buffer.alloc(0)));
   return Buffer.concat(parts);
 }
