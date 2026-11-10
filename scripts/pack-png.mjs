@@ -29,6 +29,14 @@ export function encodePacked(png) {
     }
     idx[i] = id;
   }
+  // most frequent colour gets index 0: smaller, more repetitive filtered rows
+  const count = new Array(ids.size).fill(0);
+  for (let i = 0; i < idx.length; i++) count[idx[i]]++;
+  const order = [...count.keys()].sort((a, b) => count[b] - count[a]);
+  const remap = new Array(ids.size);
+  order.forEach((old, rank) => (remap[old] = rank));
+  for (let i = 0; i < idx.length; i++) idx[i] = remap[idx[i]];
+  for (const [key, id] of ids) ids.set(key, remap[id]);
   const plte = Buffer.alloc(ids.size * 3);
   const trns = Buffer.alloc(ids.size);
   for (const [key, id] of ids) {
@@ -60,11 +68,11 @@ export function encodePacked(png) {
   };
   const score = (f) => f.reduce((n, v) => n + (v < 128 ? v : 256 - v), 0);
   const zero = Buffer.alloc(stride);
-  const build = (adaptive) =>
+  const build = (adaptive, fixed = 0) =>
     Buffer.concat(
       rows.map((cur, y) => {
         const prev = y ? rows[y - 1] : zero;
-        let best = [0, filtered(0, prev, cur)];
+        let best = [fixed, filtered(fixed, prev, cur)];
         if (adaptive)
           for (let t = 1; t < 5; t++) {
             const f = filtered(t, prev, cur);
@@ -74,7 +82,7 @@ export function encodePacked(png) {
       }),
     );
   let idat;
-  for (const raw of [build(false), build(true)])
+  for (const raw of [build(false), build(true), ...[1, 2, 3, 4].map((t) => build(false, t))])
     for (const strategy of [constants.Z_DEFAULT_STRATEGY, constants.Z_FILTERED]) {
       const z = deflateSync(raw, { level: 9, memLevel: 9, strategy });
       if (!idat || z.length < idat.length) idat = z;
