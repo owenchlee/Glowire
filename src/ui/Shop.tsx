@@ -72,6 +72,7 @@ export function Shop() {
         <View style={styles.row}>
           <PixelButton
             label="‹"
+            accessibilityLabel="Back"
             tone="cream"
             size={16}
             onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))}

@@ -127,7 +127,9 @@ export function PixelButton({
   disabled = false,
   style,
   icon,
+  accessibilityLabel,
 }: {
+  accessibilityLabel?: string;
   label: string;
   onPress: () => void;
   tone?: ButtonTone;
@@ -138,7 +140,14 @@ export function PixelButton({
 }) {
   const c = BUTTON[tone];
   return (
-    <Pressable onPress={onPress} disabled={disabled} hitSlop={6} style={[disabled && styles.disabled, style]}>
+    <Pressable
+      onPress={onPress}
+      disabled={disabled}
+      hitSlop={6}
+      accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel ?? label}
+      accessibilityState={{ disabled }}
+      style={[disabled && styles.disabled, style]}>
       {({ pressed }) => (
         <View style={[styles.buttonOutline, { marginTop: pressed ? 3 : 0 }]}>
           <View
@@ -164,7 +173,7 @@ export function Portrait({ who, size = 76 }: { who: string; size?: number }) {
   return (
     <View style={[styles.faceOutline, { width: size + 10, height: size + 10 }]}>
       <View style={styles.faceFrame}>
-        {face !== undefined && <Image source={face} style={{ width: size, height: size }} />}
+        {face !== undefined && <Image accessible={false} source={face} style={{ width: size, height: size }} />}
       </View>
     </View>
   );
