@@ -228,6 +228,11 @@ function driftFog(now: { current: Float32Array | null }, target: Uint8Array, tex
 
 type Lit = { x: number; y: number; r: number; color: readonly [number, number, number] };
 
+const clamp = (v: number, lo: number, hi: number) => (lo > hi ? (lo + hi) / 2 : Math.min(hi, Math.max(lo, v)));
+const snap = (v: number, perCell: number) => Math.round(v * perCell) / perCell;
+const nearL: Lit[] = [];
+const nearD: number[] = [];
+
 /**
  * Per frame: zoom and follow the hero with the camera, and hand the shader the lights near
  * the camera (plus a little lantern glow around the hero). Returns where the camera is.
@@ -256,27 +261,39 @@ function frame(
   // Follow the hero without showing past the edges of the map.
   const halfW = size.width / zoom / 2;
   const halfH = size.height / zoom / 2;
-  const clamp = (v: number, lo: number, hi: number) => (lo > hi ? (lo + hi) / 2 : Math.min(hi, Math.max(lo, v)));
   const cx = clamp(hero.x + 0.5, halfW, map.width - halfW);
   const cy = clamp(hero.y + 0.5, halfH, map.height - halfH);
-  const snap = (v: number) => Math.round(v * devicePerCell) / devicePerCell;
-  camera.position.x = snap(cx);
-  camera.position.y = -snap(cy);
+  camera.position.x = snap(cx, devicePerCell);
+  camera.position.y = -snap(cy, devicePerCell);
 
-  const near = lights
-    .map((l) => ({ l, d: Math.abs(l.x - cx) + Math.abs(-l.y - cy) }))
-    .filter((e) => e.d < halfW + halfH + 6)
-    .sort((a, b) => a.d - b.d)
-    .slice(0, MAX_LIGHTS - 1);
+  // The nearest lights, closest first (ties keep list order), found with an insertion pass into
+  // reusable buffers so nothing is allocated per frame.
+  const limit = halfW + halfH + 6;
+  let n = 0;
+  for (let i = 0; i < lights.length; i++) {
+    const l = lights[i]!;
+    const d = Math.abs(l.x - cx) + Math.abs(-l.y - cy);
+    if (!(d < limit)) continue;
+    if (n === MAX_LIGHTS - 1 && d >= nearD[n - 1]!) continue;
+    let j = n < MAX_LIGHTS - 1 ? n++ : n - 1;
+    while (j > 0 && nearD[j - 1]! > d) {
+      nearD[j] = nearD[j - 1]!;
+      nearL[j] = nearL[j - 1]!;
+      j--;
+    }
+    nearD[j] = d;
+    nearL[j] = l;
+  }
   const u = lighting.uLights.value;
   const uc = lighting.uLightColors.value;
   u[0]!.set(hero.x + 0.5, -hero.y - 0.4, 2.8, 1);
   uc[0]!.set(0.32, 0.36, 0.48);
-  near.forEach(({ l }, i) => {
+  for (let i = 0; i < n; i++) {
+    const l = nearL[i]!;
     u[i + 1]!.set(l.x, l.y, l.r, 1);
     uc[i + 1]!.set(l.color[0], l.color[1], l.color[2]);
-  });
-  lighting.uLightCount.value = near.length + 1;
+  }
+  lighting.uLightCount.value = n + 1;
   return { x: cx, y: cy, zoom, width: size.width, height: size.height };
 }
 
