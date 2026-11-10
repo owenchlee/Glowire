@@ -42,6 +42,7 @@ export function simulate(board: Board): SimulationResult {
   };
 
   let batteryCurrent = 0;
+  let shortCircuit = false;
   const tiles = board.cells.map((tile, cell): TileResult | null => {
     if (!tile) return null;
     if (tile.kind === 'block') {
@@ -114,6 +115,7 @@ export function simulate(board: Board): SimulationResult {
     if (tile.kind === 'battery') {
       current = -intoPlus; // discharge current leaves through +
       batteryCurrent += current;
+      if (Math.abs(current) > SHORT_CIRCUIT_CURRENT) shortCircuit = true;
       status =
         Math.abs(current) > SHORT_CIRCUIT_CURRENT
           ? 'SHORT_CIRCUIT'
@@ -152,7 +154,7 @@ export function simulate(board: Board): SimulationResult {
 
   return {
     tiles,
-    shortCircuit: tiles.some((t) => t?.kind === 'battery' && t.status === 'SHORT_CIRCUIT'),
+    shortCircuit,
     batteryCurrent,
     converged: sol.converged,
     iterations: sol.iterations,
