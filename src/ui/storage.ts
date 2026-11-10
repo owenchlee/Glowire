@@ -16,9 +16,11 @@ export function loadSave(): unknown {
 
 export function writeSave(data: unknown): void {
   try {
-    const f = file();
-    if (!f.exists) f.create();
-    f.write(JSON.stringify(data));
+    // Write a temp file, then replace the save in one atomic rename: a kill mid-write only damages the temp.
+    const tmp = new File(Paths.document, 'glowire-save.tmp');
+    if (!tmp.exists) tmp.create();
+    tmp.write(JSON.stringify(data));
+    tmp.moveSync(file(), { overwrite: true });
   } catch {
     // Ignore: the next change tries again.
   }
