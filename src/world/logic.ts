@@ -128,10 +128,14 @@ export function targetAt(
   y: number,
   solved: Solved = () => false,
 ): Target | null {
-  const resident = residents.find((r) => r.x === x && r.y === y);
-  if (resident) return { kind: 'resident', resident };
-  const spot = map.spots.find((s) => s.x === x && s.y === y);
-  if (spot) return { kind: 'spot', spot };
+  for (let i = 0; i < residents.length; i++) {
+    const resident = residents[i]!;
+    if (resident.x === x && resident.y === y) return { kind: 'resident', resident };
+  }
+  for (let i = 0; i < map.spots.length; i++) {
+    const spot = map.spots[i]!;
+    if (spot.x === x && spot.y === y) return { kind: 'spot', spot };
+  }
   const gate = gateAt(map, solved, x, y);
   return gate === null ? null : { kind: 'gate', area: gate };
 }
