@@ -106,8 +106,9 @@ export function encodePacked(png, byAppearance) {
   };
   let idat;
   for (const raw of [build(false), build(true), buildDict(), ...[1, 2, 3, 4].map((t) => build(false, t))])
-    for (const strategy of [constants.Z_DEFAULT_STRATEGY, constants.Z_FILTERED]) {
-      const z = deflateSync(raw, { level: 9, memLevel: 9, strategy });
+    for (const strategy of [constants.Z_DEFAULT_STRATEGY, constants.Z_FILTERED])
+     for (const memLevel of [5, 6, 7, 8, 9]) {
+      const z = deflateSync(raw, { level: 9, memLevel, strategy });
       if (!idat || z.length < idat.length) idat = z;
     }
   const ihdr = Buffer.alloc(13);
