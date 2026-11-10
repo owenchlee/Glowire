@@ -37,20 +37,17 @@ export function newWalker(x: number, y: number, facing: Facing): Walker {
   return { x, y, facing, input: { x: 0, y: 0 }, path: [], faceAtEnd: null, moving: false, clock: 0 };
 }
 
-/** Where to draw the hero right now (cells). */
+/** Where to draw the hero right now (cells). The walker itself: read it, don't keep or change it. */
 export function walkerPosition(w: Walker): Point {
-  return { x: w.x, y: w.y };
-}
-
-/** The middle of the hero's feet. */
-function feet(w: Point): Point {
-  return { x: w.x + (FEET.left + FEET.right) / 2, y: w.y + (FEET.top + FEET.bottom) / 2 };
+  return w;
 }
 
 /** The cell the hero is standing in. */
 export function walkerCell(w: Point): Point {
-  const f = feet(w);
-  return { x: Math.floor(f.x), y: Math.floor(f.y) };
+  return {
+    x: Math.floor(w.x + (FEET.left + FEET.right) / 2),
+    y: Math.floor(w.y + (FEET.top + FEET.bottom) / 2),
+  };
 }
 
 export interface StepResult {

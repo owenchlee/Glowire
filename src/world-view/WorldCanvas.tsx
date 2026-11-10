@@ -368,7 +368,7 @@ function Pet({ id, walker, sheet, material }: { id: string; walker: RefObject<Wa
     const hero = walkerPosition(walker.current);
     const t = trail.current;
     const last = t[t.length - 1];
-    if (!last || Math.hypot(last.x - hero.x, last.y - hero.y) > 0.05) t.push({ ...hero });
+    if (!last || Math.hypot(last.x - hero.x, last.y - hero.y) > 0.05) t.push({ x: hero.x, y: hero.y });
     if (t.length > 60) t.splice(0, t.length - 60);
     // Walk back along the trail about one cell from the hero.
     let need = 0.95;
