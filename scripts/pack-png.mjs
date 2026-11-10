@@ -15,7 +15,11 @@ const chunk = (type, data) => {
   return out;
 };
 
-export function encodePacked(png) {
+export function encodePacked(png, byAppearance) {
+  if (byAppearance === undefined) {
+    const [a, b] = [false, true].map((o) => encodePacked(png, o));
+    return b.length < a.length ? b : a;
+  }
   const { width: w, height: h, data } = png;
   const ids = new Map();
   const idx = Buffer.alloc(w * h);
@@ -32,7 +36,7 @@ export function encodePacked(png) {
   // most frequent colour gets index 0: smaller, more repetitive filtered rows
   const count = new Array(ids.size).fill(0);
   for (let i = 0; i < idx.length; i++) count[idx[i]]++;
-  const order = [...count.keys()].sort((a, b) => count[b] - count[a]);
+  const order = byAppearance ? [...count.keys()] : [...count.keys()].sort((a, b) => count[b] - count[a]);
   const remap = new Array(ids.size);
   order.forEach((old, rank) => (remap[old] = rank));
   for (let i = 0; i < idx.length; i++) idx[i] = remap[idx[i]];
