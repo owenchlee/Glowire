@@ -67,7 +67,7 @@ function WorldCard({ world, number }: { world: WorldInfo; number: number }) {
       </PixelText>
       <View style={styles.faces}>
         {faces.map((f) => (
-          <Image key={f} source={FACES[f]} style={[styles.face, !open && styles.faceDark]} />
+          <Image accessible={false} key={f} source={FACES[f]} style={[styles.face, !open && styles.faceDark]} />
         ))}
       </View>
       {open ? (

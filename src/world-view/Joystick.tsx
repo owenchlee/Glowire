@@ -36,6 +36,7 @@ export function Joystick({ onInput }: { onInput: (x: number, y: number) => void 
   return (
     <View
       style={styles.base}
+      accessibilityLabel="Movement joystick. Use the on-screen tap controls to walk."
       onStartShouldSetResponder={() => true}
       onMoveShouldSetResponder={() => true}
       onResponderTerminationRequest={() => false}

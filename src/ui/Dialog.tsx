@@ -90,10 +90,10 @@ export function Dialog({
   const translateY = rise.interpolate({ inputRange: [0, 1], outputRange: [40, 0] });
   return (
     <View style={styles.cover}>
-      <Pressable style={StyleSheet.absoluteFill} onPress={advance} />
+      <Pressable accessibilityRole="button" accessibilityLabel="Continue" style={StyleSheet.absoluteFill} onPress={advance} />
       <Animated.View style={[styles.wrap, { opacity: rise, transform: [{ translateY }] }]}>
         <Portrait who={line.who} size={88} key={line.who} />
-        <Pressable style={styles.flex} onPress={advance}>
+        <Pressable accessibilityRole="button" accessibilityLabel={`${speakerName(line.who)} says: ${line.text}`} style={styles.flex} onPress={advance}>
           <NameTab name={speakerName(line.who)} />
           <Panel style={styles.panel}>
             <PixelText size={16} style={styles.text}>

@@ -42,6 +42,7 @@ export function PartIcon({ tile, size }: { tile: Tile; size: number }) {
   return (
     <View style={{ width: size, height: size, overflow: 'hidden' }}>
       <Image
+        accessible={false}
         source={SHEET}
         style={{
           position: 'absolute',

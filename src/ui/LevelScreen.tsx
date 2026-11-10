@@ -524,7 +524,7 @@ export function LevelScreen({ level, day }: { level: LevelDef; day?: string }) {
         </View>
 
         <View style={[styles.hint, hint.tone === 'warning' && styles.hintWarning, hint.tone === 'success' && styles.hintSuccess]}>
-          <Pressable onPress={showTip} hitSlop={6} style={styles.pip}>
+          <Pressable accessibilityRole="button" accessibilityLabel="Tip from Pip" onPress={showTip} hitSlop={6} style={styles.pip}>
             <Portrait who="pip" size={36} />
             {level.tip && !said && (
               <View style={styles.tipBadge}>
@@ -593,7 +593,7 @@ export function LevelScreen({ level, day }: { level: LevelDef; day?: string }) {
             }}
           />
           {pet?.kind === 'pet' && (
-            <Pressable onPress={callPet} hitSlop={6} style={[styles.pet, petUsed && styles.petUsed]}>
+            <Pressable accessibilityRole="button" accessibilityLabel="Call your pet for help" accessibilityState={{ disabled: petUsed }} onPress={callPet} hitSlop={6} style={[styles.pet, petUsed && styles.petUsed]}>
               <PetFace id={pet.id} hopKey={petHop} />
               <PixelText size={9} color={MUTED} shadow>
                 {pet.ability === 'shiny' ? '+50%' : petUsed ? 'resting' : pet.ability}
@@ -628,7 +628,7 @@ export function LevelScreen({ level, day }: { level: LevelDef; day?: string }) {
           switchCount={switchCount}
         />
         <GestureDetector gesture={boardGesture}>
-          <View style={StyleSheet.absoluteFill} collapsable={false} />
+          <View accessibilityLabel="Circuit board. Drag parts from the tray onto the grid." style={StyleSheet.absoluteFill} collapsable={false} />
         </GestureDetector>
         <View style={styles.howTo} pointerEvents="none">
           <PixelText size={10} color={MUTED} shadow>
@@ -922,7 +922,7 @@ function TraySlot({
 
   return (
     <GestureDetector gesture={gesture}>
-      <View style={[styles.slot, (count <= 0 || spare >= all) && styles.slotEmpty]}>
+      <View accessibilityLabel={`${label}, ${count} in tray`} style={[styles.slot, (count <= 0 || spare >= all) && styles.slotEmpty]}>
         <View style={styles.partFrame}>
           <PartIcon tile={tile} size={size} />
         </View>
