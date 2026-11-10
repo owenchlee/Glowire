@@ -110,7 +110,7 @@ function rle(lens) {
   return out;
 }
 
-function encode(ops, emit) {
+function encode(ops, emit, w, final = true) {
   const lf = new Array(286).fill(0),
     df = new Array(30).fill(0);
   for (const [l, d] of ops) {
@@ -144,19 +144,8 @@ function encode(ops, emit) {
   const lc = canon(ll),
     dc = canon(dl),
     cc = canon(cl),
-    out = [];
-  let buf = 0,
-    n = 0;
-  const put = (v, k) => {
-    buf |= v << n;
-    n += k;
-    while (n >= 8) {
-      out.push(buf & 255);
-      buf >>>= 8;
-      n -= 8;
-    }
-  };
-  put(1, 1);
+    put = w.put;
+  put(final ? 1 : 0, 1);
   put(2, 2);
   put(nl - 257, 5);
   put(nd - 1, 5);
@@ -179,8 +168,27 @@ function encode(ops, emit) {
     put(d - DB[dcd], DE[dcd]);
   }
   put(lc[256], ll[256]);
-  if (n) out.push(buf & 255);
-  return Buffer.from(out);
+}
+
+function writer() {
+  const out = [];
+  let buf = 0,
+    n = 0;
+  return {
+    put(v, k) {
+      buf |= v << n;
+      n += k;
+      while (n >= 8) {
+        out.push(buf & 255);
+        buf >>>= 8;
+        n -= 8;
+      }
+    },
+    done() {
+      if (n) out.push(buf & 255);
+      return Buffer.from(out);
+    },
+  };
 }
 
 export function deflateOptimal(data, { chain = 128, rounds = 12 } = {}) {
@@ -263,7 +271,17 @@ export function deflateOptimal(data, { chain = 128, rounds = 12 } = {}) {
     for (let l = 3; l <= 258; l++) lenCost[l] = cl(ll[257 + lenCode[l]]) + LE[lenCode[l]];
     for (let c = 0; c < 30; c++) distCost[c] = cl(dl[c]);
   }
-  const raw = encode(best.ops, true);
+  // split the best parse into k equal-length blocks, each with its own Huffman tables; keep the cheapest k
+  const split = (k) => Array.from({ length: k }, (_, i) => best.ops.slice(Math.floor((best.ops.length * i) / k), Math.floor((best.ops.length * (i + 1)) / k)));
+  let bk = 1,
+    bb = Infinity;
+  for (let k = 1; k <= 24; k++) {
+    const bits = split(k).reduce((t, o) => t + encode(o, false).bits, 0);
+    if (bits < bb) ((bb = bits), (bk = k));
+  }
+  const w = writer();
+  split(bk).forEach((o, i, a) => encode(o, true, w, i === a.length - 1));
+  const raw = w.done();
   let a = 1,
     b = 0;
   for (let i = 0; i < n; i++) {
