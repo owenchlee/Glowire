@@ -17,7 +17,9 @@ const chunk = (type, data) => {
 
 export function encodePacked(png, byAppearance) {
   if (byAppearance === undefined) {
-    const all = [false, true, 'asc', 'rev', 'col'].map((o) => encodePacked(png, o));
+    // small images are cheap to encode: also try seeded random palette orders
+    const seeds = png.width * png.height <= 20000 ? Array.from({ length: 40 }, (_, i) => i + 1) : [];
+    const all = [false, true, 'asc', 'rev', 'col', ...seeds].map((o) => encodePacked(png, o));
     return all.reduce((m, x) => (x.length < m.length ? x : m));
   }
   const { width: w, height: h, data } = png;
@@ -36,8 +38,18 @@ export function encodePacked(png, byAppearance) {
   // most frequent colour gets index 0: smaller, more repetitive filtered rows
   const count = new Array(ids.size).fill(0);
   for (let i = 0; i < idx.length; i++) count[idx[i]]++;
+  const shuffled = (seed) => {
+    const a = [...count.keys()];
+    let s = (seed * 2654435761) >>> 0;
+    for (let i = a.length - 1; i > 0; i--) {
+      s = (Math.imul(s, 1664525) + 1013904223) >>> 0;
+      const j = s % (i + 1);
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  };
   const order =
-    byAppearance === 'rev' ? [...count.keys()].reverse() : byAppearance === 'col' ? colOrder() : byAppearance === true
+    typeof byAppearance === 'number' ? shuffled(byAppearance) : byAppearance === 'rev' ? [...count.keys()].reverse() : byAppearance === 'col' ? colOrder() : byAppearance === true
       ? [...count.keys()]
       : [...count.keys()].sort((a, b) => (byAppearance === 'asc' ? count[a] - count[b] : count[b] - count[a]));
   function colOrder() {
