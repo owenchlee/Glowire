@@ -55,6 +55,9 @@ export interface StepResult {
   arrived: boolean;
 }
 
+// Scratch result, reused every call: read `arrived` straight away, don't keep it.
+const STEP_RESULT: StepResult = { arrived: false };
+
 type Free = (x: number, y: number) => boolean;
 
 /** Can the feet stand with the hero at (x, y)? */
@@ -208,7 +211,8 @@ export function stepWalker(w: Walker, dt: number, free: Free): StepResult {
     }
   }
   w.clock = w.moving ? w.clock + dt : 0;
-  return { arrived };
+  STEP_RESULT.arrived = arrived;
+  return STEP_RESULT;
 }
 
 /**
