@@ -351,12 +351,12 @@ function Hero({ who, walker, sheet, material }: { who: string; walker: RefObject
   const column = Math.max(0, PEOPLE.indexOf(who as (typeof PEOPLE)[number])) * 64;
   const g = useQuad(sheet, column, 0, T, T);
   const group = useRef<Mesh>(null);
-  const last = useRef('');
+  const last = useRef(-1);
   useFrame(() => {
     const w = walker.current;
     const p = walkerPosition(w);
     const frame = walkFrame(w);
-    const key = `${w.facing}${frame}`;
+    const key = FACING_COLUMN[w.facing] * 4 + frame; // frame is 0..3
     if (key !== last.current) {
       last.current = key;
       setQuadSource(g, sheet, column + FACING_COLUMN[w.facing] * T, frame * T, T, T);
