@@ -1,5 +1,6 @@
 // Undo history around BoardState. Pure, so it can drive a useReducer and be tested.
 
+import { getPorts } from '../engine';
 import type { BoardState } from './board';
 
 export interface History {
@@ -15,7 +16,9 @@ export type HistoryAction =
 const MAX_UNDO = 100;
 
 // Same tiles in the same cells (ids aside): the player would see nothing change.
-const looks = (b: BoardState) => JSON.stringify(b.cells.map((p) => p?.tile ?? null));
+// A wire is its ports, so a straight spinner turned a half-turn counts as the same.
+const looks = (b: BoardState) =>
+  JSON.stringify(b.cells.map((p) => (p?.tile.kind === 'wire' ? [p.tile.locked, p.tile.spin, getPorts(p.tile)] : (p?.tile ?? null))));
 const sameLook = (a: BoardState, b: BoardState) => looks(a) === looks(b);
 
 export function historyReducer(state: History, action: HistoryAction): History {
