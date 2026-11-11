@@ -13,6 +13,8 @@ export const HINTS = {
   burned:
     'Pop! Too much current burned out the LED. Put a resistor in the loop to slow the current down.',
   reversed: 'An LED is backwards. Current only flows in through its + side. Tap it to turn it.',
+  batteryBackwards:
+    'The battery is the wrong way round, so the LEDs are backwards. Tap the battery to turn it.',
   cancel: 'Nothing flows: two batteries are pushing against each other. Tap one to turn it around.',
   bypassed: 'The current found a shortcut around an LED, so that LED stays dark.',
   faint:
@@ -49,7 +51,16 @@ export function pickHint(
   if (result.shortCircuit) return { text: HINTS.short, tone: 'warning' };
   if (any('BURNED_OUT')) return { text: HINTS.burned, tone: 'warning' };
   if (outOfWire) return { text: HINTS.outOfWire, tone: 'warning' };
-  if (any('REVERSED')) return { text: HINTS.reversed, tone: 'warning' };
+  const reversed = leds.filter((t) => t!.status === 'REVERSED');
+  const turnable = (cell: number) => {
+    const tile = board.cells[cell];
+    return !!tile && (!tile.locked || !!tile.spin);
+  };
+  if (reversed.some((t) => turnable(t!.cell))) return { text: HINTS.reversed, tone: 'warning' };
+  // Locked LEDs can't be turned, so the player's battery is the one to blame.
+  if (reversed.length && board.cells.some((t, i) => t?.kind === 'battery' && turnable(i))) {
+    return { text: HINTS.batteryBackwards, tone: 'warning' };
+  }
   if (batteriesCancel(board, result)) return { text: HINTS.cancel, tone: 'warning' };
   if (any('BYPASSED')) return { text: HINTS.bypassed, tone: 'warning' };
   const faint = leds.some((t) => {
