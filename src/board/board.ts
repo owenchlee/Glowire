@@ -220,6 +220,7 @@ export function drawSegment(
   for (const [cell, d] of ends) {
     const placed = next.cells[cell];
     if (placed && placed.tile.kind !== 'wire') continue; // parts stay as they are
+    if (placed && getPorts(placed.tile).includes(d)) continue; // arm already there
     const tile = withArm(placed?.tile, d);
     next = placed ? withCells(next, (c) => (c[cell] = { ...placed, tile })) : put(next, cell, tile);
   }
