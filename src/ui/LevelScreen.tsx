@@ -511,11 +511,11 @@ export function LevelScreen({ level, day }: { level: LevelDef; day?: string }) {
         <View style={styles.titleRow}>
           <PixelButton label="‹" tone="cream" size={16} onPress={goBack} />
           <View style={styles.titleWrap}>
-            <PixelText size={15} color={GOLD} shadow numberOfLines={1}>
+            <PixelText size={15} color={GOLD} shadow>
               {day ? level.title : `${levelNumber(level.id)} ${level.title}`}
             </PixelText>
             {level.job && (
-              <PixelText size={11} color={MUTED} shadow numberOfLines={1}>
+              <PixelText size={11} color={MUTED} shadow>
                 {level.phases ? `BOSS · round ${phase + 1}/${phaseCount(level)} · ` : ''}
                 {level.job.place}
               </PixelText>
@@ -1025,7 +1025,7 @@ const styles = StyleSheet.create({
   center: { textAlign: 'center' },
   side: { width: 236, padding: 10, gap: 8, backgroundColor: NIGHT, borderRightWidth: 2, borderColor: INK },
   titleRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  titleWrap: { flex: 1 },
+  titleWrap: { flex: 1, minWidth: 0 },
   hint: {
     flexDirection: 'row',
     alignItems: 'center',
