@@ -2,7 +2,8 @@
 
 import { useFrame } from './r3f';
 import { useEffect, useMemo, useRef } from 'react';
-import { Color, type Group, type Material, MeshBasicMaterial, type Sprite } from 'three';
+import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
+import { BoxGeometry, type BufferGeometry, Color, CylinderGeometry, type Group, type Material, MeshBasicMaterial, type Sprite } from 'three';
 
 import {
   type Direction,
@@ -39,16 +40,12 @@ export function TileModel({ tile, result, ghost = false }: Props) {
       {tile.locked && !tile.spin && !ghost && tile.kind !== 'switch' && tile.kind !== 'changeover' && <Rivets />}
       {tile.kind === 'wire' && (
         <>
-          {getPorts({ ...tile, rotation: 0 }).map((d) => (
-            <Arm key={d} dir={d} material={wireMat} />
-          ))}
-          <mesh geometry={g.joint} material={wireMat} position-y={TOP + 0.04} />
+          <Arms dirs={getPorts({ ...tile, rotation: 0 })} joint material={wireMat} />
         </>
       )}
       {tile.kind === 'resistor' && (
         <>
-          <Arm dir={W} length={0.26} material={wireMat} />
-          <Arm dir={E} length={0.26} material={wireMat} />
+          <Arms dirs={[W,E]} lengths={[0.26,0.26]} material={wireMat} />
           <mesh geometry={g.resistorBody} material={pick(m.resistorBody)} position-y={TOP + 0.12} />
           {resistorBandDigits(tile.ohms).map((digit, i) => (
             <mesh
@@ -63,8 +60,7 @@ export function TileModel({ tile, result, ghost = false }: Props) {
       {tile.kind === 'diode' && (
         <>
           {/* Black body, silver stripe at the cathode (−, east) end. */}
-          <Arm dir={W} length={0.26} material={wireMat} />
-          <Arm dir={E} length={0.26} material={wireMat} />
+          <Arms dirs={[W,E]} lengths={[0.26,0.26]} material={wireMat} />
           <mesh geometry={g.resistorBody} material={pick(m.diodeBody)} position-y={TOP + 0.12} scale={[0.85, 0.9, 0.9]} />
           <mesh geometry={g.resistorBand} material={pick(m.diodeBand)} position={[0.1, TOP + 0.12, 0]} scale={[1.6, 0.9, 0.9]} />
           <Plus position={[-0.3, TOP + 0.03, 0.27]} material={pick(m.marking)} />
@@ -73,8 +69,7 @@ export function TileModel({ tile, result, ghost = false }: Props) {
       )}
       {tile.kind === 'battery' && (
         <>
-          <Arm dir={W} length={0.18} material={wireMat} />
-          <Arm dir={E} length={0.18} material={wireMat} />
+          <Arms dirs={[W,E]} lengths={[0.18,0.18]} material={wireMat} />
           <mesh geometry={g.batteryBody} material={pick(m.batteryBody)} position-y={TOP + 0.21} />
           <mesh
             geometry={g.batteryCap}
@@ -124,9 +119,7 @@ function ChangeoverModel({ up, ghost, wireMat }: { up: boolean; ghost: boolean; 
   const pick = (mat: Material) => (ghost ? m.ghost : mat);
   return (
     <>
-      <Arm dir={W} length={0.28} material={wireMat} />
-      <Arm dir={N} length={0.23} material={wireMat} />
-      <Arm dir={S} length={0.23} material={wireMat} />
+      <Arms dirs={[W,N,S]} lengths={[0.28,0.23,0.23]} material={wireMat} />
       <mesh geometry={g.switchPost} material={pick(m.marking)} position={[PIVOT[0], TOP + 0.06, 0]} />
       <mesh geometry={g.switchPost} material={pick(up ? m.switchOn : m.marking)} position={[0, TOP + 0.06, -CONTACT_Z]} />
       <mesh geometry={g.switchPost} material={pick(up ? m.marking : m.switchOn)} position={[0, TOP + 0.06, CONTACT_Z]} />
@@ -166,8 +159,7 @@ function MeterModel({
   const pick = (mat: Material) => (ghost ? m.ghost : mat);
   return (
     <>
-      <Arm dir={W} length={0.2} material={wireMat} />
-      <Arm dir={E} length={0.2} material={wireMat} />
+      <Arms dirs={[W,E]} lengths={[0.2,0.2]} material={wireMat} />
       <mesh geometry={g.meterCase} material={pick(m.meterCase)} position-y={TOP + 0.08} />
       <mesh geometry={g.meterFace} material={pick(m.meterFace)} position={[0, TOP + 0.17, 0.08]} />
       <group ref={needle} position={[0, TOP + 0.185, 0.08]} rotation-y={Math.PI}>
@@ -220,8 +212,7 @@ function SwitchModel({
   const pick = (mat: Material) => (ghost ? m.ghost : mat);
   return (
     <>
-      <Arm dir={W} length={0.24} material={wireMat} />
-      <Arm dir={E} length={0.24} material={wireMat} />
+      <Arms dirs={[W,E]} lengths={[0.24,0.24]} material={wireMat} />
       <mesh geometry={g.switchPost} material={pick(m.marking)} position={[-0.25, TOP + 0.06, 0]} />
       <mesh geometry={g.switchPost} material={pick(m.marking)} position={[0.25, TOP + 0.06, 0]} />
       <group
@@ -248,27 +239,37 @@ function wireMaterial(result: TileResult | null): Material {
 }
 
 /** A wire segment from `0.5 − length` out to the tile edge in direction `dir`. */
-function Arm({
-  dir,
-  length = 0.5,
+const armsCache = new Map<string, BufferGeometry>();
+
+/** All of a tile's wire segments (and the wire joint) as one cached mesh: one draw call. */
+function Arms({
+  dirs,
+  lengths,
+  joint = false,
   material,
 }: {
-  dir: Direction;
-  length?: number;
+  dirs: readonly Direction[];
+  lengths?: readonly number[];
+  joint?: boolean;
   material: Material;
 }) {
-  const { geometry: g } = getAssets();
-  const [vx, vz] = DIR_VECTORS[dir];
-  const c = 0.5 - length / 2;
-  return (
-    <mesh
-      geometry={g.arm}
-      material={material}
-      position={[vx * c, TOP + 0.04, vz * c]}
-      rotation-y={vx !== 0 ? Math.PI / 2 : 0}
-      scale-z={length / 0.5}
-    />
-  );
+  const key = `${dirs.join()}|${lengths?.join() ?? ''}|${joint}`;
+  let geometry = armsCache.get(key);
+  if (!geometry) {
+    const parts: BufferGeometry[] = dirs.map((dir, i) => {
+      const length = lengths?.[i] ?? 0.5;
+      const [vx, vz] = DIR_VECTORS[dir];
+      const c = 0.5 - length / 2;
+      return new BoxGeometry(0.15, 0.08, 0.5)
+        .scale(1, 1, length / 0.5)
+        .rotateY(vx !== 0 ? Math.PI / 2 : 0)
+        .translate(vx * c, TOP + 0.04, vz * c);
+    });
+    if (joint) parts.push(new CylinderGeometry(0.075, 0.075, 0.08, 16).translate(0, TOP + 0.04, 0));
+    geometry = mergeGeometries(parts);
+    armsCache.set(key, geometry);
+  }
+  return <mesh geometry={geometry} material={material} />;
 }
 
 type Vec3 = [number, number, number];
@@ -355,8 +356,7 @@ function LedModel({
   const dome = ghost ? m.ghost : burned ? m.ledBurned : mats.dome;
   return (
     <>
-      <Arm dir={W} length={0.3} material={wireMat} />
-      <Arm dir={E} length={0.3} material={wireMat} />
+      <Arms dirs={[W,E]} lengths={[0.3,0.3]} material={wireMat} />
       <mesh geometry={g.ledRim} material={dome} position-y={TOP + 0.035} />
       <mesh geometry={g.ledDome} material={dome} position-y={TOP + 0.07} />
       {burned && !ghost && (
