@@ -158,7 +158,7 @@ function FrameDriver({ busy, ambient, changes }: { busy: boolean; ambient: boole
   useFrame(({ clock }) => {
     if (until.current < 0) until.current = clock.elapsedTime + 2;
     if (busy || clock.elapsedTime < until.current) invalidate();
-    else if (ambient) setTimeout(invalidate, 2000); // the lamp flicker is slow; one redraw every 2 s keeps it alive
+    else if (ambient) setTimeout(invalidate, 4000); // the lamp flicker is slow; one redraw every 4 s keeps it alive
   });
   return null;
 }
