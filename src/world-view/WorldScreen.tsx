@@ -597,7 +597,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
   },
-  title: { paddingHorizontal: 4 },
+  title: { paddingHorizontal: 4, minHeight: 44, justifyContent: 'center' },
   action: { position: 'absolute', right: 18, bottom: 16, alignItems: 'center', gap: 2 },
   hint: { marginTop: 2 },
   travel: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(8,9,20,0.55)' },
