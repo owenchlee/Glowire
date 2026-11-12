@@ -23,7 +23,9 @@ import {
   PixelButton,
   PixelText,
   Portrait,
+  TEXT,
   TEXT_SOFT,
+  CREAM_SHADE,
 } from './pixel';
 
 type Tab = 'notebook' | 'secrets' | 'people';
@@ -51,10 +53,10 @@ export function Journal() {
     <Pressable key={key} onPress={() => found && setOpen({ title, lines })} style={[styles.entry, !found && styles.entryHidden]}>
       {who && <Portrait who={found ? who : 'pip'} size={34} />}
       <View style={styles.flex}>
-        <PixelText size={13} color={found ? '#3d2c22' : TEXT_SOFT}>
+        <PixelText size={13} color={found ? '#3d2c22' : TEXT}>
           {found ? title : '???'}
         </PixelText>
-        <PixelText size={10} color={TEXT_SOFT}>
+        <PixelText size={10} color={found ? TEXT_SOFT : TEXT}>
           {sub}
         </PixelText>
       </View>
@@ -166,5 +168,5 @@ const styles = StyleSheet.create({
     borderColor: INK,
     borderRadius: 4,
   },
-  entryHidden: { opacity: 0.55 },
+  entryHidden: { backgroundColor: CREAM_SHADE },
 });
