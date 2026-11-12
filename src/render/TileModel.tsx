@@ -63,8 +63,7 @@ export function TileModel({ tile, result, ghost = false }: Props) {
           <Arms dirs={[W,E]} lengths={[0.26,0.26]} material={wireMat} />
           <mesh geometry={g.resistorBody} material={pick(m.diodeBody)} position-y={TOP + 0.12} scale={[0.85, 0.9, 0.9]} />
           <mesh geometry={g.resistorBand} material={pick(m.diodeBand)} position={[0.1, TOP + 0.12, 0]} scale={[1.6, 0.9, 0.9]} />
-          <Plus position={[-0.3, TOP + 0.03, 0.27]} material={pick(m.marking)} />
-          <Minus position={[0.3, TOP + 0.03, 0.27]} material={pick(m.marking)} />
+          <PlusMinus plusX={-0.3} minusX={0.3} y={TOP + 0.03} z={0.27} material={pick(m.marking)} />
         </>
       )}
       {tile.kind === 'battery' && (
@@ -81,8 +80,7 @@ export function TileModel({ tile, result, ghost = false }: Props) {
             material={pick(m.batteryCap)}
             position={[-0.31, TOP + 0.21, 0]}
           />
-          <Plus position={[-0.08, TOP + 0.415, 0]} material={pick(m.markingLight)} />
-          <Minus position={[0.15, TOP + 0.415, 0]} material={pick(m.markingLight)} />
+          <PlusMinus plusX={-0.08} minusX={0.15} y={TOP + 0.415} z={0} material={pick(m.markingLight)} />
         </>
       )}
       {tile.kind === 'led' && (
@@ -98,6 +96,8 @@ export function TileModel({ tile, result, ghost = false }: Props) {
 }
 
 /** Where the lever of a changeover switch pivots, and where its two contacts stand. */
+type Vec3 = [number, number, number];
+
 const PIVOT: Vec3 = [-0.22, 0, 0];
 const CONTACT_Z = 0.27;
 const LEVER_REACH = Math.hypot(0.22, CONTACT_Z);
@@ -171,8 +171,7 @@ function MeterModel({
         position={[0, TOP + 0.17, 0.17]}
         scale={[0.6, 0.3, 0.6]}
       />
-      <Plus position={[-0.2, TOP + 0.17, 0.19]} material={pick(m.markingLight)} />
-      <Minus position={[0.2, TOP + 0.17, 0.19]} material={pick(m.markingLight)} />
+      <PlusMinus plusX={-0.2} minusX={0.2} y={TOP + 0.17} z={0.19} material={pick(m.markingLight)} />
     </>
   );
 }
@@ -272,18 +271,33 @@ function Arms({
   return <mesh geometry={geometry} material={material} />;
 }
 
-type Vec3 = [number, number, number];
+const plusMinusCache = new Map<string, BufferGeometry>();
 
-function Plus({ position, material }: { position: Vec3; material: Material }) {
-  const { geometry: g } = getAssets();
-  return (
-    <mesh geometry={g.plus} material={material} position={position} />
-  );
-}
-
-function Minus({ position, material }: { position: Vec3; material: Material }) {
-  const { geometry: g } = getAssets();
-  return <mesh geometry={g.plusBar} material={material} position={position} />;
+/** A plus mark and a minus mark as one cached mesh: one draw call. */
+function PlusMinus({
+  plusX,
+  minusX,
+  y,
+  z,
+  material,
+}: {
+  plusX: number;
+  minusX: number;
+  y: number;
+  z: number;
+  material: Material;
+}) {
+  const key = `${plusX}|${minusX}`;
+  let geometry = plusMinusCache.get(key);
+  if (!geometry) {
+    const { geometry: g } = getAssets();
+    geometry = mergeGeometries([
+      g.plus.clone().translate(plusX, 0, 0),
+      g.plusBar.clone().translate(minusX, 0, 0),
+    ]);
+    plusMinusCache.set(key, geometry);
+  }
+  return <mesh geometry={geometry} material={material} position={[0, y, z]} />;
 }
 
 function Rivets() {
@@ -378,8 +392,7 @@ function LedModel({
           />
         </group>
       )}
-      <Plus position={[-0.3, TOP + 0.013, 0.27]} material={ghost ? m.ghost : m.marking} />
-      <Minus position={[0.3, TOP + 0.013, 0.27]} material={ghost ? m.ghost : m.marking} />
+      <PlusMinus plusX={-0.3} minusX={0.3} y={TOP + 0.013} z={0.27} material={ghost ? m.ghost : m.marking} />
       {!ghost && (
         <>
           <sprite ref={halo} material={mats.halo} position-y={TOP + 0.2} />
