@@ -158,7 +158,7 @@ function FrameDriver({ busy, ambient, changes }: { busy: boolean; ambient: boole
   useFrame(({ clock }) => {
     if (until.current < 0) until.current = clock.elapsedTime + 2;
     if (busy || clock.elapsedTime < until.current) invalidate();
-    else if (ambient) setTimeout(invalidate, 1000 / 15); // slow lamp flicker needs no more than 15 fps
+    else if (ambient) setTimeout(invalidate, 1000 / 8); // slow lamp flicker is smooth enough at 8 fps
   });
   return null;
 }
