@@ -276,10 +276,7 @@ type Vec3 = [number, number, number];
 function Plus({ position, material }: { position: Vec3; material: Material }) {
   const { geometry: g } = getAssets();
   return (
-    <group position={position}>
-      <mesh geometry={g.plusBar} material={material} />
-      <mesh geometry={g.plusBar} material={material} rotation-y={Math.PI / 2} />
-    </group>
+    <mesh geometry={g.plus} material={material} position={position} />
   );
 }
 
@@ -290,23 +287,7 @@ function Minus({ position, material }: { position: Vec3; material: Material }) {
 
 function Rivets() {
   const { geometry: g, material: m } = getAssets();
-  return (
-    <>
-      {[
-        [-1, -1],
-        [1, -1],
-        [-1, 1],
-        [1, 1],
-      ].map(([sx, sz]) => (
-        <mesh
-          key={`${sx}${sz}`}
-          geometry={g.rivet}
-          material={m.rivet}
-          position={[sx! * 0.36, TOP + 0.005, sz! * 0.36]}
-        />
-      ))}
-    </>
-  );
+  return <mesh geometry={g.rivets} material={m.rivet} position-y={TOP} />;
 }
 
 const PUFF_SECONDS = 0.9;
