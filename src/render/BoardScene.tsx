@@ -23,6 +23,7 @@ import type { SimulationResult } from '../engine';
 import { currentSkin, getAssets } from './assets';
 import { AnimatedTile } from './AnimatedTile';
 import { FlowParticles } from './FlowParticles';
+import { currentLevel } from './flow';
 import { cellToWorld, TOP, worldToCell } from './layout';
 import { COLORS } from './theme';
 import { TileModel } from './TileModel';
@@ -58,6 +59,7 @@ export function BoardCanvas(props: Props) {
     <Canvas
       style={StyleSheet.absoluteFill}
       orthographic
+      frameloop="demand"
       camera={{ position: [10, 10, 10], zoom: 60, near: 0.1, far: 100 }}
     >
       <color attach="background" args={[props.backdrop ? '#0d0f1e' : currentSkin().board.backdrop]} />
@@ -82,6 +84,14 @@ function Scene({
   const night = !!backdrop;
   return (
     <>
+      <FrameDriver
+        busy={
+          !!ghost ||
+          result.tiles.some((t) => t && Object.values(t.portCurrents).some((i) => currentLevel(i) > 0))
+        }
+        ambient={!!backdrop}
+        changes={[board, result, ghost, draggingId, shake, celebrateKey, view, backdrop]}
+      />
       <CameraRig board={board} pickerRef={pickerRef} onReady={onReady} view={view} />
       {backdrop && <Backdrop spec={backdrop} boardWidth={board.width} />}
       {night ? (
@@ -126,6 +136,31 @@ function Scene({
       )}
     </>
   );
+}
+
+/**
+ * The canvas only draws on demand. Keep it drawing while something loops forever (current,
+ * LED halos, ghost, backdrop), and for 2 s after any prop change so springs, shakes and
+ * the celebration can finish. A still board then costs no GPU at all.
+ */
+function FrameDriver({ busy, ambient, changes }: { busy: boolean; ambient: boolean; changes: unknown[] }) {
+  const invalidate = useThree((s) => s.invalidate);
+  const until = useRef(-1); // -1: a change is waiting for the next frame to stamp the end time
+  const last = useRef<unknown[]>([]);
+  // Compare by hand: a spread dependency array would defeat the hooks lint.
+  const changed = changes.length !== last.current.length || changes.some((c, i) => c !== last.current[i]);
+  useLayoutEffect(() => {
+    if (!changed) return;
+    last.current = changes;
+    until.current = -1;
+    invalidate();
+  });
+  useFrame(({ clock }) => {
+    if (until.current < 0) until.current = clock.elapsedTime + 2;
+    if (busy || clock.elapsedTime < until.current) invalidate();
+    else if (ambient) setTimeout(invalidate, 1000 / 15); // slow lamp flicker needs no more than 15 fps
+  });
+  return null;
 }
 
 /** Orthographic camera that fits the board to the screen, plus picking. */
