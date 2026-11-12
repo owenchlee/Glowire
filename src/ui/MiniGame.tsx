@@ -3,7 +3,7 @@
 
 import { router } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import {
@@ -76,11 +76,13 @@ export function MiniGame({ id }: { id: GameId }) {
         </View>
         <View style={styles.flex} />
         <Portrait who={info.host} size={64} />
-        <View>
+        <View style={styles.sayBox}>
           <NameTab name={speakerName(info.host)} />
-          <Panel>
-            <PixelText size={12}>{say}</PixelText>
-          </Panel>
+          <ScrollView>
+            <Panel>
+              <PixelText size={12}>{say}</PixelText>
+            </Panel>
+          </ScrollView>
         </View>
       </View>
 
@@ -321,6 +323,7 @@ const styles = StyleSheet.create({
   flex: { flex: 1 },
   row: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   side: { width: 250, padding: 12, gap: 8, backgroundColor: NIGHT, borderRightWidth: 2, borderColor: INK },
+  sayBox: { flexShrink: 1 },
   main: { flex: 1, padding: 16 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 16 },
   centerText: { textAlign: 'center', maxWidth: 420 },
