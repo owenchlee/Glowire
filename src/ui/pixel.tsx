@@ -138,7 +138,7 @@ export function PixelButton({
 }) {
   const c = BUTTON[tone];
   return (
-    <Pressable onPress={onPress} disabled={disabled} hitSlop={6} style={[disabled && styles.disabled, style]}>
+    <Pressable onPress={onPress} disabled={disabled} hitSlop={6} style={[styles.tapBox, disabled && styles.disabled, style]}>
       {({ pressed }) => (
         <View style={[styles.buttonOutline, { marginTop: pressed ? 3 : 0 }]}>
           <View
@@ -185,6 +185,8 @@ export function Counter({ icon, value, color = GOLD }: { icon: string; value: nu
 }
 
 const styles = StyleSheet.create({
+  // Child-finger minimum (Apple HIG 44pt); the drawn button stays centred inside.
+  tapBox: { minHeight: 44, minWidth: 44, justifyContent: 'center' },
   textShadow: {
     textShadowColor: INK,
     textShadowOffset: { width: 1, height: 1.5 },
