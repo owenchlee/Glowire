@@ -3,7 +3,9 @@
 import { Canvas, useFrame, useThree } from './r3f';
 import { type RefObject, useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 import { StyleSheet } from 'react-native';
+import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import {
+  BufferGeometry,
   type Group,
   type Mesh,
   MeshBasicMaterial,
@@ -229,6 +231,35 @@ function BoardBase({ board, highlight }: { board: BoardState; highlight: number 
     [slab],
   );
 
+  // Checkerboard floor merged into two meshes (one per colour), leaving out the highlighted cell.
+  const floor = useMemo(() => {
+    const a: BufferGeometry[] = [];
+    const b: BufferGeometry[] = [];
+    for (let cell = 0; cell < board.width * board.height; cell++) {
+      if (cell === highlight) continue;
+      const [x, z] = cellToWorld(cell, board.width, board.height);
+      const checker = (Math.floor(cell / board.width) + (cell % board.width)) % 2 === 0;
+      (checker ? a : b).push(g.cell.clone().translate(x, 0.001, z));
+    }
+    const merge = (list: BufferGeometry[]) => {
+      const merged = mergeGeometries(list) ?? new BufferGeometry();
+      list.forEach((geo) => geo.dispose());
+      return merged;
+    };
+    return { a: merge(a), b: merge(b) };
+  }, [board.width, board.height, highlight, g.cell]);
+  useEffect(
+    () => () => {
+      floor.a.dispose();
+      floor.b.dispose();
+    },
+    [floor],
+  );
+  const highlightPos = useMemo<[number, number, number]>(() => {
+    const [x, z] = cellToWorld(highlight ?? 0, board.width, board.height);
+    return [x, 0.001, z];
+  }, [highlight, board.width, board.height]);
+
   const float = useRef<Group>(null);
   return (
     <group ref={float}>
@@ -240,18 +271,11 @@ function BoardBase({ board, highlight }: { board: BoardState; highlight: number 
         scale={[board.width * 1.7, 1, board.height * 1.7]}
       />
       <mesh geometry={slab.geometry} material={slab.top} position-y={-0.225} />
-      {board.cells.map((_, cell) => {
-        const [x, z] = cellToWorld(cell, board.width, board.height);
-        const checker = (Math.floor(cell / board.width) + (cell % board.width)) % 2 === 0;
-        return (
-          <mesh
-            key={cell}
-            geometry={g.cell}
-            material={cell === highlight ? m.cellHighlight : checker ? m.cellA : m.cellB}
-            position={[x, 0.001, z]}
-          />
-        );
-      })}
+      <mesh geometry={floor.a} material={m.cellA} />
+      <mesh geometry={floor.b} material={m.cellB} />
+      {highlight !== null && (
+        <mesh geometry={g.cell} material={m.cellHighlight} position={highlightPos} />
+      )}
     </group>
   );
 }
