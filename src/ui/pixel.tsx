@@ -112,9 +112,9 @@ export function NameTab({ name }: { name: string }) {
 
 type ButtonTone = 'orange' | 'gold' | 'teal' | 'cream';
 const BUTTON: Record<ButtonTone, { face: string; lip: string; text: string }> = {
-  orange: { face: ORANGE, lip: ORANGE_DARK, text: CREAM },
+  orange: { face: ORANGE, lip: ORANGE_DARK, text: INK },
   gold: { face: GOLD, lip: GOLD_DARK, text: TEXT },
-  teal: { face: TEAL, lip: TEAL_DARK, text: CREAM },
+  teal: { face: '#3f6b69', lip: TEAL_DARK, text: CREAM },
   cream: { face: CREAM, lip: CREAM_SHADE, text: TEXT },
 };
 
