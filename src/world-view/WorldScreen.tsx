@@ -1044,7 +1044,7 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     gap: 8,
   },
-  title: { paddingHorizontal: 4, flexShrink: 1 },
+  title: { paddingHorizontal: 4, flexShrink: 1, minHeight: 44, justifyContent: 'center' },
   right: { alignItems: 'flex-end', gap: 4, flexShrink: 0 },
   line: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   action: { position: 'absolute', right: 18, bottom: 16, alignItems: 'center', gap: 2 },
