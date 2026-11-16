@@ -5,6 +5,6 @@ import { MiniGame } from '../../src/ui/MiniGame';
 
 export default function GameRoute() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  if (!(String(id) in GAMES)) return <Redirect href="/" />;
+  if (!Object.hasOwn(GAMES, String(id))) return <Redirect href="/" />;
   return <MiniGame key={String(id)} id={String(id) as GameId} />;
 }
