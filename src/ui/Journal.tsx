@@ -86,7 +86,7 @@ export function Journal() {
     <SafeAreaView style={styles.screen} edges={['left', 'right']}>
       <View style={styles.side}>
         <View style={styles.row}>
-          <PixelButton label="‹" tone="cream" size={16} onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))} />
+          <PixelButton label="‹" accessibilityLabel="Back" tone="cream" size={16} onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))} />
           <PixelText size={18} color={GOLD} shadow style={styles.flex}>
             Journal
           </PixelText>

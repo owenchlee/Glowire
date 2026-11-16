@@ -496,7 +496,7 @@ export function LevelScreen({ level, day }: { level: LevelDef; day?: string }) {
       {/* Left: the job, Pip's advice, and what counts as done. */}
       <View style={styles.side}>
         <View style={styles.titleRow}>
-          <PixelButton label="‹" tone="cream" size={16} onPress={goBack} />
+          <PixelButton label="‹" accessibilityLabel="Back" tone="cream" size={16} onPress={goBack} />
           <View style={styles.titleWrap}>
             <PixelText size={15} color={GOLD} shadow numberOfLines={1}>
               {day ? level.title : `${levelNumber(level.id)} ${level.title}`}
@@ -625,7 +625,7 @@ export function LevelScreen({ level, day }: { level: LevelDef; day?: string }) {
         />
         {level.boss && !solved && <BossPerch who={villain} round={phase} rounds={phaseCount(level)} />}
         <GestureDetector gesture={boardGesture}>
-          <View style={StyleSheet.absoluteFill} collapsable={false} />
+          <View accessibilityLabel="Circuit board. Drag parts from the tray onto the grid." style={StyleSheet.absoluteFill} collapsable={false} />
         </GestureDetector>
         <View style={styles.howTo} pointerEvents="none">
           <PixelText size={10} color={MUTED} shadow>
@@ -815,7 +815,7 @@ function TraySlot({
 
   return (
     <GestureDetector gesture={gesture}>
-      <View style={[styles.slot, (count <= 0 || spare >= all) && styles.slotEmpty]}>
+      <View accessibilityLabel={`${label}, ${count} in tray`} style={[styles.slot, (count <= 0 || spare >= all) && styles.slotEmpty]}>
         <View style={styles.partFrame}>
           <PartIcon tile={tile} size={size} />
         </View>

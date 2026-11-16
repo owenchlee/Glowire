@@ -207,6 +207,7 @@ export function Casino() {
         <View style={styles.row}>
           <PixelButton
             label="‹"
+            accessibilityLabel="Back"
             tone="cream"
             size={16}
             disabled={busy}

@@ -106,7 +106,7 @@ export function MiniGame({ id, day }: { id: GameId; day?: string }) {
     <SafeAreaView style={styles.screen} edges={['left', 'right']}>
       <View style={styles.side}>
         <View style={styles.row}>
-          <PixelButton label="‹" tone="cream" size={16} onPress={goBack} />
+          <PixelButton label="‹" accessibilityLabel="Back" tone="cream" size={16} onPress={goBack} />
           <PixelText size={18} color={GOLD} shadow style={styles.flex}>
             {teaser ? `Daily: ${info.title}` : info.title}
           </PixelText>

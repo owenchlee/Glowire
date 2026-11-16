@@ -211,7 +211,7 @@ function WorldCard({ world, number }: { world: WorldInfo; number: number }) {
         {faces.map((f) =>
           // A mystery until they've spoken to you (or you've already done one of their jobs).
           save.seen.includes(metKey(f)) || jobs.some((l) => l.job!.client === f && starsFor(save, l.id) > 0) ? (
-            <Image key={f} source={FACES[f]} style={[styles.face, !open && styles.faceDark]} />
+            <Image accessible={false} key={f} source={FACES[f]} style={[styles.face, !open && styles.faceDark]} />
           ) : (
             <View key={f} style={[styles.face, styles.mystery]}>
               <PixelText size={20} color={CREAM}>

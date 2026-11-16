@@ -72,6 +72,7 @@ export function Shop() {
         <View style={styles.row}>
           <PixelButton
             label="‹"
+            accessibilityLabel="Back"
             tone="cream"
             size={16}
             onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))}
@@ -135,13 +136,13 @@ export function Shop() {
 function Preview({ item }: { item: ShopItem }) {
   switch (item.kind) {
     case 'pet':
-      return <Image source={FACES[item.id]} style={styles.face} />;
+      return <Image accessible={false} source={FACES[item.id]} style={styles.face} />;
     case 'wire':
       return <WireSwatch wire={item} />;
     case 'board':
       return <BenchSwatch board={item} />;
     case 'outfit':
-      return <Image source={FACES[outfitSprite(item.id)]} style={styles.face} />;
+      return <Image accessible={false} source={FACES[outfitSprite(item.id)]} style={styles.face} />;
     case 'hat':
       return null;
   }
