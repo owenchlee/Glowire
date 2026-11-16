@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { fromEngineBoard, toEngineBoard } from '../board/board';
-import { parseBoard, simulate } from '../engine';
+import { type Tile, parseBoard, simulate } from '../engine';
 import {
   cellsMeantDark,
   createLevelBoard,
@@ -16,6 +16,7 @@ import {
   partKey,
   remainingParts,
   scrambleState,
+  spins,
 } from './evaluate';
 import type { LevelDef } from './types';
 
@@ -306,5 +307,15 @@ describe('goalWordsFor', () => {
     const words = goalWordsFor(level(['MA MV Cu']));
     expect(words).toEqual({ twoWay: true, meters: { M1: 'A', M2: 'V' } });
     expect(goalWordsFor(level(['S1 L>']))).toEqual({ twoWay: false, meters: {} });
+  });
+});
+
+describe('spins', () => {
+  const tileOf = (token: string): Tile => parseBoard([token]).cells[0]!;
+  it('is true only for wires, LEDs and resistors', () => {
+    expect(spins(tileOf('─'))).toBe(true);
+    expect(spins(tileOf('L>'))).toBe(true);
+    expect(spins(tileOf('R220'))).toBe(true);
+    expect(spins(tileOf('B^'))).toBe(false);
   });
 });

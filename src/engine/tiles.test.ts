@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { parseBoard } from './test-helpers';
-import { battery, getPorts, getTerminals, isConnected, led, rotateTile, wire } from './tiles';
+import { armBit, armDirections, battery, getPorts, getTerminals, isConnected, led, rotateTile, wire } from './tiles';
 import { E, N, S, W } from './types';
 
 describe('tiles', () => {
@@ -33,5 +33,15 @@ describe('tiles', () => {
     expect(isConnected(b, 1, E)).toBe(false); // │ has no W port
     expect(isConnected(b, 0, W)).toBe(false); // board edge
     expect(isConnected(b, 2, S)).toBe(false); // empty cell
+  });
+});
+
+describe('arm masks', () => {
+  it('armBit gives each direction its own bit, and armDirections reads them back in N, E, S, W order', () => {
+    const bits = ([N, E, S, W] as const).map((d) => armBit(d));
+    expect(new Set(bits).size).toBe(4);
+    expect(bits.reduce((a, b) => a | b, 0)).toBe(15);
+    expect(armDirections(armBit(W) | armBit(N))).toEqual([N, W]);
+    expect(armDirections(0)).toEqual([]);
   });
 });
