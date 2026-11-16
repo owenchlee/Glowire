@@ -58,6 +58,14 @@ function scratchF64(slot: number, len: number): Float64Array {
 
 /** Diode current and its derivative (small-signal conductance) at voltage v, including GMIN. */
 export function diodeEval(v: number, d: DiodeModel): { i: number; g: number } {
+  evalInto(v, d);
+  return { i: evalI, g: evalG };
+}
+
+// Result slots for evalInto: the Newton loop reads these instead of allocating an object per call.
+let evalI = 0;
+let evalG = 0;
+function evalInto(v: number, d: DiodeModel): void {
   const x = v / d.nVt;
   let i: number;
   let g: number;
@@ -70,7 +78,8 @@ export function diodeEval(v: number, d: DiodeModel): { i: number; g: number } {
     i = d.is * (e - 1);
     g = (d.is * e) / d.nVt;
   }
-  return { i: i + GMIN * v, g: g + GMIN };
+  evalI = i + GMIN * v;
+  evalG = g + GMIN;
 }
 
 /**
@@ -79,8 +88,11 @@ export function diodeEval(v: number, d: DiodeModel): { i: number; g: number } {
  * instead move along the log of the step, so each iteration changes the current by a
  * sane factor and the iteration converges from any starting point.
  */
-export function limitJunctionStep(vNew: number, vOld: number, d: DiodeModel): number {
-  const vcrit = d.nVt * Math.log(d.nVt / (Math.SQRT2 * d.is));
+function criticalVoltage(d: DiodeModel): number {
+  return d.nVt * Math.log(d.nVt / (Math.SQRT2 * d.is));
+}
+
+export function limitJunctionStep(vNew: number, vOld: number, d: DiodeModel, vcrit = criticalVoltage(d)): number {
   if (vNew > vcrit && Math.abs(vNew - vOld) > 2 * d.nVt) {
     if (vOld > 0) {
       const arg = 1 + (vNew - vOld) / d.nVt;
@@ -207,10 +219,11 @@ export function solveNetlist(circuit: Circuit, step?: TimeStep): NetlistSolution
   //    once into `base` and copied in; only the diode tangents (and the sources they control)
   //    are re-stamped each pass.
   const vd = scratchF64(0, diodes.length); // linearisation point per diode
-  const A = scratchF64(1, size * size);
   const base = scratchF64(2, size * size);
   const zBase = scratchF64(3, size);
   const z = scratchF64(4, size);
+  // Linear circuit: one pass, so solve in place on base and skip the matrix copy.
+  const A = diodes.length === 0 ? base : scratchF64(1, size * size);
   const resistors: number[] = [];
   const capacitors: number[] = [];
   for (let i = 0; i < elements.length; i++) {
@@ -254,10 +267,12 @@ export function solveNetlist(circuit: Circuit, step?: TimeStep): NetlistSolution
   // next point is computed during the convergence test, so each pass evaluates exp once.
   const di0 = scratchF64(5, diodeEls.length);
   const dg0 = scratchF64(6, diodeEls.length);
+  const vcrit = scratchF64(7, diodeEls.length);
   for (let k = 0; k < diodeEls.length; k++) {
-    const e = diodeEval(0, diodeEls[k]!.model);
-    di0[k] = e.i;
-    dg0[k] = e.g;
+    evalInto(0, diodeEls[k]!.model);
+    di0[k] = evalI;
+    dg0[k] = evalG;
+    vcrit[k] = criticalVoltage(diodeEls[k]!.model);
   }
   const V = (node: number, x: Float64Array) => (index[node]! < 0 ? 0 : x[index[node]!]!);
 
@@ -265,8 +280,8 @@ export function solveNetlist(circuit: Circuit, step?: TimeStep): NetlistSolution
   let iterations = 0;
   while (!converged && iterations < MAX_ITERATIONS) {
     iterations++;
-    for (let k = 0; k < size * size; k++) A[k] = base[k]!;
-    for (let k = 0; k < size; k++) z[k] = zBase[k]!;
+    if (A !== base) A.set(base.subarray(0, size * size));
+    z.set(zBase.subarray(0, size));
     for (let k = 0; k < diodeEls.length; k++) {
       const el = diodeEls[k]!;
       const i = di0[k]!;
@@ -310,7 +325,33 @@ export function solveNetlist(circuit: Circuit, step?: TimeStep): NetlistSolution
     }
     solveLinear(A, z, size);
 
-    // Record currents at this solution before moving the linearisation point.
+    converged = true;
+    for (let k = 0; k < diodeEls.length; k++) {
+      const el = diodeEls[k]!;
+      const raw = V(el.a, z) - V(el.b, z);
+      const i = di0[k]!;
+      const g = dg0[k]!;
+      currents[diodes[k]!] = i + g * (raw - vd[k]!);
+      const next = limitJunctionStep(raw, vd[k]!, el.model, vcrit[k]!);
+      const dv = Math.abs(next - vd[k]!);
+      evalInto(next, el.model);
+      const di = Math.abs(evalI - i);
+      const vSettled = dv <= VOLTAGE_TOLERANCE + RELATIVE_TOLERANCE * Math.abs(next);
+      const iSettled = di <= CURRENT_TOLERANCE + RELATIVE_TOLERANCE * Math.abs(i);
+      if (next !== raw || !(vSettled || iSettled)) converged = false;
+      vd[k] = next;
+      di0[k] = evalI;
+      dg0[k] = evalG;
+    }
+    for (const f of controlled) {
+      const el = elements[f]!;
+      if (el.type === 'F') currents[f] = el.gain * currents[el.ctrl]!;
+    }
+  }
+
+  // Linear-element currents (resistors, capacitors, sources) only matter at the final
+  // solution, still held in z.
+  if (iterations > 0) {
     for (const r of resistors) {
       const el = elements[r]!;
       if (el.type === 'R') currents[r] = (V(el.a, z) - V(el.b, z)) / el.ohms;
@@ -320,29 +361,6 @@ export function solveNetlist(circuit: Circuit, step?: TimeStep): NetlistSolution
       if (el.type === 'C') currents[c] = capG(el) * (V(el.a, z) - V(el.b, z) - charge(el));
     }
     for (let k = 0; k < sources.length; k++) currents[sources[k]!] = z[n + k]!;
-
-    converged = true;
-    for (let k = 0; k < diodeEls.length; k++) {
-      const el = diodeEls[k]!;
-      const raw = V(el.a, z) - V(el.b, z);
-      const i = di0[k]!;
-      const g = dg0[k]!;
-      currents[diodes[k]!] = i + g * (raw - vd[k]!);
-      const next = limitJunctionStep(raw, vd[k]!, el.model);
-      const dv = Math.abs(next - vd[k]!);
-      const e = diodeEval(next, el.model);
-      const di = Math.abs(e.i - i);
-      const vSettled = dv <= VOLTAGE_TOLERANCE + RELATIVE_TOLERANCE * Math.abs(next);
-      const iSettled = di <= CURRENT_TOLERANCE + RELATIVE_TOLERANCE * Math.abs(i);
-      if (next !== raw || !(vSettled || iSettled)) converged = false;
-      vd[k] = next;
-      di0[k] = e.i;
-      dg0[k] = e.g;
-    }
-    for (const f of controlled) {
-      const el = elements[f]!;
-      if (el.type === 'F') currents[f] = el.gain * currents[el.ctrl]!;
-    }
   }
 
   for (let node = 0; node < nodeCount; node++) voltages[node] = V(node, z);

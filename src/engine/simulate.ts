@@ -13,6 +13,11 @@ import { type TimeStep, solveNetlist } from './mna';
 import { getChangeoverPorts, getTerminals, getTransistorPorts } from './tiles';
 import type { Board, ComponentStatus, Direction, SimulationResult, TileResult } from './types';
 
+function findIn(parent: Int32Array, k: number): number {
+  while (parent[k] !== k) k = parent[k] = parent[parent[k]!]!;
+  return k;
+}
+
 /** A transistor passing more than this (0.1 mA) counts as switched on. */
 const TRANSISTOR_ON = 1e-4;
 
@@ -35,19 +40,23 @@ export function simulate(board: Board, step?: TimeStep): SimulationResult {
   }
 
   // Nodes joined purely by wire tiles: if both legs of a part are, it is bypassed.
-  const parent = new Int32Array(circuit.nodeCount);
-  for (let i = 0; i < parent.length; i++) parent[i] = i;
+  // Built lazily: only powered parts need it.
+  let parent: Int32Array | null = null;
   const find = (k: number): number => {
-    while (parent[k] !== k) k = parent[k] = parent[parent[k]!]!;
-    return k;
+    if (!parent) {
+      const p = (parent = new Int32Array(circuit.nodeCount));
+      for (let i = 0; i < p.length; i++) p[i] = i;
+      for (const el of circuit.elements) {
+        const t = board.cells[el.cell];
+        if (t?.kind === 'wire' || (t?.kind === 'meter' && t.mode === 'A'))
+          p[findIn(p, el.a)] = findIn(p, el.b);
+      }
+    }
+    return findIn(parent, k);
   };
-  for (const el of circuit.elements) {
-    const t = board.cells[el.cell];
-    if (t?.kind === 'wire' || (t?.kind === 'meter' && t.mode === 'A'))
-      parent[find(el.a)] = find(el.b);
-  }
 
   let batteryCurrent = 0;
+  let shortCircuit = false;
   const tiles = board.cells.map((tile, cell): TileResult | null => {
     if (!tile) return null;
     if (tile.kind === 'block') {
@@ -138,6 +147,7 @@ export function simulate(board: Board, step?: TimeStep): SimulationResult {
     if (tile.kind === 'battery') {
       current = -intoPlus; // discharge current leaves through +
       batteryCurrent += current;
+      if (Math.abs(current) > SHORT_CIRCUIT_CURRENT) shortCircuit = true;
       status =
         Math.abs(current) > SHORT_CIRCUIT_CURRENT
           ? 'SHORT_CIRCUIT'
@@ -181,7 +191,7 @@ export function simulate(board: Board, step?: TimeStep): SimulationResult {
 
   return {
     tiles,
-    shortCircuit: tiles.some((t) => t?.kind === 'battery' && t.status === 'SHORT_CIRCUIT'),
+    shortCircuit,
     batteryCurrent,
     converged: sol.converged,
     iterations: sol.iterations,
