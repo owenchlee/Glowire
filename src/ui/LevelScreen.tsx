@@ -514,7 +514,7 @@ export function LevelScreen({ level, day }: { level: LevelDef; day?: string }) {
             </PixelText>
           ))}
           {budget !== null && (
-            <PixelText size={12} color={evaluation.wires >= budget ? RED : CREAM} shadow>
+            <PixelText size={12} color={evaluation.wires >= budget ? '#ff7a63' : CREAM} shadow>
               ⚡ Wire: {evaluation.wires} / {budget}
             </PixelText>
           )}
