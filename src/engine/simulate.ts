@@ -24,19 +24,19 @@ export function simulate(board: Board, step?: TimeStep): SimulationResult {
   const circuit = buildCircuit(board);
   const sol = solveNetlist(circuit, step);
 
-  // Port inflows and port nodes per tile.
-  const inflow = new Map<number, Partial<Record<Direction, number>>>();
-  const nodeAt = new Map<number, number>(); // cell * 4 + dir -> node
+  // Port inflows and port nodes per tile. Arrays, not Maps: this runs on every board edit.
+  const inflow: (Partial<Record<Direction, number>> | undefined)[] = new Array(board.cells.length);
+  const nodeAt = new Int32Array(board.cells.length * 4); // cell * 4 + dir -> node
   for (const p of circuit.ports) {
     const I = sol.currents[p.element]!;
-    const flows = inflow.get(p.cell) ?? {};
+    const flows = (inflow[p.cell] ??= {});
     flows[p.dir] = p.terminal === 'a' ? I : -I;
-    inflow.set(p.cell, flows);
-    nodeAt.set(p.cell * 4 + p.dir, p.node);
+    nodeAt[p.cell * 4 + p.dir] = p.node;
   }
 
   // Nodes joined purely by wire tiles: if both legs of a part are, it is bypassed.
-  const parent = Array.from({ length: circuit.nodeCount }, (_, i) => i);
+  const parent = new Int32Array(circuit.nodeCount);
+  for (let i = 0; i < parent.length; i++) parent[i] = i;
   const find = (k: number): number => {
     while (parent[k] !== k) k = parent[k] = parent[parent[k]!]!;
     return k;
@@ -61,17 +61,25 @@ export function simulate(board: Board, step?: TimeStep): SimulationResult {
         status: 'OFF',
       };
     }
-    const portCurrents = inflow.get(cell) ?? {};
-    const flows = Object.values(portCurrents);
+    const portCurrents = inflow[cell] ?? {};
 
     if (tile.kind === 'wire') {
-      const nodes = Object.keys(portCurrents).map((d) => nodeAt.get(cell * 4 + Number(d))!);
-      const vs = nodes.map((node) => sol.voltages[node]!);
-      const current = flows.reduce((s, I) => s + Math.max(0, I), 0);
+      // Directions ascending, matching Object.values order so the float sum is unchanged.
+      let current = 0;
+      let vMax = -Infinity;
+      let vMin = Infinity;
+      for (let d = 0; d < 4; d++) {
+        const I = portCurrents[d as Direction];
+        if (I === undefined) continue;
+        current += Math.max(0, I);
+        const v = sol.voltages[nodeAt[cell * 4 + d]!]!;
+        if (v > vMax) vMax = v;
+        if (v < vMin) vMin = v;
+      }
       return {
         cell,
         kind: tile.kind,
-        voltage: vs.length ? Math.max(...vs) - Math.min(...vs) : 0,
+        voltage: vMax >= vMin ? vMax - vMin : 0,
         current,
         portCurrents,
         brightness: 0,
@@ -102,8 +110,8 @@ export function simulate(board: Board, step?: TimeStep): SimulationResult {
       // Its current is what flows in at the collector; its voltage, collector to emitter.
       const [, c, e] = getTransistorPorts(tile);
       const current = portCurrents[c] ?? 0;
-      const vc = sol.voltages[nodeAt.get(cell * 4 + c) ?? 0] ?? 0;
-      const ve = sol.voltages[nodeAt.get(cell * 4 + e) ?? 0] ?? 0;
+      const vc = sol.voltages[nodeAt[cell * 4 + c]!] ?? 0;
+      const ve = sol.voltages[nodeAt[cell * 4 + e]!] ?? 0;
       return {
         cell,
         kind: tile.kind,
@@ -117,8 +125,8 @@ export function simulate(board: Board, step?: TimeStep): SimulationResult {
     }
 
     const [plus, minus] = getTerminals(tile);
-    const pNode = nodeAt.get(cell * 4 + plus)!;
-    const mNode = nodeAt.get(cell * 4 + minus)!;
+    const pNode = nodeAt[cell * 4 + plus]!;
+    const mNode = nodeAt[cell * 4 + minus]!;
     const voltage = sol.voltages[pNode]! - sol.voltages[mNode]!;
     const intoPlus = portCurrents[plus] ?? 0;
     const powered = sol.powered[pNode] === 1 && sol.powered[mNode] === 1;

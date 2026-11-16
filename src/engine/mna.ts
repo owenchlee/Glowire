@@ -10,9 +10,11 @@
 //   capacitor  a gap when settled; stepping through time, a conductance C/dt plus a source
 //   F source   gain × a diode's current (transistors), on that diode's tangent line too
 
-import type { Circuit, DiodeModel } from './circuit';
+import type { Circuit, DiodeModel, Element } from './circuit';
 import { GMIN, OPEN_SWITCH_RESISTANCE } from './constants';
 import { solveLinear } from './linear';
+
+type DiodeElement = Extract<Element, { type: 'D' }>;
 
 export interface NetlistSolution {
   /** Node voltages, volts. Nodes not connected to any battery read 0. */
@@ -35,6 +37,24 @@ const VOLTAGE_TOLERANCE = 1e-9;
 const CURRENT_TOLERANCE = 1e-12;
 /** exp() argument cap; beyond it the diode curve continues as a straight line. */
 const MAX_EXPONENT = 80;
+
+// Reusable scratch buffers for solveNetlist's internal arrays (it runs on every board
+// edit, and allocating ~15 typed arrays per call dominated small boards). Each slot
+// grows on demand; the first `len` entries are reset to `value` on every request.
+const i32Pool: Int32Array[] = [];
+const f64Pool: Float64Array[] = [];
+function scratchI32(slot: number, len: number, value: number): Int32Array {
+  let b = i32Pool[slot];
+  if (b === undefined || b.length < len) i32Pool[slot] = b = new Int32Array(Math.max(len, 2 * (b?.length ?? 32)));
+  b.fill(value, 0, len);
+  return b;
+}
+function scratchF64(slot: number, len: number): Float64Array {
+  let b = f64Pool[slot];
+  if (b === undefined || b.length < len) f64Pool[slot] = b = new Float64Array(Math.max(len, 2 * (b?.length ?? 32)));
+  else b.fill(0, 0, len);
+  return b;
+}
 
 /** Diode current and its derivative (small-signal conductance) at voltage v, including GMIN. */
 export function diodeEval(v: number, d: DiodeModel): { i: number; g: number } {
@@ -94,51 +114,78 @@ export function solveNetlist(circuit: Circuit, step?: TimeStep): NetlistSolution
 
   // 1. Prune dangling elements. A node touched by only one element terminal can't
   //    carry current (KCL), so that element's current is zero. Repeat until stable.
-  const touching: number[][] = Array.from({ length: nodeCount }, () => []);
-  elements.forEach((el, i) => {
-    touching[el.a]!.push(i);
-    touching[el.b]!.push(i);
-  });
-  const degree = touching.map((list) => list.length);
-  const active = new Uint8Array(elements.length).fill(1);
-  const pruned: { element: number; leaf: number }[] = [];
-  const leaves = degree.flatMap((deg, node) => (deg === 1 ? [node] : []));
+  //    Element lists per node in CSR form (typed arrays: this runs on every board edit),
+  //    each list in ascending element order.
+  const elementCount = elements.length;
+  const degree = scratchI32(0, nodeCount, 0);
+  for (let i = 0; i < elementCount; i++) {
+    const el = elements[i]!;
+    degree[el.a]!++;
+    degree[el.b]!++;
+  }
+  const start = scratchI32(1, nodeCount + 1, 0);
+  for (let node = 0; node < nodeCount; node++) start[node + 1] = start[node]! + degree[node]!;
+  const fill = scratchI32(2, nodeCount, 0);
+  for (let node = 0; node < nodeCount; node++) fill[node] = start[node]!;
+  const touching = scratchI32(3, 2 * elementCount, 0);
+  for (let i = 0; i < elementCount; i++) {
+    const el = elements[i]!;
+    touching[fill[el.a]!++] = i;
+    touching[fill[el.b]!++] = i;
+  }
+  const active = scratchI32(4, elementCount, 1);
+  const prunedElement: number[] = [];
+  const prunedLeaf: number[] = [];
+  const leaves: number[] = [];
+  for (let node = 0; node < nodeCount; node++) if (degree[node] === 1) leaves.push(node);
   while (leaves.length) {
     const leaf = leaves.pop()!;
     if (degree[leaf] !== 1) continue;
-    const element = touching[leaf]!.find((i) => active[i])!;
+    let element = touching[start[leaf]!]!;
+    for (let k = start[leaf]!; k < start[leaf + 1]!; k++) {
+      if (active[touching[k]!]) {
+        element = touching[k]!;
+        break;
+      }
+    }
     active[element] = 0;
-    pruned.push({ element, leaf });
+    prunedElement.push(element);
+    prunedLeaf.push(leaf);
     const el = elements[element]!;
-    for (const n of [el.a, el.b]) if (--degree[n]! === 1) leaves.push(n);
+    if (--degree[el.a]! === 1) leaves.push(el.a);
+    if (--degree[el.b]! === 1) leaves.push(el.b);
   }
 
   // 2. Find connected circuits among what's left; only those with a battery (or, stepping
   //    through time, a capacitor that may hold charge) get solved. Each one is grounded at
   //    the − node of its first battery, else of its first capacitor.
-  const parent = Array.from({ length: nodeCount }, (_, i) => i);
+  const parent = scratchI32(5, nodeCount, 0);
+  for (let k = 0; k < nodeCount; k++) parent[k] = k;
   const find = (k: number): number => {
     while (parent[k] !== k) k = parent[k] = parent[parent[k]!]!;
     return k;
   };
-  elements.forEach((el, i) => {
+  for (let i = 0; i < elementCount; i++) {
+    const el = elements[i]!;
     if (active[i]) parent[find(el.a)] = find(el.b);
-  });
-  const groundOf = new Map<number, number>();
-  elements.forEach((el, i) => {
-    if (active[i] && el.type === 'V' && !groundOf.has(find(el.a))) groundOf.set(find(el.a), el.b);
-  });
+  }
+  const groundOf = scratchI32(6, nodeCount, -1); // root -> ground node
+  for (let i = 0; i < elementCount; i++) {
+    const el = elements[i]!;
+    if (active[i] && el.type === 'V' && groundOf[find(el.a)] === -1) groundOf[find(el.a)] = el.b;
+  }
   if (step)
-    elements.forEach((el, i) => {
-      if (active[i] && el.type === 'C' && !groundOf.has(find(el.a))) groundOf.set(find(el.a), el.b);
-    });
+    for (let i = 0; i < elementCount; i++) {
+      const el = elements[i]!;
+      if (active[i] && el.type === 'C' && groundOf[find(el.a)] === -1) groundOf[find(el.a)] = el.b;
+    }
 
   // Matrix index for every powered, non-ground node; then one row per voltage source.
-  const index = new Int32Array(nodeCount).fill(-1);
+  const index = scratchI32(7, nodeCount, -1);
   let n = 0;
   for (let node = 0; node < nodeCount; node++) {
-    const ground = groundOf.get(find(node));
-    if (ground === undefined || degree[node] === 0) continue;
+    const ground = groundOf[find(node)]!;
+    if (ground === -1 || degree[node] === 0) continue;
     powered[node] = 1;
     if (node !== ground) index[node] = n++;
   }
@@ -156,66 +203,98 @@ export function solveNetlist(circuit: Circuit, step?: TimeStep): NetlistSolution
   const size = n + sources.length;
 
   // 3. Newton–Raphson. With no diodes the system is linear and one pass is exact.
-  const vd = new Float64Array(diodes.length); // linearisation point per diode
-  const A = new Float64Array(size * size);
-  const z = new Float64Array(size);
-  const V = (node: number, x: Float64Array) => (index[node]! < 0 ? 0 : x[index[node]!]!);
-  const stampG = (a: number, b: number, g: number) => {
-    const ia = index[a]!;
-    const ib = index[b]!;
-    if (ia >= 0) A[ia * size + ia]! += g;
-    if (ib >= 0) A[ib * size + ib]! += g;
-    if (ia >= 0 && ib >= 0) {
-      A[ia * size + ib]! -= g;
-      A[ib * size + ia]! -= g;
+  //    Resistors, capacitors and sources don't change between iterations, so they are stamped
+  //    once into `base` and copied in; only the diode tangents (and the sources they control)
+  //    are re-stamped each pass.
+  const vd = scratchF64(0, diodes.length); // linearisation point per diode
+  const A = scratchF64(1, size * size);
+  const base = scratchF64(2, size * size);
+  const zBase = scratchF64(3, size);
+  const z = scratchF64(4, size);
+  const resistors: number[] = [];
+  const capacitors: number[] = [];
+  for (let i = 0; i < elements.length; i++) {
+    const el = elements[i]!;
+    if (!active[i] || !powered[el.a]) continue;
+    if (el.type === 'R' || el.type === 'C') {
+      // Element order as before, so the floating-point sums come out identical.
+      (el.type === 'R' ? resistors : capacitors).push(i);
+      const g = el.type === 'R' ? 1 / el.ohms : capG(el);
+      const ia = index[el.a]!;
+      const ib = index[el.b]!;
+      if (ia >= 0) base[ia * size + ia]! += g;
+      if (ib >= 0) base[ib * size + ib]! += g;
+      if (ia >= 0 && ib >= 0) {
+        base[ia * size + ib]! -= g;
+        base[ib * size + ia]! -= g;
+      }
+      if (el.type === 'C') {
+        const ieq = -g * charge(el);
+        if (ia >= 0) zBase[ia]! -= ieq;
+        if (ib >= 0) zBase[ib]! += ieq;
+      }
     }
-  };
-  const stampI = (a: number, b: number, i: number) => {
-    // Current i flowing a → b through the element leaves node a and enters node b.
-    if (index[a]! >= 0) z[index[a]!]! -= i;
-    if (index[b]! >= 0) z[index[b]!]! += i;
-  };
+  }
+  for (let k = 0; k < sources.length; k++) {
+    const el = elements[sources[k]!]!;
+    if (el.type !== 'V') continue;
+    const row = n + k;
+    const ia = index[el.a]!;
+    const ib = index[el.b]!;
+    if (ia >= 0) base[ia * size + row] = base[row * size + ia] = 1;
+    if (ib >= 0) base[ib * size + row] = base[row * size + ib] = -1;
+    zBase[row] = el.volts;
+  }
+  const diodeEls: DiodeElement[] = [];
+  for (const d of diodes) {
+    const el = elements[d]!;
+    if (el.type === 'D') diodeEls.push(el);
+  }
+  // Diode current/conductance at the current linearisation point vd. The value at the
+  // next point is computed during the convergence test, so each pass evaluates exp once.
+  const di0 = scratchF64(5, diodeEls.length);
+  const dg0 = scratchF64(6, diodeEls.length);
+  for (let k = 0; k < diodeEls.length; k++) {
+    const e = diodeEval(0, diodeEls[k]!.model);
+    di0[k] = e.i;
+    dg0[k] = e.g;
+  }
+  const V = (node: number, x: Float64Array) => (index[node]! < 0 ? 0 : x[index[node]!]!);
 
   let converged = size === 0;
   let iterations = 0;
   while (!converged && iterations < MAX_ITERATIONS) {
     iterations++;
-    A.fill(0);
-    z.fill(0);
-    elements.forEach((el, i) => {
-      if (!active[i] || !powered[el.a]) return;
-      if (el.type === 'R') stampG(el.a, el.b, 1 / el.ohms);
-      if (el.type === 'C') {
-        const g = capG(el);
-        stampG(el.a, el.b, g);
-        stampI(el.a, el.b, -g * charge(el));
+    for (let k = 0; k < size * size; k++) A[k] = base[k]!;
+    for (let k = 0; k < size; k++) z[k] = zBase[k]!;
+    for (let k = 0; k < diodeEls.length; k++) {
+      const el = diodeEls[k]!;
+      const i = di0[k]!;
+      const g = dg0[k]!;
+      const ia = index[el.a]!;
+      const ib = index[el.b]!;
+      if (ia >= 0) A[ia * size + ia]! += g;
+      if (ib >= 0) A[ib * size + ib]! += g;
+      if (ia >= 0 && ib >= 0) {
+        A[ia * size + ib]! -= g;
+        A[ib * size + ia]! -= g;
       }
-    });
-    sources.forEach((s, k) => {
-      const el = elements[s]!;
-      if (el.type !== 'V') return;
-      const row = n + k;
-      if (index[el.a]! >= 0) A[index[el.a]! * size + row] = A[row * size + index[el.a]!] = 1;
-      if (index[el.b]! >= 0) A[index[el.b]! * size + row] = A[row * size + index[el.b]!] = -1;
-      z[row] = el.volts;
-    });
-    diodes.forEach((d, k) => {
-      const el = elements[d]!;
-      if (el.type !== 'D') return;
-      const { i, g } = diodeEval(vd[k]!, el.model);
-      stampG(el.a, el.b, g);
-      stampI(el.a, el.b, i - g * vd[k]!); // tangent line: I ≈ g·v + (i − g·vd)
-    });
+      const ieq = i - g * vd[k]!; // tangent line: I ≈ g·v + (i − g·vd)
+      // Current flowing a → b through the element leaves node a and enters node b.
+      if (ia >= 0) z[ia]! -= ieq;
+      if (ib >= 0) z[ib]! += ieq;
+    }
     // Current-controlled sources (inside transistors): gain × the controlling diode's current,
     // which on its tangent line is g·(V(ca) − V(cb)) + (i − g·vd). The g part is a
     // transconductance stamped against the diode's nodes; the rest is a fixed current.
-    controlled.forEach((f) => {
+    for (const f of controlled) {
       const el = elements[f]!;
-      if (el.type !== 'F') return;
+      if (el.type !== 'F') continue;
       const k = diodeSlot.get(el.ctrl);
       const ctrl = elements[el.ctrl]!;
-      if (k === undefined || ctrl.type !== 'D') return;
-      const { i, g } = diodeEval(vd[k]!, ctrl.model);
+      if (k === undefined || ctrl.type !== 'D') continue;
+      const i = di0[k]!;
+      const g = dg0[k]!;
       const gm = el.gain * g;
       const rows = [index[el.a]!, index[el.b]!];
       const cols = [index[ctrl.a]!, index[ctrl.b]!];
@@ -225,37 +304,45 @@ export function solveNetlist(circuit: Circuit, step?: TimeStep): NetlistSolution
         if (cols[0]! >= 0) A[r * size + cols[0]!]! += sign * gm;
         if (cols[1]! >= 0) A[r * size + cols[1]!]! -= sign * gm;
       });
-      stampI(el.a, el.b, el.gain * (i - g * vd[k]!));
-    });
+      const ieq = el.gain * (i - g * vd[k]!);
+      if (index[el.a]! >= 0) z[index[el.a]!]! -= ieq;
+      if (index[el.b]! >= 0) z[index[el.b]!]! += ieq;
+    }
     solveLinear(A, z, size);
 
     // Record currents at this solution before moving the linearisation point.
-    elements.forEach((el, i) => {
-      if (!active[i] || !powered[el.a]) return;
-      if (el.type === 'R') currents[i] = (V(el.a, z) - V(el.b, z)) / el.ohms;
-      if (el.type === 'C') currents[i] = capG(el) * (V(el.a, z) - V(el.b, z) - charge(el));
-    });
-    sources.forEach((s, k) => (currents[s] = z[n + k]!));
+    for (const r of resistors) {
+      const el = elements[r]!;
+      if (el.type === 'R') currents[r] = (V(el.a, z) - V(el.b, z)) / el.ohms;
+    }
+    for (const c of capacitors) {
+      const el = elements[c]!;
+      if (el.type === 'C') currents[c] = capG(el) * (V(el.a, z) - V(el.b, z) - charge(el));
+    }
+    for (let k = 0; k < sources.length; k++) currents[sources[k]!] = z[n + k]!;
 
     converged = true;
-    diodes.forEach((d, k) => {
-      const el = elements[d]!;
-      if (el.type !== 'D') return;
+    for (let k = 0; k < diodeEls.length; k++) {
+      const el = diodeEls[k]!;
       const raw = V(el.a, z) - V(el.b, z);
-      const { i, g } = diodeEval(vd[k]!, el.model);
-      currents[d] = i + g * (raw - vd[k]!);
+      const i = di0[k]!;
+      const g = dg0[k]!;
+      currents[diodes[k]!] = i + g * (raw - vd[k]!);
       const next = limitJunctionStep(raw, vd[k]!, el.model);
       const dv = Math.abs(next - vd[k]!);
-      const di = Math.abs(diodeEval(next, el.model).i - i);
+      const e = diodeEval(next, el.model);
+      const di = Math.abs(e.i - i);
       const vSettled = dv <= VOLTAGE_TOLERANCE + RELATIVE_TOLERANCE * Math.abs(next);
       const iSettled = di <= CURRENT_TOLERANCE + RELATIVE_TOLERANCE * Math.abs(i);
       if (next !== raw || !(vSettled || iSettled)) converged = false;
       vd[k] = next;
-    });
-    controlled.forEach((f) => {
+      di0[k] = e.i;
+      dg0[k] = e.g;
+    }
+    for (const f of controlled) {
       const el = elements[f]!;
       if (el.type === 'F') currents[f] = el.gain * currents[el.ctrl]!;
-    });
+    }
   }
 
   for (let node = 0; node < nodeCount; node++) voltages[node] = V(node, z);
@@ -263,8 +350,9 @@ export function solveNetlist(circuit: Circuit, step?: TimeStep): NetlistSolution
   // 4. Pruned elements carry no current, so the voltage across them is 0 (or the EMF
   //    for a battery's source, or the charge a capacitor still holds). Walk back out to
   //    the leaves to give them voltages.
-  for (let k = pruned.length - 1; k >= 0; k--) {
-    const { element, leaf } = pruned[k]!;
+  for (let k = prunedElement.length - 1; k >= 0; k--) {
+    const element = prunedElement[k]!;
+    const leaf = prunedLeaf[k]!;
     const el = elements[element]!;
     currents[element] = 0;
     const emf = el.type === 'V' ? el.volts : el.type === 'C' ? charge(el) : 0;
