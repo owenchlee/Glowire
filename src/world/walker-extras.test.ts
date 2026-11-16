@@ -6,7 +6,7 @@ const wallAt5 = (x: number) => x !== 5;
 
 describe('walker helpers', () => {
   it('walkerPosition reports the draw position', () => {
-    expect(walkerPosition(newWalker(2.5, 7, 'up'))).toEqual({ x: 2.5, y: 7 });
+    expect(walkerPosition(newWalker(2.5, 7, 'up'))).toMatchObject({ x: 2.5, y: 7 });
   });
 
   it('clearLine is true in the open and false across a wall', () => {

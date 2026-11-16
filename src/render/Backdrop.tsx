@@ -158,7 +158,7 @@ function Scenery({
     g.scale.setScalar(cell);
     // Put the job's door just right of the board, so the house shows beside it.
     const beside = (boardWidth / 2 + 0.3) / cell + 1.2;
-    g.children.forEach((c) => c.position.set(-(cx + 0.5) + beside, cy - 0.5, 0));
+    for (let i = 0; i < g.children.length; i++) g.children[i]!.position.set(-(cx + 0.5) + beside, cy - 0.5, 0);
   });
   void size;
 

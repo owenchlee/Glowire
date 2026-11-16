@@ -450,12 +450,14 @@ function LedModel({
     group.visible = p < 1;
     if (p >= 1) return;
     mats.puff.opacity = 0.75 * (1 - p);
-    group.children.forEach((child, i) => {
-      const a = (i / group.children.length) * Math.PI * 2;
-      const r = 0.08 + 0.4 * p;
+    const kids = group.children;
+    const r = 0.08 + 0.4 * p;
+    for (let i = 0; i < kids.length; i++) {
+      const child = kids[i]!;
+      const a = (i / kids.length) * Math.PI * 2;
       child.position.set(Math.cos(a) * r, TOP + 0.2 + 0.45 * p, Math.sin(a) * r);
       child.scale.setScalar(0.6 + 1.4 * p);
-    });
+    }
   });
 
   const dome = ghost ? m.ghost : burned ? m.ledBurned : mats.dome;

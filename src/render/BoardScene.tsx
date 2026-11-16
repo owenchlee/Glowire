@@ -189,15 +189,22 @@ function CameraRig({
   // R3F can still adjust the camera after that effect (on web, around a resize). Check each
   // frame and tell the 2D overlay again if the view really moved, so value tags never stick
   // to stale spots.
-  const seen = useRef('');
+  // NaN marks "nothing seen yet" (NaN never equals anything, so the first frame always differs).
+  const seen = useRef<number[]>([NaN, 0, 0, 0, 0, 0, 0]);
   useFrame(() => {
     camera.updateMatrixWorld();
     const e = camera.projectionMatrix.elements;
     const w = camera.matrixWorld.elements;
-    const key = `${e[0]},${e[5]},${e[12]},${e[13]},${w[12]},${w[13]},${w[14]}`;
-    if (key === seen.current) return;
-    const first = seen.current === '';
-    seen.current = key;
+    const s = seen.current;
+    if (s[0] === e[0] && s[1] === e[5] && s[2] === e[12] && s[3] === e[13] && s[4] === w[12] && s[5] === w[13] && s[6] === w[14]) return;
+    const first = Number.isNaN(s[0]);
+    s[0] = e[0]!;
+    s[1] = e[5]!;
+    s[2] = e[12]!;
+    s[3] = e[13]!;
+    s[4] = w[12]!;
+    s[5] = w[13]!;
+    s[6] = w[14]!;
     if (!first) onReady();
   });
 
@@ -312,7 +319,8 @@ function Celebration({ position: [x, z] }: { position: [number, number] }) {
     const grp = group.current;
     if (!grp) return;
     grp.visible = t < 1.6;
-    grp.children.forEach((child, i) => {
+    for (let i = 0; i < grp.children.length; i++) {
+      const child = grp.children[i]!;
       const b = bits[i]!;
       const r = b.speed * t;
       (child as Mesh).position.set(
@@ -321,7 +329,7 @@ function Celebration({ position: [x, z] }: { position: [number, number] }) {
         Math.sin(b.angle) * r,
       );
       b.material.opacity = Math.max(0, 1 - t / 1.6);
-    });
+    }
   });
 
   return (

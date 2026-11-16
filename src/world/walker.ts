@@ -40,20 +40,21 @@ export function newWalker(x: number, y: number, facing: Facing): Walker {
   return { x, y, facing, input: { x: 0, y: 0 }, path: [], faceAtEnd: null, moving: false, clock: 0 };
 }
 
-/** Where to draw the hero right now (cells). */
+/** Where to draw the hero right now (cells). The walker itself: read it, don't keep or change it. */
 export function walkerPosition(w: Walker): Point {
-  return { x: w.x, y: w.y };
-}
-
-/** The middle of the hero's feet. */
-function feet(w: Point): Point {
-  return { x: w.x + (FEET.left + FEET.right) / 2, y: w.y + (FEET.top + FEET.bottom) / 2 };
+  return w;
 }
 
 /** The cell the hero is standing in. */
 export function walkerCell(w: Point): Point {
-  const f = feet(w);
-  return { x: Math.floor(f.x), y: Math.floor(f.y) };
+  return walkerCellInto(w, { x: 0, y: 0 });
+}
+
+/** Same as walkerCell, written into `out` (no allocation, for per-frame use). */
+export function walkerCellInto(w: Point, out: Point): Point {
+  out.x = Math.floor(w.x + (FEET.left + FEET.right) / 2);
+  out.y = Math.floor(w.y + (FEET.top + FEET.bottom) / 2);
+  return out;
 }
 
 export interface StepResult {
@@ -83,6 +84,9 @@ export function climbsLedge(x: number, y0: number, y1: number, free: Free): bool
   for (let cx = x0; cx <= x1; cx++) if (free.ledge(cx, newRow) && !free.ledge(cx, oldRow)) return true;
   return false;
 }
+
+// Scratch result, reused every call: read `arrived` straight away, don't keep it.
+const STEP_RESULT: StepResult = { arrived: false };
 
 /** Can the feet stand with the hero at (x, y)? */
 export function fits(x: number, y: number, free: Free): boolean {
@@ -272,7 +276,8 @@ export function stepWalker(w: Walker, dt: number, free: Free): StepResult {
     }
   }
   w.clock = w.moving ? w.clock + dt : 0;
-  return { arrived };
+  STEP_RESULT.arrived = arrived;
+  return STEP_RESULT;
 }
 
 /**
@@ -359,16 +364,36 @@ export function clearLine(a: Point, b: Point, free: Free): boolean {
  * Cells in front of the hero, best first: straight ahead, then a little to either side (the
  * hero can stand half a cell off from someone and still talk to them).
  */
+const FACE_DX = { down: 0, up: 0, left: -1, right: 1 };
+const FACE_DY = { down: 1, up: -1, left: 0, right: 0 };
+const SIDES = [0, 0.32, -0.32];
+// Scratch results, reused every call: callers must not keep the array or its points.
+const FACING_OUT: Point[] = [];
+const FACING_POOL: Point[] = [
+  { x: 0, y: 0 },
+  { x: 0, y: 0 },
+  { x: 0, y: 0 },
+];
+
 export function facingCells(w: Walker): Point[] {
-  const f = feet(w);
-  const d = { down: [0, 1], up: [0, -1], left: [-1, 0], right: [1, 0] }[w.facing] as [number, number];
+  const fx = w.x + (FEET.left + FEET.right) / 2;
+  const fy = w.y + (FEET.top + FEET.bottom) / 2;
+  const dx = FACE_DX[w.facing];
+  const dy = FACE_DY[w.facing];
   const reach = 0.75;
-  const out: Point[] = [];
-  for (const side of [0, 0.32, -0.32]) {
-    const px = f.x + d[0] * reach + (d[1] !== 0 ? side : 0);
-    const py = f.y + d[1] * reach + (d[0] !== 0 ? side : 0);
-    const c = { x: Math.floor(px), y: Math.floor(py) };
-    if (!out.some((o) => o.x === c.x && o.y === c.y)) out.push(c);
+  const out = FACING_OUT;
+  out.length = 0;
+  for (let i = 0; i < SIDES.length; i++) {
+    const side = SIDES[i]!;
+    const cx = Math.floor(fx + dx * reach + (dy !== 0 ? side : 0));
+    const cy = Math.floor(fy + dy * reach + (dx !== 0 ? side : 0));
+    let dup = false;
+    for (let j = 0; j < out.length; j++) if (out[j]!.x === cx && out[j]!.y === cy) dup = true;
+    if (dup) continue;
+    const c = FACING_POOL[out.length]!;
+    c.x = cx;
+    c.y = cy;
+    out.push(c);
   }
   return out;
 }
