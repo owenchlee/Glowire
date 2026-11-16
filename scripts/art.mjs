@@ -351,7 +351,8 @@ const PIP_RECOLOUR = {
 const CAST_RECOLOUR = {
   hazel: { a5608b: '9ba7aa', d3a2c0: 'd2c9c9', '548789': '4a7f4b', '2d697b': '345a52' },
   bram: { d14b34: '61372e', '8f3e56': '3b3643', '4a5270': '2d697b' },
-  moth: { d14b34: 'a5608b', '548789': '3b3643', '4e484a': '61372e' },
+  // Moth shares Theo's body, so a different skin tone as well as the plum hoodie.
+  moth: { ef914f: '9a5f3c', d14b34: '6b3a26', efa042: 'b8794a', '548789': '5c3a6e', '79b8ce': 'a5608b', '4e484a': '61372e' },
   glimmer: { '79b8ce': 'ffe166', '9ba7aa': 'f1ae41' },
   // Brightwater Deep: Pearl with sea-foam hair in a teal diving suit, Old Marlo in the
   // Jar-Keeper's navy and gold, Tess in coral and kelp, Echo in brass, and the Hush: the same
@@ -440,7 +441,10 @@ function characters() {
     ids.push(id);
   }
   const atlas = new PNG({ width: sheets.length * 64, height: 112 + 16 });
-  sheets.forEach((s, i) => blit(atlas, s.sheet, i * 64, 0));
+  // Some sheets (OldWoman) have only 2 walk rows; repeat them so the 4-frame walk never shows a blank frame.
+  sheets.forEach((s, i) => {
+    for (let y = 0; y < 64; y += s.sheet.height) blit(atlas, s.sheet, i * 64, y);
+  });
   const extras = [read(join(NINJA, 'characters', 'Shadow.png'))];
   const emoteNames = [];
   for (const [file, name] of Object.entries(EMOTES)) {

@@ -4,7 +4,7 @@
 import { type RefObject, useEffect, useMemo, useRef, useState } from 'react';
 import { StyleSheet } from 'react-native';
 import type { RootState } from '@react-three/fiber';
-import { type BufferGeometry, Color, type Group, type Mesh, type OrthographicCamera, type ShaderMaterial, type Texture } from 'three';
+import { type BufferGeometry, CircleGeometry, Color, type Group, MeshBasicMaterial, type Mesh, type OrthographicCamera, type ShaderMaterial, type Texture } from 'three';
 
 import { FILLED_TILE, ROCK_TILE } from '../world/builder';
 import { EXTRAS, PEOPLE } from '../world/people.generated';
@@ -22,6 +22,8 @@ const WORLD_SHEET = require('../../assets/art/world.png');
 const PEOPLE_SHEET = require('../../assets/art/people.png');
 
 const T = 16;
+/** How much of a world's night colour reaches places no light touches. */
+const NIGHT_DIM = 0.28;
 const FACING_COLUMN = { down: 0, up: 1, left: 2, right: 3 } as const;
 
 /** Where the camera is, so taps on the screen can be turned into map cells. */
@@ -45,6 +47,8 @@ interface Props {
   residents: Resident[];
   /** Secrets not found yet: a little twinkle over each. */
   sparkles?: { x: number; y: number }[];
+  /** The Glowire glowing through the road: cells from the hero to the next job (Pip's guide). */
+  trail?: { x: number; y: number }[];
   /** Pushable rocks, and the water they've filled (world/rocks.ts). */
   rocks?: RockState;
   /** Dust puffs to spawn (a rock pushed, a hop landed): drained every frame. Cell coordinates of the feet. */
@@ -63,6 +67,10 @@ interface Props {
   onTick: (dt: number) => void;
   /** Told where the camera is each frame. */
   onView: (view: View) => void;
+  /** How much of the night colour lights unlit places (the game's deep blackout by default). */
+  nightDim?: number;
+  /** How many cells fit top to bottom (the game shows about 11½; the title shows more town). */
+  cellsTall?: number;
 }
 
 export function WorldCanvas(props: Props) {
@@ -108,10 +116,13 @@ function Scene({
   fog,
   hero = 'hero',
   sparkles = [],
+  trail = [],
   rocks,
   puffs,
   ghosts = [],
   lantern,
+  nightDim = NIGHT_DIM,
+  cellsTall = 11.5,
 }: Props & { sheets: { city: Texture; people: Texture } }) {
   const fogTexture = useMemo(() => createFog(map.width, map.height), [map]);
   const lighting = useMemo(() => createLighting(map.night ?? '#6a74ad', fogTexture), [fogTexture, map.night]);
@@ -155,7 +166,7 @@ function Scene({
   const objects = useMemo(() => {
     const quads: Quad[] = [];
     for (const o of map.objects) {
-      if (o.until && lit.has(o.until)) continue;
+      if ((o.until && lit.has(o.until)) || (o.after && !lit.has(o.after))) continue;
       const z = o.flat ? 0.02 : depth(o.y + o.h);
       const on = o.group && lit.has(o.group) ? 1 : 0;
       o.tiles.forEach((t, i) => {
@@ -210,14 +221,16 @@ function Scene({
     driftFog(fogNow, fog, fogTexture, delta);
     const flicker = 0.75 + 0.25 * Math.sin(state.clock.elapsedTime * 13) * Math.sin(state.clock.elapsedTime * 3.1);
     const all = ghostLights.length ? [...ghostLights.map((l) => ({ ...l, r: l.r * flicker })), ...lights] : lights;
-    onView(frame(state, walkerPosition(walker.current), map, all, lighting, map.underwater ? (lantern?.current ?? 1) : null));
-  });
+    onView(frame(state, walkerPosition(walker.current), map, all, lighting, map.underwater ? (lantern?.current ?? 1) : null, nightDim, cellsTall));
+    // -1: step the walker and camera before the hero/pet draw, or they lag the camera a frame and judder.
+  }, -1);
 
   return (
     <>
       <mesh geometry={ground} material={city} />
       <mesh geometry={objects} material={city} />
       <mesh geometry={rockMesh} material={city} />
+      <GlowTrail path={trail} />
       {residents.map((r) => (
         <Person key={(r as Partial<Placed>).key ?? `${r.who}@${r.x},${r.y}`} who={r.who} x={r.x} y={r.y} facing={r.facing} sheet={peopleSheet} material={people} />
       ))}
@@ -353,6 +366,8 @@ function frame(
   lighting: Lighting,
   /** Under the sea: the hero's lantern (0–1). Null on land, where they carry a steady glow. */
   lantern: number | null,
+  nightDim: number,
+  cellsTall: number,
 ): View {
   const camera = state.camera as OrthographicCamera;
   const { size } = state;
@@ -364,15 +379,16 @@ function frame(
   const dl = map.underwater ? null : daylight(currentPhase());
   if (dl) {
     const night = nightRgb(map.night ?? '#6a74ad');
-    const a = ambientColor(dl.phase, night);
-    lighting.uAmbient.value.setRGB(a[0], a[1], a[2]);
+    // Deep blackout: away from a lamp you can barely make anything out.
+    const [r, g, b] = ambientColor(dl.phase, night);
+    lighting.uAmbient.value.setRGB(r * nightDim, g * nightDim, b * nightDim);
     lighting.uDay.value = dl.day;
   }
   const lamp = dl ? dl.lamp : 1;
 
   // About 11½ cells top to bottom, at a whole number of screen pixels per art pixel, so the
   // pixel art stays crisp.
-  const devicePerCell = Math.max(32, Math.round((size.height * dpr) / 11.5 / T) * T);
+  const devicePerCell = Math.max(T, Math.round((size.height * dpr) / cellsTall / T) * T);
   const zoom = devicePerCell / dpr;
   if (camera.zoom !== zoom) {
     camera.zoom = zoom;
@@ -397,8 +413,9 @@ function frame(
   const u = lighting.uLights.value;
   const uc = lighting.uLightColors.value;
   if (lantern === null) {
-    u[0]!.set(hero.x + 0.5, -hero.y - 0.4, 2.8, dl ? 1 - dl.day * 0.9 : 1);
-    uc[0]!.set(0.32, 0.36, 0.48);
+    // The hero's own small glow: enough to see the few cells around you, no further.
+    u[0]!.set(hero.x + 0.5, -hero.y - 0.4, 4.2, dl ? 1 - dl.day * 0.9 : 1);
+    uc[0]!.set(0.95, 0.85, 0.62);
   } else {
     // A warm lantern whose light shrinks as it runs down (and flickers when nearly out).
     const flicker = lantern < 0.25 ? 0.85 + 0.15 * Math.sin(state.clock.elapsedTime * 23) : 1;
@@ -527,9 +544,13 @@ function Hero({
   const body = useRef<Mesh>(null);
   const last = useRef('');
   const onLedge = useRef(false);
-  useFrame(() => {
+  useFrame((state) => {
     const w = walker.current;
     const p = walkerPosition(w);
+    // Same device-pixel grid the camera snaps to, so hero and world move in lockstep (no diagonal shimmer).
+    const px = state.camera.zoom * state.viewport.dpr;
+    const sx = Math.round(p.x * px) / px;
+    const sy = Math.round(p.y * px) / px;
     const frame = walkFrame(w);
     const key = `${w.facing}${frame}`;
     if (key !== last.current) {
@@ -546,7 +567,7 @@ function Hero({
     if (onLedge.current && !on && w.facing === 'down') puffs?.current?.push({ x: p.x + 0.5, y: p.y + 0.95 });
     onLedge.current = on;
     if (body.current) body.current.position.y = hop;
-    if (group.current) group.current.position.set(p.x, -p.y, depth(p.y + 1) + 0.005);
+    if (group.current) group.current.position.set(sx, -sy, depth(p.y + 1) + 0.005);
   });
   return (
     <group ref={group}>
@@ -618,6 +639,41 @@ function Ghost({ who, x, y, sheet, material }: { who: string; x: number; y: numb
     mesh.visible = Math.sin(t * 9.3) * Math.sin(t * 2.7 + x) > -0.55;
   });
   return <mesh ref={ref} geometry={g} material={material} />;
+}
+
+const TRAIL_MAX = 80;
+const DOT = new CircleGeometry(0.08, 10);
+const HALO = new CircleGeometry(0.2, 14);
+const DOT_GOLD = new MeshBasicMaterial({ color: '#ffd45a', transparent: true, opacity: 0.95, depthWrite: false });
+const HALO_GOLD = new MeshBasicMaterial({ color: '#ffb52e', transparent: true, opacity: 0.22, depthWrite: false });
+
+/**
+ * The Glowire showing through the road: gold dots from the hero to the next job, with a
+ * pulse of current running along them toward it. Drawn above the ground and below
+ * everything standing on it, unlit, so it glows in the dark.
+ */
+function GlowTrail({ path }: { path: { x: number; y: number }[] }) {
+  const dots = path.slice(0, TRAIL_MAX);
+  const group = useRef<Group>(null);
+  useFrame(({ clock }) => {
+    const g = group.current;
+    if (!g) return;
+    const head = (clock.elapsedTime * 7) % (dots.length + 6);
+    g.children.forEach((m, i) => {
+      const pulse = Math.max(0, 1 - Math.abs(i - head) / 2.5);
+      m.scale.setScalar(0.75 + 0.7 * pulse);
+    });
+  });
+  return (
+    <group ref={group}>
+      {dots.map((p, i) => (
+        <group key={i} position={[p.x + 0.5, -p.y - 0.5, 0.5]}>
+          <mesh geometry={HALO} material={HALO_GOLD} />
+          <mesh geometry={DOT} material={DOT_GOLD} />
+        </group>
+      ))}
+    </group>
+  );
 }
 
 /** A tiny twinkle that comes and goes: something here is worth a closer look. */

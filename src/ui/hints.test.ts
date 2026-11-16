@@ -14,7 +14,7 @@ const unsolved: Evaluation = {
 
 function hintFor(rows: string[], meantDark: number[] = []) {
   const board = parseBoard(rows);
-  return pickHint('intro', board, simulate(board), unsolved, false, new Set(meantDark)).text;
+  return pickHint('intro', board, simulate(board), unsolved, null, new Set(meantDark)).text;
 }
 
 describe('hints', () => {
@@ -27,11 +27,11 @@ describe('hints', () => {
     const cells = board.cells.map((t) => (t?.kind === 'led' ? { ...t, locked: true } : t));
     const b = { ...board, cells };
     expect(simulate(b).tiles.some((t) => t?.status === 'REVERSED')).toBe(true);
-    expect(pickHint('intro', b, simulate(b), unsolved, false, new Set()).text).toBe(HINTS.batteryBackwards);
+    expect(pickHint('intro', b, simulate(b), unsolved, null, new Set()).text).toBe(HINTS.batteryBackwards);
   });
 
   it('does not blame batteries for an open circuit', () => {
-    expect(hintFor(['┌ R220 .', 'B^ . Lv', 'Bv . Lv', '└ ─ ┘'])).toBe('intro');
+    expect(hintFor(['┌ R220 .', 'B^ . Lv', 'Bv . Lv', '└ ─ ┘'])).toBe(HINTS.unlinked);
   });
 
   it('explains LEDs in a row that 3 V cannot light', () => {
@@ -42,5 +42,18 @@ describe('hints', () => {
     const rows = ['┌ R220 ┬ ┐', 'B^ . Lv Lgv', '└ ─ ┴ ┘'];
     expect(hintFor(rows)).toBe(HINTS.faint);
     expect(hintFor(rows, [1 * 4 + 3])).toBe('intro');
+  });
+});
+
+describe('brightness hint', () => {
+  it('gives the mA and the band when a lit LED is too dim', () => {
+    const board = parseBoard(['┌ R220 ┐', 'B^ . Lv', '└ ─ ┘']);
+    const evaluation: Evaluation = {
+      ...unsolved,
+      goals: [{ goal: { kind: 'lit', led: 'A', brightness: 'medium' }, met: false, mA: 1.13 }],
+    };
+    expect(pickHint('intro', board, simulate(board), evaluation, null, new Set()).text).toBe(
+      'An LED glows at 1.1 mA, but this goal wants 4–8.4 mA. Too dim: take out some resistance.',
+    );
   });
 });

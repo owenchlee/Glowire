@@ -335,7 +335,7 @@ function wireMaterial(result: TileResult | null): Material {
 }
 
 /** A wire segment from `0.5 − length` out to the tile edge in direction `dir`. */
-function Arm({
+export function Arm({
   dir,
   length = 0.5,
   material,

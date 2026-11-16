@@ -20,7 +20,12 @@ import type { LevelDef } from '../levels/types';
 import { type Choice, Dialog, type DialogLine } from '../ui/Dialog';
 import { starsFor, useGame } from '../ui/game';
 import { Fishing } from '../ui/Fishing';
-import { Counter, GOLD, Panel, PixelButton, PixelText } from '../ui/pixel';
+import { ChestGame } from '../ui/ChestGame';
+import { SoundToggle } from '../ui/SoundToggle';
+import { type ChestGameKind, chestDifficulty, chestGameFor } from '../ui/chestGames';
+import { playSfx, playStep, startMusic } from '../audio/audio';
+import { surfaceAt } from '../audio/surface';
+import { Counter, GOLD, Panel, PixelButton, PixelText, Portrait } from '../ui/pixel';
 import { type RockState, newRocks, pushRock, rockIndex, withRocks } from '../world/rocks';
 import {
   STEP,
@@ -50,11 +55,13 @@ import {
 import { type Placed, placeResidents, residentKey } from '../world/routines';
 import { ROUTINES } from '../world/routines.data';
 import { WORLDS } from '../world/worlds';
-import { currentPhase, dayClockSeconds, daylight } from './daylight';
-import { secondsSinceNightFell } from './nightClock';
+import { dayClockSeconds } from './daylight';
 import { Joystick } from './Joystick';
-import { chestKey, labelFor } from './targets';
-import { AreaBanner, ClockBadge, LanternGauge } from './WorldHud';
+import { MapScreen } from './MapScreen';
+import { readExplored, revealAround, writeExplored } from './explored';
+import { guideHelp, guideTip, inTutorial, nextGoal, tutorialNudge } from './guide';
+import { chestKey, labelFor, metKey, sceneReady } from './targets';
+import { AreaBanner, LanternGauge } from './WorldHud';
 import { type Puff, type View as CameraView, WorldCanvas } from './WorldCanvas';
 
 /** Where the hero was standing in each world, so coming back from a puzzle feels seamless. */
@@ -125,11 +132,10 @@ export function WorldScreen({ map, worldId }: { map: WorldMap; worldId: string }
   const routines = ROUTINES[worldId];
   const placeNow = useCallback(
     (hero?: Point): Placed[] => {
-      const phase = currentPhase();
-      const night = !map.underwater && daylight(phase).night;
-      return placeResidents(presentBase, routines, dayClockSeconds(), night, hero, night ? secondsSinceNightFell(phase) : Infinity);
+      // The whole game is one blackout night, so people stay out instead of going home to bed.
+      return placeResidents(presentBase, routines, dayClockSeconds(), false, hero, Infinity);
     },
-    [presentBase, routines, map.underwater],
+    [presentBase, routines],
   );
   const [residents, setResidents] = useState<Placed[]>(() => placeNow());
   const residentsSig = useRef('');
@@ -185,8 +191,9 @@ export function WorldScreen({ map, worldId }: { map: WorldMap; worldId: string }
   const secretsFound = worldSecrets.filter((x) => found(x.id)).length;
   const chests = useMemo(() => map.spots.flatMap((s) => (s.kind === 'chest' ? [s.id] : [])), [map]);
   const chestsFound = chests.filter((id) => save.seen.includes(chestKey(id))).length;
+  // Opened chests join the lit set for drawing only, so the canvas swaps them for open ones.
+  const drawnLit = useMemo(() => new Set([...lit, ...save.seen.filter((k) => k.startsWith('chest:'))]), [lit, save.seen]);
   const fishCaught = Object.values(save.fish ?? {}).reduce((a, b) => a + b, 0);
-  const hasFish = useMemo(() => map.spots.some((s) => s.kind === 'fish'), [map]);
   const areaIndex = useCallback(
     (x: number, y: number) => map.areaOf[y * map.width + x] ?? 255,
     [map],
@@ -240,6 +247,21 @@ export function WorldScreen({ map, worldId }: { map: WorldMap; worldId: string }
     blockedNow.current = blocked;
   }, [blocked]);
   const free = useCallback((x: number, y: number) => canWalk(map, blockedNow.current, x, y), [map]);
+
+  // Pip's guide: the next job, and the Glowire glowing along the road to it.
+  const [heroCell, setHeroCell] = useState(() => walkerCell(start));
+  const tutorial = inTutorial(map, solved);
+  const goal = useMemo(() => nextGoal(map, solved, residents, heroCell), [map, solved, residents, heroCell]);
+  const trail = useMemo(
+    // Only the first world lays the glowing road; later worlds are for exploring.
+    () => (goal && map.id === 'glowtown' ? (findPath(map, blocked, heroCell, goal) ?? []) : []),
+    [map, blocked, heroCell, goal],
+  );
+  // A ref, so callbacks that read the goal don't change (and re-bind the keys) on every step.
+  const goalNow = useRef(goal);
+  useEffect(() => {
+    goalNow.current = goal;
+  }, [goal]);
   // One-way ledges: the walker asks this (through the function) before climbing into a cell.
   useEffect(() => {
     setLedges(free, map.ledges, map.width);
@@ -259,22 +281,96 @@ export function WorldScreen({ map, worldId }: { map: WorldMap; worldId: string }
 
   // A story scene waiting to be seen takes over until it's done.
   const [chat, setChat] = useState<Talk | null>(null);
-  const scene = pendingScene(map, save, here);
+  const pending = pendingScene(map, save, here);
+  const scene = pending && sceneReady(pending.lines, residents, heroCell) ? pending : null;
   const talk: Talk | null = chat ?? (scene ? { lines: scene.lines, seenId: scene.id } : null);
-  const isTalking = talk !== null || fishing;
+  // Chests: some are locked with a little skill game (ui/ChestGame); rock-puzzle ones never are.
+  const [chestGame, setChestGame] = useState<{ id: string; sparks: number; kind: ChestGameKind } | null>(null);
+  const rockChests = useMemo(
+    () => new Set((map.puzzles ?? []).flatMap((p) => ('chest' in p && typeof p.chest === 'string' ? [p.chest] : []))),
+    [map],
+  );
+  const openChest = useCallback((s: { id: string; sparks: number }) => {
+    commitSave({ ...save, sparks: save.sparks + s.sparks, seen: [...save.seen, chestKey(s.id)] });
+    buzz.win();
+    playSfx('chest-open');
+    setChat({ lines: [{ who: 'pip', text: `A hidden chest! Inside: ⚡${s.sparks} sparks. Bzzt, what a find!` }] });
+  }, [save, commitSave]);
+
+  // The map (M): what you've walked near is remembered in the save, a few seconds at a time.
+  const [mapAt, setMapAt] = useState<Point | null>(null);
+  const mapOpen = mapAt !== null;
+  // The screen remounts per world (key=map.id), so this is read once per world.
+  const [explored] = useState(() => {
+    const ex = readExplored(save.seen, map);
+    // Areas you've already finished count as explored (saves from before the map existed).
+    for (let y = 0; y < map.height; y++)
+      for (let x = 0; x < map.width; x++) {
+        const a = map.areas[map.areaOf[y * map.width + x]!];
+        if (a && a.jobs.length > 0 && areaDone(a, solved)) revealAround(ex, map, x, y, 0);
+      }
+    return ex;
+  });
+  const exploredDirty = useRef(false);
+  const saveNow = useRef(save);
+  useEffect(() => {
+    saveNow.current = save;
+  }, [save]);
+  const storeExplored = useCallback(() => {
+    if (!exploredDirty.current) return;
+    exploredDirty.current = false;
+    commitSave({ ...saveNow.current, seen: writeExplored(saveNow.current.seen, map, explored) });
+  }, [commitSave, map, explored]);
+  useEffect(() => {
+    const id = setInterval(storeExplored, 4000);
+    return () => {
+      clearInterval(id);
+      storeExplored();
+    };
+  }, [storeExplored]);
+  const openMap = useCallback(() => {
+    const w = walker.current;
+    if (revealAround(explored, map, w.x, w.y, 7)) exploredDirty.current = true;
+    storeExplored();
+    setMapAt(walkerCell(w));
+  }, [explored, map, storeExplored]);
+
+  const isTalking = talk !== null || fishing || chestGame !== null || mapOpen;
+  const openMapNow = useRef(openMap);
+  useEffect(() => {
+    openMapNow.current = openMap;
+  }, [openMap]);
+  useEffect(() => startMusic(), []);
+  // Everyone who speaks to you counts as met, so their face shows on the world page from now on.
+  const newlyMet = [...new Set((talk?.lines ?? []).map((l) => metKey(l.who)))]
+    .filter((k) => !save.seen.includes(k))
+    .join('|');
+  useEffect(() => {
+    if (newlyMet) commitSave({ ...save, seen: [...save.seen, ...newlyMet.split('|')] });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [newlyMet]);
   const talking = useRef(false);
+  const resyncKeys = useRef(() => {});
   useEffect(() => {
     talking.current = isTalking;
+    // Keys still held through a chat or scene pick the walk back up when it closes.
+    if (!isTalking) resyncKeys.current();
   }, [isTalking]);
   const [facingLabel, setFacingLabel] = useState<string | null>(null);
   const [travelling, setTravelling] = useState(false);
 
   // Pause the town while a puzzle or the shop is open on top of it.
   const [focused, setFocused] = useState(true);
+  // Read by the key handler: this screen stays mounted under a puzzle, where its keys must do nothing.
+  const focusedNow = useRef(true);
   useFocusEffect(
     useCallback(() => {
       setFocused(true);
-      return () => setFocused(false);
+      focusedNow.current = true;
+      return () => {
+        setFocused(false);
+        focusedNow.current = false;
+      };
     }, []),
   );
 
@@ -362,6 +458,22 @@ export function WorldScreen({ map, worldId }: { map: WorldMap; worldId: string }
   /** What talking to someone (or using a door) says and offers. */
   const interact = useCallback(
     (target: Target) => {
+      // Tutorial: until the first house is lit, Pip steers you back to it (talking and reading are fine).
+      if (tutorial && target.kind !== 'gate') {
+        const s = target.kind === 'spot' ? target.spot : null;
+        const r = target.kind === 'resident' ? target.resident : null;
+        const job = r?.job ?? (s?.kind === 'job' ? s.job : undefined);
+        const later =
+          job !== undefined
+            ? job !== goalNow.current?.job
+            : r
+              ? r.who === 'pip'
+              : !!s && !['sign', 'note', 'secret'].includes(s.kind);
+        if (later) {
+          setChat({ lines: tutorialNudge(goalNow.current) });
+          return;
+        }
+      }
       if (target.kind === 'gate') {
         const a = map.areas[target.area]!;
         const left = a.jobs.filter((j) => !solved(j)).length;
@@ -504,20 +616,10 @@ export function WorldScreen({ map, worldId }: { map: WorldMap; worldId: string }
         if (save.seen.includes(chestKey(s.id)))
           setChat({ lines: [{ who: 'pip', text: 'Empty now. It was a good one, though.' }] });
         else {
-          commitSave({
-            ...save,
-            sparks: save.sparks + s.sparks,
-            seen: [...save.seen, chestKey(s.id)],
-          });
-          buzz.win();
-          setChat({
-            lines: [
-              {
-                who: 'pip',
-                text: `A hidden chest! Inside: ⚡${s.sparks} sparks. Bzzt, what a find!`,
-              },
-            ],
-          });
+          // Chests behind a rock puzzle were the puzzle; the rest may be locked with a little game.
+          const kind = rockChests.has(s.id) ? null : chestGameFor(s.id, s.sparks);
+          if (kind) setChestGame({ id: s.id, sparks: s.sparks, kind });
+          else openChest(s);
         }
       } else if (s.kind === 'fish') setFishing(true);
       else if (s.kind === 'reset') {
@@ -541,7 +643,7 @@ export function WorldScreen({ map, worldId }: { map: WorldMap; worldId: string }
         if (sec) setChat({ lines: sec.lines, seenId: secretKey(sec.id) });
       }
     },
-    [map, save, commitSave, solved, startJob, close, talkToPip, go, askChoice, rockState],
+    [map, save, solved, tutorial, startJob, close, talkToPip, go, askChoice, rockState, rockChests, openChest],
   );
 
   const facingTarget = useCallback((): Target | null => {
@@ -570,6 +672,10 @@ export function WorldScreen({ map, worldId }: { map: WorldMap; worldId: string }
         w.path = [];
       }
       const { arrived } = stepWalker(w, dt, free);
+      if (w.moving) {
+        playStep(surfaceAt(map, w.x + 0.5, w.y + 0.6));
+        if (revealAround(explored, map, w.x, w.y, 7)) exploredDirty.current = true;
+      }
       // Walking into a rock pushes it, after a short beat of leaning on it.
       const ax = Math.abs(w.input.x) > 0.3 ? Math.sign(w.input.x) : 0;
       const ay = Math.abs(w.input.y) > 0.3 ? Math.sign(w.input.y) : 0;
@@ -597,6 +703,7 @@ export function WorldScreen({ map, worldId }: { map: WorldMap; worldId: string }
             rocksNow.current = moved.state;
             setRockState(moved.state);
             buzz.thud();
+            playSfx('rock-push');
             puffs.current.push({ x: moved.to.x + 0.5, y: moved.to.y + 0.9 }, { x: rock.x + 0.5, y: rock.y + 0.9 });
           }
         }
@@ -621,6 +728,7 @@ export function WorldScreen({ map, worldId }: { map: WorldMap; worldId: string }
             break;
           }
       const c = walkerCell(w);
+      setHeroCell((old) => (old.x === c.x && old.y === c.y ? old : c));
       const a = areaAt(c.x, c.y);
       if (a !== 255 && a !== lastArea.current) {
         lastArea.current = a;
@@ -649,7 +757,7 @@ export function WorldScreen({ map, worldId }: { map: WorldMap; worldId: string }
         }
       }
     },
-    [facingTarget, interact, free, areaAt, map],
+    [facingTarget, interact, free, areaAt, map, explored],
   );
 
   // Keyboard (web): hold arrows / WASD to walk (two at once for diagonals); E / Enter /
@@ -661,13 +769,17 @@ export function WorldScreen({ map, worldId }: { map: WorldMap; worldId: string }
       const on = (f: Facing) => (held.includes(f) ? 1 : 0);
       walker.current.input = { x: on('right') - on('left'), y: on('down') - on('up') };
     };
+    resyncKeys.current = sync;
     const down = (e: KeyboardEvent) => {
-      if (talking.current) return;
+      if (talking.current || !focusedNow.current) return;
       const dir = KEYS[e.key];
       if (dir) {
         e.preventDefault();
         if (!held.includes(dir)) held.push(dir);
         sync();
+      } else if (e.key === 'm' || e.key === 'M') {
+        e.preventDefault();
+        openMapNow.current();
       } else if (['e', 'E', 'Enter', ' '].includes(e.key)) {
         e.preventDefault();
         act();
@@ -678,7 +790,9 @@ export function WorldScreen({ map, worldId }: { map: WorldMap; worldId: string }
       if (!dir) return;
       const i = held.indexOf(dir);
       if (i >= 0) held.splice(i, 1);
-      sync();
+      // Two keys never lift on the same frame: a short grace stops a diagonal ending in a sideways jerk.
+      if (held.length) setTimeout(sync, 70);
+      else sync();
     };
     const blur = () => {
       held.length = 0;
@@ -752,11 +866,12 @@ export function WorldScreen({ map, worldId }: { map: WorldMap; worldId: string }
         paused={!focused}
         pet={save.equipped.pet}
         hero={outfitSprite(save.equipped.outfit)}
-        lit={lit}
+        lit={drawnLit}
         fog={fog}
         residents={residents}
         bubbles={bubbles}
         sparkles={sparkles}
+        trail={trail}
         rocks={rockState}
         puffs={puffs}
         ghosts={ghosts}
@@ -793,24 +908,24 @@ export function WorldScreen({ map, worldId }: { map: WorldMap; worldId: string }
         </Pressable>
         <View style={styles.right} pointerEvents="box-none">
           <View style={styles.line} pointerEvents="box-none">
-            {!map.underwater && <ClockBadge />}
-            <Counter icon="✦" value={`${litCount}/${worldJobs.length}`} color="#ffe58a" />
+            <Counter icon="✦" value={`${litCount}/${worldJobs.length} lit`} color="#ffe58a" />
             <Counter icon="⚡" value={save.sparks} />
             <Counter icon="★" value={totalStars(save)} />
+            <SoundToggle />
+          </View>
+          {/* Collections only appear once you've found the first of each, labelled in words. */}
+          <View style={styles.line} pointerEvents="box-none">
+            {notesFound > 0 && <Counter icon="✎" value={`Notes ${notesFound}/${notes.length}`} color="#c9e7ff" />}
+            {fishCaught > 0 && <Counter icon="≈" value={`Fish ${fishCaught}`} color="#8fd0e8" />}
+            {chestsFound > 0 && <Counter icon="◆" value={`Chests ${chestsFound}/${chests.length}`} color="#f2b36b" />}
+            {secretsFound > 0 && (
+              <Counter icon="◉" value={`Secrets ${secretsFound}/${worldSecrets.length}`} color="#ffd27a" />
+            )}
           </View>
           <View style={styles.line} pointerEvents="box-none">
-            {notes.length > 0 && (
-              <Counter icon="✎" value={`${notesFound}/${notes.length}`} color="#c9e7ff" />
-            )}
-            {(fishCaught > 0 || hasFish) && <Counter icon="≈" value={fishCaught} color="#8fd0e8" />}
-            {chests.length > 0 && (
-              <Counter icon="◆" value={`${chestsFound}/${chests.length}`} color="#f2b36b" />
-            )}
-            {worldSecrets.length > 0 && (
-              <Counter icon="◉" value={`${secretsFound}/${worldSecrets.length}`} color="#ffd27a" />
-            )}
+            <PixelButton label="Map (M)" tone="gold" size={12} onPress={openMap} />
             <PixelButton label="Journal" tone="cream" size={12} onPress={() => go('/journal')} />
-            <PixelButton label="Worlds" tone="teal" size={12} onPress={() => go('/')} />
+            <PixelButton label="Worlds" tone="teal" size={12} onPress={() => go('/story')} />
           </View>
         </View>
       </View>
@@ -823,6 +938,25 @@ export function WorldScreen({ map, worldId }: { map: WorldMap; worldId: string }
               press E
             </PixelText>
           )}
+        </View>
+      )}
+
+      {!talk && !travelling && !mapOpen && !chestGame && !fishing && (
+        <View style={[styles.guide, facingLabel ? styles.guideRaised : null]} pointerEvents="box-none">
+          <Panel style={styles.guidePanel}>
+            <View style={styles.guideRow}>
+              <Portrait who="pip" size={34} />
+              <PixelText size={12} style={styles.flex}>
+                {guideTip(map, solved, goal)}
+              </PixelText>
+            </View>
+            <PixelButton
+              label="Need help?"
+              tone="teal"
+              size={11}
+              onPress={() => setChat({ lines: guideHelp(map, solved, goal, Platform.OS === 'web') })}
+            />
+          </Panel>
         </View>
       )}
 
@@ -878,6 +1012,22 @@ export function WorldScreen({ map, worldId }: { map: WorldMap; worldId: string }
           onClose={close}
         />
       )}
+      {chestGame && !talk && (
+        <ChestGame
+          key={chestGame.id}
+          kind={chestGame.kind}
+          difficulty={chestDifficulty(chestGame.sparks)}
+          onWin={() => {
+            const spot = chestGame;
+            setChestGame(null);
+            openChest(spot);
+          }}
+          onClose={() => setChestGame(null)}
+        />
+      )}
+      {mapAt && (
+        <MapScreen map={map} explored={explored} solved={solved} hero={mapAt} onClose={() => setMapAt(null)} />
+      )}
     </View>
   );
 }
@@ -899,6 +1049,11 @@ const styles = StyleSheet.create({
   line: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   action: { position: 'absolute', right: 18, bottom: 16, alignItems: 'center', gap: 2 },
   hint: { marginTop: 2 },
+  guide: { position: 'absolute', right: 14, bottom: 14, width: 300, maxWidth: '46%' },
+  // Sits above the action button ("Knock", "Talk") when that's showing.
+  guideRaised: { bottom: 84 },
+  guidePanel: { gap: 6, alignItems: 'flex-end' },
+  guideRow: { flexDirection: 'row', alignItems: 'center', gap: 8, alignSelf: 'stretch' },
   travel: {
     position: 'absolute',
     top: 0,

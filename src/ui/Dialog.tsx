@@ -4,6 +4,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Animated, Platform, Pressable, StyleSheet, View } from 'react-native';
 
+import { playSfx, playVoice, stopVoice } from '../audio/audio';
+import { voiceKey } from '../audio/voiceKey';
+import { VOICES } from '../audio/voices.generated';
 import { person } from '../game/cast';
 import { buzz } from './haptics';
 import { NameTab, Panel, PixelButton, PixelText, Portrait, TEXT_SOFT } from './pixel';
@@ -42,6 +45,13 @@ export function Dialog({
   const last = index === lines.length - 1;
   const done = shown >= line.text.length;
   const rise = useRef(new Animated.Value(0)).current;
+  // The recorded line, if this one has been voiced (lines with live numbers never are).
+  const voice = VOICES[voiceKey(line.who, line.text)];
+
+  useEffect(() => {
+    if (voice) playVoice(voice);
+    return stopVoice;
+  }, [line, voice]);
 
   useEffect(() => {
     Animated.timing(rise, { toValue: 1, duration: 180, useNativeDriver: true }).start();
@@ -53,12 +63,13 @@ export function Dialog({
       () =>
         setShown((n) => {
           if (n >= line.text.length) clearInterval(timer);
+          else if (!voice && n % 6 === 0 && line.text[n] !== ' ') playSfx('talk-blip'); // blips stand in for a voice
           return Math.min(line.text.length, n + 2);
         }),
       22,
     );
     return () => clearInterval(timer);
-  }, [line]);
+  }, [line, voice]);
 
   const advance = useCallback(() => {
     if (!done) return setShown(line.text.length);

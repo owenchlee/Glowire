@@ -46,17 +46,20 @@ describe('save file', () => {
 });
 
 describe('sparks', () => {
-  it('pays each star once', () => {
+  it('pays each star once, plus a solve and 2★/3★ bonus on every clear', () => {
     expect(sparksForStars(0, 3)).toBe(35);
     expect(sparksForStars(1, 3)).toBe(25);
     expect(sparksForStars(0, 1, true)).toBe(20); // bosses pay double
     const first = recordJob(fresh(), 5, 2);
-    expect(first.earned).toBe(20);
+    expect(first.earned).toBe(20 + 5 + 5);
     expect(first.firstClear).toBe(true);
     const again = recordJob(first.save, 5, 2);
-    expect(again.earned).toBe(0);
+    expect(again.earned).toBe(5 + 5); // a replay still pays
+    expect(again.save.stars['5']).toBe(2);
+    expect(recordJob(first.save, 5, 1).save.stars['5']).toBe(2); // a worse replay never lowers the stars
+    expect(recordJob(first.save, 5, 0).earned).toBe(0);
     const better = recordJob(first.save, 5, 3);
-    expect(better.earned).toBe(15);
+    expect(better.earned).toBe(15 + 5 + 10);
     expect(better.save.stars['5']).toBe(3);
     expect(better.firstClear).toBe(false);
   });
@@ -64,7 +67,7 @@ describe('sparks', () => {
   it('Penny adds half again', () => {
     const save = { ...fresh(), owned: [...NEW_SAVE.owned, 'penny'] };
     const withPenny = equip(save, 'penny');
-    expect(recordJob(withPenny, 1, 3).earned).toBe(53); // 35 × 1.5, rounded
+    expect(recordJob(withPenny, 1, 3).earned).toBe(75); // (35 + 5 + 10) × 1.5
   });
 });
 

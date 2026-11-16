@@ -81,4 +81,12 @@ describe('mini-game rewards', () => {
     expect(recordGame(first.save, 'signal', 4).earned).toBe(0);
     expect(recordGame(first.save, 'signal', 7).earned).toBe(6);
   });
+
+  it('pays every finished run by its stars, best or not', () => {
+    const first = recordGame(NEW_SAVE, 'panel', 45, 3);
+    expect(first.earned).toBe(45 * 3 + 5 + 10);
+    expect(recordGame(first.save, 'panel', 30, 1).earned).toBe(5);
+    expect(recordGame(first.save, 'panel', 40, 2).earned).toBe(10);
+    expect(recordGame(first.save, 'panel', 0, 0).earned).toBe(0);
+  });
 });

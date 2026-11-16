@@ -6,7 +6,12 @@ import {
   canTurn,
   lampMilliamps,
   lanternRound,
+  rigInTheWay,
+  rigPush,
   panelBoard,
+  panelSolution,
+  pipeHint,
+  probeHint,
   panelSolved,
   pipeBoard,
   pipesSolved,
@@ -168,5 +173,47 @@ describe('Lantern Budget', () => {
   it('knows a parallel resistor does not dim the lamp', () => {
     expect(lampMilliamps({ kind: 'parallel', volts: 6, ohms: 47 })).toBeCloseTo((6 / LAMP_OHMS) * 1000);
     expect(lampMilliamps({ kind: 'twin', volts: 6, ohms: 0 })).toBeCloseTo(30);
+  });
+
+  it('shows brightness as push over what is in the way, so no maths is needed', () => {
+    const random = rng(7);
+    for (let round = 0; round < 12; round++) {
+      for (const r of lanternRound(round, random).rigs)
+        expect(lampMilliamps(r)).toBeCloseTo((rigPush(r) / rigInTheWay(r)) * 1000);
+    }
+  });
+});
+
+describe("Pip's hints", () => {
+  it('following the pipe hint always lights every lamp', () => {
+    for (let seed = 1; seed <= 60; seed++) {
+      let b = pipeBoard(seed % 5, rng(seed));
+      for (let guard = 0; guard < 200 && !pipesSolved(b); guard++) {
+        const h = pipeHint(b)!;
+        expect(h).not.toBeNull();
+        for (let k = 0; k < h.turns; k++) b = turnPipe(b, h.i);
+      }
+      expect(pipesSolved(b)).toBe(true);
+    }
+  });
+
+  it('the panel solution fixes the panel in no more presses than par', () => {
+    for (let seed = 1; seed <= 100; seed++) {
+      const random = rng(seed);
+      for (let round = 0; round < 3; round++) {
+        const p = panelBoard(round, random);
+        const presses = panelSolution(p.n, p.on);
+        expect(presses.length).toBeLessThanOrEqual(p.par);
+        const done = presses.reduce((on, i) => pressPanel(p.n, on, i), p.on);
+        expect(done.every(Boolean)).toBe(true);
+      }
+    }
+  });
+
+  it('the probe hint halves what is left, and names the lamp at the end', () => {
+    expect(probeHint(8, new Array(8).fill(false), null)).toEqual({ from: 0, to: 3, only: false });
+    expect(probeHint(8, new Array(8).fill(false), [4, 7])).toEqual({ from: 4, to: 5, only: false });
+    const cleared = [true, true, true, true, true, false, true, true];
+    expect(probeHint(8, cleared, null)).toEqual({ from: 5, to: 5, only: true });
   });
 });

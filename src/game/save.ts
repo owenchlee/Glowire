@@ -46,6 +46,8 @@ export interface SaveData {
   fish: Record<string, number>;
   /** Testing switch: every job is open. */
   unlockAll: boolean;
+  /** Sound and music off. */
+  muted: boolean;
 }
 
 export const NEW_SAVE: SaveData = {
@@ -61,6 +63,7 @@ export const NEW_SAVE: SaveData = {
   luck: NEW_LUCK,
   fish: {},
   unlockAll: false,
+  muted: false,
 };
 
 const isRecord = (v: unknown): v is Record<string, unknown> =>
@@ -111,6 +114,7 @@ export function migrate(raw: unknown): SaveData {
     luck: { ...NEW_LUCK, ...(isRecord(raw.luck) ? numbers(raw.luck) : {}) },
     fish: isRecord(raw.fish) ? numbers(raw.fish) : {},
     unlockAll: raw.unlockAll === true,
+    muted: raw.muted === true,
   };
 }
 
@@ -130,6 +134,16 @@ export function sparksForStars(before: number, after: number, boss = false): num
   return boss ? total * 2 : total;
 }
 
+/** Paid on every clear, replays too: a little for solving, more for 2 and 3 stars. */
+export const SOLVE_SPARKS = 5;
+export const STAR_BONUS = [0, 0, 5, 10] as const;
+const clearPay = (stars: number) => ({ solve: stars > 0 ? SOLVE_SPARKS : 0, bonus: STAR_BONUS[Math.min(3, stars)] ?? 0 });
+
+/** "Solved +⚡5 · ★★★ bonus +⚡10", for the result cards. */
+export function payNote(p: { solve?: number; bonus?: number }, stars: number): string {
+  return [p.solve ? `Solved +⚡${p.solve}` : '', p.bonus ? `${'★'.repeat(stars)} bonus +⚡${p.bonus}` : ''].filter(Boolean).join('  ·  ');
+}
+
 /** Penny the Raccoon's bonus. */
 export function withPetBonus(save: SaveData, sparks: number): number {
   return save.equipped.pet === 'penny' ? Math.round(sparks * 1.5) : sparks;
@@ -143,6 +157,9 @@ export interface JobPayout {
   firstClear: boolean;
   /** 2 or 5 when a payday Surge hit (already in `earned`); 1 otherwise. */
   surge?: 1 | 2 | 5;
+  /** The every-clear part of `earned` (before Penny and Surge): for solving, and the 2★/3★ bonus. */
+  solve?: number;
+  bonus?: number;
 }
 
 /**
@@ -158,10 +175,13 @@ function withSurge(save: SaveData, earned: number, random?: Random): { save: Sav
 
 export function recordJob(save: SaveData, id: number, stars: number, boss = false, random?: Random): JobPayout {
   const before = save.stars[String(id)] ?? 0;
-  if (stars <= before) return { save, earned: 0, firstClear: false };
-  const base = withPetBonus(save, sparksForStars(before, stars, boss));
-  const paid = withSurge({ ...save, stars: { ...save.stars, [id]: stars }, sparks: save.sparks + base }, base, random);
-  return { save: paid.save, earned: paid.earned, firstClear: before === 0, surge: paid.surge };
+  const { solve, bonus } = clearPay(stars);
+  const fresh = stars > before ? sparksForStars(before, stars, boss) : 0;
+  const base = withPetBonus(save, fresh + solve + bonus);
+  if (base <= 0) return { save, earned: 0, firstClear: false };
+  const starsNow = stars > before ? { ...save.stars, [id]: stars } : save.stars;
+  const paid = withSurge({ ...save, stars: starsNow, sparks: save.sparks + base }, base, random);
+  return { save: paid.save, earned: paid.earned, firstClear: before === 0, surge: paid.surge, solve, bonus };
 }
 
 /** YYYY-MM-DD in the player's own time zone. */
@@ -247,14 +267,19 @@ export function recordBrainDaily(save: SaveData, today: string, stars: number, r
 export const GAME_SPARKS_PER_POINT = 3;
 
 /** A mini-game finished: a new best pays sparks for every point it beats the old one by. */
-export function recordGame(save: SaveData, game: string, score: number): JobPayout {
+/** A finished mini-game run: sparks for a new best, plus the every-clear pay for its `stars` (0 for none). */
+export function recordGame(save: SaveData, game: string, score: number, stars = 0): JobPayout {
   const best = save.games[game] ?? 0;
-  if (score <= best) return { save, earned: 0, firstClear: false };
-  const earned = withPetBonus(save, (score - best) * GAME_SPARKS_PER_POINT);
+  const { solve, bonus } = clearPay(stars);
+  const record = score > best ? (score - best) * GAME_SPARKS_PER_POINT : 0;
+  const earned = withPetBonus(save, record + solve + bonus);
+  if (earned <= 0) return { save, earned: 0, firstClear: false };
   return {
-    save: { ...save, sparks: save.sparks + earned, games: { ...save.games, [game]: score } },
+    save: { ...save, sparks: save.sparks + earned, games: score > best ? { ...save.games, [game]: score } : save.games },
     earned,
-    firstClear: best === 0,
+    firstClear: best === 0 && score > best,
+    solve,
+    bonus,
   };
 }
 

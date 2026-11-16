@@ -36,7 +36,8 @@ export const CHAPTER_1: ChapterDef = {
       newPart: {
         name: 'Resistor',
         token: 'R220',
-        text: 'A resistor slows the current down. Without one, an LED gets too much current and burns out!',
+        text:
+          'This battery pushes 3 volts, but a red LED only wants about 2 volts. Wired straight in, the extra volt shoves too much current through and it burns out (past 30 mA).\n\nA 220 Ω resistor takes that extra 1 volt for itself. Current = leftover volts ÷ ohms: 1 V ÷ 220 Ω ≈ 5 mA. Safe, and it glows.',
       },
     },
     {
@@ -106,7 +107,7 @@ export const CHAPTER_1: ChapterDef = {
         ask: 'I’m NOT scared of the dark. I just want a little light. A soft one. Not a big bright one. Okay?',
         thanks: 'That’s perfect. Not scary at all. …Can Pip stay until I fall asleep?',
       },
-      tip: 'A bigger resistor lets less current through, so the LED glows softer.',
+      tip: 'The resistor gets the 1 volt the LED doesn’t use. 1 V ÷ 100 Ω = 10 mA (bright). 1 V ÷ 1000 Ω = 1 mA (soft). Bigger ohms, less current.',
       stars: [{ kind: 'safe' }, { kind: 'solo' }],
       intro: 'Make the LED glow softly. Bigger resistors let less current through.',
       board: ['. .  . .  .', '. .  . .  .', '. B^ . Lv .', '. .  . .  .', '. .  . .  .'],
@@ -302,6 +303,7 @@ export const CHAPTER_1: ChapterDef = {
       id: 32,
       title: 'Grumble’s Tangle',
       boss: true,
+      taunt: 'Heh heh. Gran’s little apprentice, all alone on the roof with ME. Build whatever you like… I’ll wreck it!',
       job: {
         client: 'gran',
         place: 'Gran’s Workshop',

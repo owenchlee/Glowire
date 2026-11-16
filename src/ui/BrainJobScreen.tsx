@@ -1,18 +1,21 @@
 // A job that is a brain game: the client asks in their own voice on the left, the puzzle fills
 // the right. Finishing pays out like a circuit job (stars by how well you played).
 
+import { payNote } from '../game/save';
 import { router } from 'expo-router';
-import { useCallback, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { brainStars } from '../game/puzzles';
 import type { BrainJob, LevelDef } from '../levels/types';
 import { levelNumber } from '../levels/levels';
-import { ClockPanel, DeadLampHunt, DockyardWiring, LanternBudget } from './BrainGames';
+import { ClockPanel, DeadLampHunt, DockyardWiring, type HintRef, LanternBudget } from './BrainGames';
 import { speakerName } from './Dialog';
 import { useGame } from './game';
 import { buzz } from './haptics';
+import { PipHelp } from './PipHelp';
+import { GAMES as GAMES_INFO } from '../game/games';
 import { CREAM, Counter, GOLD, INK, NIGHT, NIGHT_DEEP, NameTab, Panel, PixelButton, PixelText, Portrait } from './pixel';
 
 const GAMES = { probe: DeadLampHunt, pipes: DockyardWiring, panel: ClockPanel, lantern: LanternBudget } as const;
@@ -21,18 +24,19 @@ export function BrainJobScreen({ level, brain }: { level: LevelDef; brain: Brain
   const { save, finishJob } = useGame();
   const job = level.job;
   const [say, setSay] = useState(job?.ask ?? level.intro);
+  const hint = useRef<(() => string | null) | null>(null) as HintRef;
   const [run, setRun] = useState(0);
   const [phase, setPhase] = useState<'intro' | 'play' | 'done'>('intro');
-  const [result, setResult] = useState<{ stars: number; earned: number } | null>(null);
+  const [result, setResult] = useState<{ stars: number; earned: number; note: string } | null>(null);
   const Game = GAMES[brain.game];
   const best = save.stars[String(level.id)] ?? 0;
 
   const finish = useCallback(
     (score: number) => {
       const stars = brainStars(brain.game, score);
-      const payout = stars > 0 ? finishJob(level.id, stars, false) : { earned: 0 };
+      const payout = stars > 0 ? finishJob(level.id, stars, false) : null;
       if (stars > 0) buzz.win();
-      setResult({ stars, earned: payout.earned });
+      setResult({ stars, earned: payout?.earned ?? 0, note: payout ? payNote(payout, stars) : '' });
       setSay(stars > 0 ? (job?.thanks ?? 'Thank you!') : 'Not quite. Have another go?');
       setPhase('done');
     },
@@ -60,12 +64,13 @@ export function BrainJobScreen({ level, brain }: { level: LevelDef; brain: Brain
           <Counter icon="★" value={`${best}/3`} />
           <Counter icon="⚡" value={save.sparks} />
         </View>
+        <PipHelp tips={GAMES_INFO[brain.game].tips} ask={() => hint.current?.() ?? null} />
         <View style={styles.flex} />
         {job && <Portrait who={job.client} size={64} />}
         <View>
           {job && <NameTab name={speakerName(job.client)} />}
           <Panel>
-            <PixelText size={12}>{say}</PixelText>
+            <PixelText size={16}>{say}</PixelText>
           </Panel>
         </View>
       </View>
@@ -78,7 +83,7 @@ export function BrainJobScreen({ level, brain }: { level: LevelDef; brain: Brain
             <PixelButton label="Start!" tone="orange" size={18} onPress={start} />
           </View>
         )}
-        {phase === 'play' && <Game key={run} seed={brain.seed + run} onSay={setSay} onEnd={finish} />}
+        {phase === 'play' && <Game key={run} seed={brain.seed + run} onSay={setSay} onEnd={finish} hint={hint} />}
         {phase === 'done' && result && (
           <View style={styles.center}>
             <PixelText size={26} color={GOLD} shadow>
@@ -87,6 +92,11 @@ export function BrainJobScreen({ level, brain }: { level: LevelDef; brain: Brain
             {result.earned > 0 && (
               <PixelText size={14} color={CREAM} shadow>
                 +⚡ {result.earned} sparks
+              </PixelText>
+            )}
+            {!!result.note && (
+              <PixelText size={13} color={GOLD} shadow>
+                {result.note}
               </PixelText>
             )}
             <View style={styles.row}>
@@ -102,7 +112,7 @@ export function BrainJobScreen({ level, brain }: { level: LevelDef; brain: Brain
 
 const styles = StyleSheet.create({
   screen: { flex: 1, flexDirection: 'row', backgroundColor: NIGHT_DEEP },
-  side: { width: 250, padding: 12, gap: 8, backgroundColor: NIGHT, borderRightWidth: 2, borderColor: INK },
+  side: { width: 280, padding: 12, gap: 8, backgroundColor: NIGHT, borderRightWidth: 2, borderColor: INK },
   main: { flex: 1, padding: 16 },
   row: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   flex: { flex: 1 },

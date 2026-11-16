@@ -94,7 +94,7 @@ export const SECRETS_BRAIN: Secret[] = [
     id: 'brain-hazel-par',
     world: 'mossbell',
     title: 'The panel that fixes itself',
-    unlock: { game: 'panel', score: 60 },
+    unlock: { game: 'panel', score: 35 },
     lines: [
       { who: 'hazel', text: 'Beat par on the old panel? Then you know the secret: pressing a switch twice undoes it. Never waste a press.' },
       { who: 'hazel', text: 'My grandmother wrote it on the wall in chalk: “Think before the click.” Electricians call it a plan.' },

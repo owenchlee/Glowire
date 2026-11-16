@@ -312,8 +312,8 @@ function stopExtras(b: MapBuilder) {
   b.tree(6, 8, 'dead');
   b.prop(10, 7, 'bench');
   b.prop(11, 7, 'bench');
-  b.chest('mossbell-hollow-ridge', 11, 10, 20);
-  put(b, 'mushroom', [[9, 9], [6, 10], [10, 10]]);
+  b.chest('mossbell-hollow-ridge', 11, 9, 20);
+  put(b, 'mushroom', [[9, 9], [10, 8], [5, 8]]);
   b.lamp(8, 7, 'area:stop', 'park');
   sign(b, 9, 18, 'A ladder up the ridge behind the kiln. Somebody leaves things up there for the next person to find.');
   sign(b, 8, 9, 'On a clear night you can see the bell tower from here. Its clock says 11:52. Mine says that too, and I am not wearing one.');

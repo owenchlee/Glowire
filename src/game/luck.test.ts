@@ -78,16 +78,16 @@ describe('payday surges', () => {
   });
   it('never rolls without a random source, so old payouts are unchanged', () => {
     const p = recordJob(rich(0), 1, 3);
-    expect(p.earned).toBe(35);
+    expect(p.earned).toBe(50);
     expect(p.surge).toBe(1);
   });
   it('multiplies the payout and resets pity; a miss raises it', () => {
     const hit = recordJob(rich(0), 1, 3, false, fixed(0.05));
-    expect(hit.earned).toBe(70);
-    expect(hit.save.sparks).toBe(70);
+    expect(hit.earned).toBe(100);
+    expect(hit.save.sparks).toBe(100);
     expect(hit.save.luck).toMatchObject({ dry: 0, surges: 1 });
     const miss = recordJob(rich(0), 1, 3, false, fixed(0.99));
-    expect(miss.save.sparks).toBe(35);
+    expect(miss.save.sparks).toBe(50);
     expect(miss.save.luck.dry).toBe(1);
   });
   it('old saves without luck migrate', () => {

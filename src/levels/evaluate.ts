@@ -146,6 +146,8 @@ export interface GoalStatus {
   met: boolean;
   /** Timed goals: how many seconds it took (Infinity: longer than anyone would wait). */
   seconds?: number;
+  /** Brightness goals: mA through the first LED that glows but outside the wanted band. */
+  mA?: number;
 }
 
 export interface Evaluation {
@@ -185,6 +187,19 @@ export function meterReading(t: TileResult | null | undefined, mode: 'A' | 'V'):
 
 const inBand = (led: TileResult, brightness: keyof typeof BRIGHTNESS = 'any') =>
   led.brightness >= BRIGHTNESS[brightness].min && led.brightness <= BRIGHTNESS[brightness].max;
+/** mA of the first LED that glows, but too dimly or too brightly. */
+const offBand = (leds: (TileResult | null | undefined)[], brightness?: keyof typeof BRIGHTNESS) => {
+  const led = leds.find((t): t is TileResult => isLit(t) && !inBand(t, brightness));
+  return led ? Math.abs(led.current) * 1000 : undefined;
+};
+
+// Brightness is current / 20 mA (every LED's ratedCurrent in engine/constants.ts); bright tops out at burn-out, not 20.
+const bandMA = (b: number) => formatReading(Math.round(b * 200) / 10);
+/** A brightness band in milliamps, e.g. "4–8.4 mA". */
+export const bandText = (brightness: keyof typeof BRIGHTNESS) => {
+  const { min, max } = BRIGHTNESS[brightness];
+  return max >= 1 ? `${bandMA(min)}+ mA` : `${bandMA(min)}–${bandMA(max)} mA`;
+};
 
 /**
  * A timed goal: leave the switch one way until everything has settled, flip it, and count
@@ -231,7 +246,7 @@ export function evaluateLevel(level: LevelDef, state: BoardState): Evaluation {
     if (goal.kind === 'dark') return { goal, met: isDark(at(goal.led)) };
     if (goal.kind === 'lit') {
       const led = at(goal.led);
-      return { goal, met: isLit(led) && inBand(led, goal.brightness) };
+      return { goal, met: isLit(led) && inBand(led, goal.brightness), mA: offBand([led], goal.brightness) };
     }
     if (goal.kind === 'meter') {
       const cell = labels[goal.meter] ?? -1;
@@ -243,13 +258,13 @@ export function evaluateLevel(level: LevelDef, state: BoardState): Evaluation {
       const leds = tiles.filter((t) => t?.kind === 'led');
       const met =
         leds.length >= goal.count && leds.every((t) => isLit(t) && inBand(t, goal.brightness));
-      return { goal, met };
+      return { goal, met, mA: offBand(leds, goal.brightness) };
     }
     const met = ledLabels.every((name) => {
       const led = at(name);
       return goal.leds.includes(name) ? isLit(led) && inBand(led, goal.brightness) : isDark(led);
     });
-    return { goal, met };
+    return { goal, met, mA: offBand(goal.leds.map(at), goal.brightness) };
   });
 
   solve(); // the board as the player currently has it
@@ -331,7 +346,9 @@ export function describeGoal(
 ): string {
   const name = (led: string) => names[led] ?? led;
   const how =
-    'brightness' in goal && goal.brightness && goal.brightness !== 'any' ? ` ${BRIGHTNESS[goal.brightness].word}` : '';
+    'brightness' in goal && goal.brightness && goal.brightness !== 'any'
+      ? ` ${BRIGHTNESS[goal.brightness].word} (${bandText(goal.brightness)})`
+      : '';
   const ledCount = Object.keys(names).length;
   if (goal.kind === 'hold' || goal.kind === 'delay') {
     const sw = switchCount === 1 ? 'the switch' : goal.switch;

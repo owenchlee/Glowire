@@ -3,7 +3,7 @@
 
 import { router } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Animated, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import {
@@ -44,6 +44,43 @@ const GLYPH: Record<SlotSymbol, string> = {
   cloud: '☁️',
 };
 const PAYS: SlotSymbol[] = ['star', 'bolt', 'bulb', 'battery', 'plug'];
+const BULBS = 14;
+
+/** The sign over the machine, with a ring of bulbs that chase round (faster when it's hot). */
+function Marquee({ hot }: { hot: boolean }) {
+  const [tick, setTick] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => setTick((t) => t + 1), hot ? 90 : 260);
+    return () => clearInterval(id);
+  }, [hot]);
+  return (
+    <View style={styles.marquee}>
+      <View style={styles.bulbs}>
+        {Array.from({ length: BULBS }, (_, i) => (
+          <View key={i} style={[styles.bulb, (i + tick) % 3 === 0 && styles.bulbOn]} />
+        ))}
+      </View>
+      <PixelText size={34} color={GOLD} shadow style={styles.marqueeText}>
+        LUCKY LANTERN
+      </PixelText>
+    </View>
+  );
+}
+
+/** A win, popping up big over the reels. */
+function WinPop({ amount }: { amount: number }) {
+  const t = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    Animated.spring(t, { toValue: 1, friction: 4, useNativeDriver: true }).start();
+  }, [t]);
+  return (
+    <Animated.View pointerEvents="none" style={[styles.winPop, { opacity: t, transform: [{ scale: t.interpolate({ inputRange: [0, 1], outputRange: [0.4, 1] }) }] }]}>
+      <PixelText size={48} color={GOLD} shadow>
+        +⚡{amount}
+      </PixelText>
+    </Animated.View>
+  );
+}
 
 type Phase = 'idle' | 'spinning' | 'won' | 'flipping';
 
@@ -199,14 +236,16 @@ export function Casino() {
       </View>
 
       <View style={styles.main}>
-        <Panel tone="night" style={styles.machine}>
+        <View style={styles.cabinet}>
+          <Marquee hot={phase === 'won' || busy} />
           <View style={styles.reels}>
             {reels.map((s, i) => (
               <View key={i} style={[styles.reel, phase === 'won' && styles.reelWin]}>
-                <PixelText size={44}>{GLYPH[s]}</PixelText>
+                <PixelText size={84}>{GLYPH[s]}</PixelText>
               </View>
             ))}
           </View>
+          {phase === 'won' && <WinPop key={stake} amount={stake} />}
           {phase === 'won' ? (
             <View style={styles.row}>
               <PixelText size={16} color={GOLD} shadow>
@@ -240,16 +279,36 @@ export function Casino() {
               />
             </View>
           )}
-        </Panel>
+        </View>
+        {/* Prizes in real sparks at the current bet, so you can see what you're playing for. */}
         <View style={styles.pays}>
           {PAYS.map((s) => (
-            <PixelText key={s} size={11} color="#c9c3e6">
-              {GLYPH[s]}×3 pays {SLOT_TRIPLE[s]}×
-            </PixelText>
+            <View key={s} style={[styles.prize, s === 'star' && styles.jackpot]}>
+              <PixelText size={22}>{GLYPH[s].repeat(3)}</PixelText>
+              <PixelText size={s === 'star' ? 20 : 16} color={GOLD} shadow>
+                ⚡{SLOT_TRIPLE[s] * activeBet}
+              </PixelText>
+              {s === 'star' && (
+                <PixelText size={11} color="#ffe9a8">
+                  JACKPOT
+                </PixelText>
+              )}
+            </View>
           ))}
-          <PixelText size={11} color="#c9c3e6">
-            Pair pays {SLOT_PAIR}× · ☁️ pays nothing
+          <View style={styles.prize}>
+            <PixelText size={14} color={CREAM}>
+              Any pair
+            </PixelText>
+            <PixelText size={16} color={GOLD} shadow>
+              ⚡{SLOT_PAIR * activeBet} back
+            </PixelText>
+          </View>
+        </View>
+        <View style={styles.row}>
+          <PixelText size={12} color="#b9b2db" style={styles.flex}>
+            Sparks buy outfits, pets and glowing wire in the Shop. (☁️ is Grumble: he pays nothing.)
           </PixelText>
+          <PixelButton label="Shop" tone="teal" size={12} disabled={busy} onPress={() => router.push('/shop')} />
         </View>
         {save.sparks < BETS[0] && !busy && (
           <PixelText size={12} color={RED} shadow>
@@ -273,12 +332,30 @@ const styles = StyleSheet.create({
     borderRightWidth: 2,
     borderColor: INK,
   },
-  main: { flex: 1, padding: 14, gap: 10, justifyContent: 'center' },
-  machine: { gap: 14 },
-  reels: { flexDirection: 'row', gap: 10, justifyContent: 'center' },
+  main: { flex: 1, padding: 18, gap: 14, justifyContent: 'center', alignItems: 'center' },
+  cabinet: {
+    width: '100%',
+    maxWidth: 680,
+    gap: 16,
+    padding: 18,
+    backgroundColor: '#3a1f3f',
+    borderWidth: 6,
+    borderColor: '#c48a1c',
+    borderRadius: 14,
+    shadowColor: GOLD,
+    shadowOpacity: 0.35,
+    shadowRadius: 24,
+  },
+  marquee: { alignItems: 'center', gap: 6, paddingVertical: 8, backgroundColor: '#1b0f22', borderWidth: 3, borderColor: INK, borderRadius: 8 },
+  marqueeText: { letterSpacing: 4 },
+  bulbs: { flexDirection: 'row', gap: 10 },
+  bulb: { width: 12, height: 12, borderRadius: 6, backgroundColor: '#5a3b1c', borderWidth: 2, borderColor: INK },
+  bulbOn: { backgroundColor: GOLD, shadowColor: GOLD, shadowOpacity: 0.9, shadowRadius: 8 },
+  winPop: { position: 'absolute', left: 0, right: 0, top: '42%', alignItems: 'center' },
+  reels: { flexDirection: 'row', gap: 14, justifyContent: 'center', padding: 12, backgroundColor: INK, borderRadius: 8 },
   reel: {
-    width: 96,
-    height: 84,
+    width: 150,
+    height: 150,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: CREAM,
@@ -286,13 +363,8 @@ const styles = StyleSheet.create({
     borderColor: INK,
     borderRadius: 6,
   },
-  reelWin: { borderColor: GOLD, backgroundColor: '#fff3c4' },
-  pays: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 10,
-    borderTopWidth: 2,
-    borderColor: TEAL,
-    paddingTop: 8,
-  },
+  reelWin: { borderColor: GOLD, backgroundColor: '#fff3c4', shadowColor: GOLD, shadowOpacity: 0.9, shadowRadius: 16 },
+  pays: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, justifyContent: 'center', maxWidth: 680 },
+  prize: { alignItems: 'center', minWidth: 96, paddingVertical: 6, paddingHorizontal: 10, backgroundColor: NIGHT, borderWidth: 2, borderColor: TEAL, borderRadius: 6 },
+  jackpot: { borderColor: GOLD, backgroundColor: '#3a2a12' },
 });

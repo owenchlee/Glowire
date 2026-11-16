@@ -192,10 +192,14 @@ const RELIEF = {
 export type ReliefStyle = keyof typeof RELIEF;
 /** The plain wall tiles (left, middle, right) that stack above a plateau's cliff edge to make it taller. */
 const WALL = { green: [24, 25, 26].map((i) => at('relief', i)), sand: [124, 125, 126].map((i) => at('relief', i)) } as const;
+/** The wall's top course, for a third row of cliff where there's room (see raiseCliffs). */
+const WALL_TOP = { green: [4, 5, 6].map((i) => at('relief', i)), sand: [104, 105, 106].map((i) => at('relief', i)) } as const;
 const LADDER = { green: at('reliefDetail', 15), sand: at('reliefDetail', 51) } as const;
 /** Cave mouths set into a hillside: 3×3, door in the bottom middle. */
 const CAVES = { green: cut('reliefDetail', 84, 3, 3), sand: cut('reliefDetail', 87, 3, 3) } as const;
 const CHEST = at('element', 19);
+/** An empty open box: the art pack has no opened chest, and this reads as one. */
+const CHEST_OPEN = at('element', 22);
 /** The pushable boulder, and the flat stone a pushed one leaves in the water. */
 export const ROCK_TILE = at('nature', 296);
 export const FILLED_TILE = at('water', 12);
@@ -207,13 +211,13 @@ export const PROPS = {
   mailbox: { t: city(305), solid: true },
   planter: { t: city(276), solid: true },
   fruit: { t: city(277), solid: true },
-  crate: { t: city(275), solid: true },
+  crate: { t: city(303), solid: true },
   hydrant: { t: city(251), solid: true },
   cone: { t: city(307), solid: true },
-  barrel: { t: at('house', 380), solid: true },
-  pot: { t: at('house', 413), solid: true },
-  sign: { t: at('element', 34), solid: true },
-  well: { t: at('element', 2), solid: true },
+  barrel: { t: at('house', 381), solid: true }, // 380 is half of a hay dome, not a barrel
+  pot: { t: at('house', 414), solid: true }, // 413 is part of the hay dome
+  sign: { t: at('element', 32), solid: true }, // 34 is a sack
+  well: { t: at('element', 20), solid: true }, // 2 is a pair of posts
   grave: { t: at('element', 36), solid: true },
   cross: { t: at('element', 35), solid: true },
   stump: { t: at('nature', 196), solid: true },
@@ -226,7 +230,7 @@ export const PROPS = {
   daisy: { t: at('nature', 270), solid: false },
   tulip: { t: at('nature', 267), solid: false },
   fern: { t: at('nature', 247), solid: false },
-  reeds: { t: at('nature', 271), solid: false },
+  reeds: { t: at('nature', 244), solid: false }, // 271 is a square hedge block
   lily: { t: at('water', 95), solid: true },
 } as const;
 export type PropName = keyof typeof PROPS;
@@ -284,6 +288,11 @@ export class MapBuilder {
   readonly gates: { area: number; cells: Point[] }[] = [];
   readonly rocks: Point[] = [];
   readonly puzzles: Puzzle[] = [];
+  /** Lily pads wait for the ponds to be painted (their art carries its own square of water). */
+  private readonly lilies: Point[] = [];
+  /** Tall plateaus and ladders, so finish() can raise cliffs a row where nothing stands. */
+  private readonly cliffs: { x: number; y: number; w: number; h: number; style: ReliefStyle }[] = [];
+  private readonly ladders: { x: number; y: number; style: ReliefStyle }[] = [];
   readonly ledges: Uint8Array;
   /** Cells that can be walked on whatever the terrain says (bridges). */
   private readonly walkable: Uint8Array;
@@ -599,6 +608,7 @@ export class MapBuilder {
     const r = RELIEF[style];
     // The cliff is two tiles tall when there's room: plain wall, then the cliff's ragged foot.
     const tall = h >= 5 && w >= 3;
+    if (tall && h >= 7) this.cliffs.push({ x, y, w, h, style });
     for (let j = 0; j < h; j++)
       for (let i = 0; i < w; i++) {
         const row = j === 0 ? 0 : j === h - 1 ? 2 : 1;
@@ -612,8 +622,38 @@ export class MapBuilder {
       }
   }
 
+  /**
+   * Make tall plateaus read as high ground: a third row of cliff wall above the two there
+   * already, wherever that row of the top is empty (nothing placed on it, nobody standing
+   * there), and ladders climb the extra rung. Runs once everything is placed.
+   */
+  private raiseCliffs() {
+    const used = new Set<number>();
+    const mark = (x: number, y: number) => used.add(y * this.width + x);
+    for (const o of this.objects) for (let j = 0; j < o.h; j++) for (let i = 0; i < o.w; i++) mark(o.x + i, o.y + j);
+    for (const s of this.spots) mark(s.x, s.y);
+    for (const r of this.residents) mark(r.x, r.y);
+    for (const c of this.cliffs) {
+      const row = c.y + c.h - 3;
+      let free = true;
+      for (let i = 1; i < c.w - 1; i++) if (used.has(row * this.width + c.x + i)) free = false;
+      if (!free) continue;
+      for (let i = 0; i < c.w; i++) {
+        const col = i === 0 ? 0 : i === c.w - 1 ? 2 : 1;
+        this.setGround(c.x + i, row, WALL_TOP[c.style][col]!);
+        if (this.inside(c.x + i, row)) this.solid[row * this.width + c.x + i] = 1;
+      }
+      for (const l of this.ladders)
+        if (l.x > c.x && l.x < c.x + c.w - 1 && l.y === c.y + c.h - 1) {
+          this.setDecal(l.x, row, LADDER[l.style]);
+          this.solid[row * this.width + l.x] = 0;
+        }
+    }
+  }
+
   /** A ladder up a cliff face (the cell on the plateau's bottom row). Opens a way through the rim. */
   ladder(x: number, y: number, style: ReliefStyle = 'green') {
+    this.ladders.push({ x, y, style });
     // Up the whole face: the bottom row y, and the wall row above it if the cliff is tall.
     for (const yy of [y, y - 1]) {
       if (!this.inside(x, yy)) continue;
@@ -642,7 +682,9 @@ export class MapBuilder {
 
   /** A hidden chest of sparks. Solid, so you stand beside it. */
   chest(id: string, x: number, y: number, sparks: number) {
-    this.object(x, y, 1, 1, [CHEST]);
+    // Opened chests (seen `chest:<id>`) are added to the lit set by the world screen.
+    this.objects.push({ x, y, w: 1, h: 1, tiles: [CHEST], until: `chest:${id}` });
+    this.objects.push({ x, y, w: 1, h: 1, tiles: [CHEST_OPEN], after: `chest:${id}` });
     this.block(x, y, 1, 1);
     this.spots.push({ kind: 'chest', x, y, id, sparks });
   }
@@ -871,6 +913,7 @@ export class MapBuilder {
   }
 
   prop(x: number, y: number, name: PropName) {
+    if (name === 'lily') return void this.lilies.push({ x, y });
     const p = PROPS[name];
     this.object(x, y, 1, 1, [p.t]);
     if (name === 'reeds' || name === 'fern' || name === 'sunflower' || name === 'tulip' || name === 'daisy') this.objects[this.objects.length - 1]!.sway = true;
@@ -920,7 +963,7 @@ export class MapBuilder {
 
   /** Light that spills out of a doorway once the building's lights are fixed. */
   doorLight(p: Point, group: string) {
-    this.lights.push({ x: p.x + 0.5, y: p.y - 0.2, radius: 3.4, color: '#ffc463', group });
+    this.lights.push({ x: p.x + 0.5, y: p.y - 0.2, radius: 5.5, color: '#ffc463', group });
   }
 
   glow(x: number, y: number, group: string, radius = 3, color = '#ffcf7a') {
@@ -986,8 +1029,44 @@ export class MapBuilder {
 
   private water = new Uint8Array(0);
 
+  /**
+   * Each area's lamps come on bit by bit: a lamp lights with the job nearest it, so every
+   * house you fix lights its corner and the last one finishes the area.
+   */
+  private spreadAreaLights() {
+    for (const area of this.areas) {
+      const at = area.jobs.flatMap((job) => {
+        const s = this.spots.find((p) => p.kind === 'job' && p.job === job) ?? this.residents.find((r) => r.job === job);
+        return s ? [{ job, x: s.x, y: s.y }] : [];
+      });
+      if (!at.length) continue;
+      const nearest = (x: number, y: number) => at.reduce((a, b) => (Math.hypot(b.x - x, b.y - y) < Math.hypot(a.x - x, a.y - y) ? b : a)).job;
+      const regroup = (item: { group?: string }, x: number, y: number) => {
+        if (item.group !== `area:${area.id}`) return;
+        const job = nearest(x, y);
+        item.group = `job:${job}`;
+        this.groups[item.group] ??= [job];
+      };
+      for (const l of this.lights) regroup(l, l.x - 0.5, Math.round(l.y));
+      // Same point as the light, so a lamp's bulb and its pool of light switch on together.
+      for (const o of this.objects) regroup(o, o.x, o.y + o.h - 1);
+    }
+  }
+
   finish(meta: { id: string; name: string; spawn: Point & { facing: Facing }; night?: string; underwater?: boolean }): WorldMap {
     this.water = new Uint8Array(this.width * this.height);
+    // A lily only floats well inside a pond: on or by the shore its square of water shows.
+    const wet = (x: number, y: number) => {
+      const g = this.groundAt(x, y);
+      return g === 'pond' || g === 'sea';
+    };
+    for (const { x, y } of this.lilies)
+      if (wet(x, y) && wet(x + 1, y) && wet(x - 1, y) && wet(x, y + 1) && wet(x, y - 1)) {
+        this.object(x, y, 1, 1, [PROPS.lily.t]);
+        this.block(x, y, 1, 1);
+      }
+    this.spreadAreaLights();
+    this.raiseCliffs();
     this.resolveGround();
     if (meta.underwater) this.reefify();
     return {
@@ -1043,7 +1122,9 @@ export class MapBuilder {
         mask |= bit; // land (anything that isn't water)
         if (kind(x + dx, y + dy) === 'sand') sandNear = true;
       }
-      if (as === 'water' && !sandNear) return -1;
+      // Ponds always take the hand-drawn rounded shore: the village pack's pond edges were matched
+      // wrong by the autotiler (crossings on straight edges). The sea keeps its own look by grass.
+      if (as === 'water' && !sandNear && kind(x, y) !== 'pond') return -1;
       return SHORE_TILES[as][mask]!;
     };
     for (let y = 0; y < height; y++)

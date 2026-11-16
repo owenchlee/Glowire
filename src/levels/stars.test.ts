@@ -81,7 +81,7 @@ describe('stars', () => {
         names,
         0,
       ),
-    ).toBe('Also: light the LED brightly');
+    ).toBe('Also: light the LED brightly (9+ mA)');
   });
 });
 

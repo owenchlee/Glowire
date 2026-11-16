@@ -26,6 +26,7 @@ import { LEVELS } from '../levels/levels';
 import { wearSkin as setSkin } from '../puzzle-view/skin';
 import { applySkin } from '../render/assets';
 import { loadSave, writeSave } from './storage';
+import { setMuted } from '../audio/audio';
 
 export const JOB_ORDER = LEVELS.map((l) => l.id);
 
@@ -118,6 +119,8 @@ export function GameProvider({ children }: { children: ReactNode }) {
   // Cosmetics live in the shared 3D materials, so the board picks them up everywhere.
   const { wire, board } = save.equipped;
   useEffect(() => wearSkin(wire, board), [wire, board]);
+  // The sound setting is part of the save, so it sticks between visits.
+  useEffect(() => setMuted(save.muted), [save.muted]);
 
   const value = useMemo(
     () => ({ save, finishJob, finishDaily, finishGame, buy, commitSave: commit, equip, markSeen, setUnlockAll }),

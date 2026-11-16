@@ -176,9 +176,22 @@ function faceFor(w: Walker, dx: number, dy: number): Facing {
   return h ?? v ?? w.facing;
 }
 
+/** `free`, plus the cells the feet stand on right now (so the hero can always step off them). */
+function alsoUnderFeet(w: Point, free: Free): Free {
+  const x0 = Math.floor(w.x + FEET.left);
+  const x1 = Math.floor(w.x + FEET.right - EPS);
+  const y0 = Math.floor(w.y + FEET.top);
+  const y1 = Math.floor(w.y + FEET.bottom - EPS);
+  const f: Free = (x, y) => free(x, y) || (x >= x0 && x <= x1 && y >= y0 && y <= y1);
+  f.ledge = free.ledge;
+  return f;
+}
+
 /** Advance the walker by `dt` seconds. `free(x, y)` says whether a cell can be entered. */
 export function stepWalker(w: Walker, dt: number, free: Free): StepResult {
   let arrived = false;
+  // Someone on a routine stepped onto the hero's feet: let them walk off it instead of freezing.
+  if (!fits(w.x, w.y, free)) free = alsoUnderFeet(w, free);
   let { x: ix, y: iy } = w.input;
   const len = Math.hypot(ix, iy);
 

@@ -1,5 +1,6 @@
 import { type Board, type SimulationResult, LED_MODELS, rotateTile, simulate } from '../engine';
-import type { Evaluation } from '../levels/evaluate';
+import { type Evaluation, bandText, formatReading } from '../levels/evaluate';
+import { BRIGHTNESS } from '../levels/types';
 
 export type HintTone = 'info' | 'warning' | 'success';
 
@@ -11,7 +12,7 @@ export interface Hint {
 export const HINTS = {
   short: 'Short circuit! The current skipped the LED and rushed straight back to the battery.',
   burned:
-    'Pop! Too much current burned out the LED. Put a resistor in the loop to slow the current down.',
+    'Pop! An LED only wants about 2 volts (blue about 3) and burns out past 30 mA. Put a resistor in the loop to take the extra volts.',
   reversed: 'An LED is backwards. Current only flows in through its + side. Tap it to turn it.',
   batteryBackwards:
     'The battery is the wrong way round, so the LEDs are backwards. Tap the battery to turn it.',
@@ -19,7 +20,10 @@ export const HINTS = {
   bypassed: 'The current found a shortcut around an LED, so that LED stays dark.',
   faint:
     'An LED is getting a trickle of current, too little to glow. It needs more voltage, or another LED is hogging the current.',
+  unlinked:
+    "An LED isn't on a closed loop. Trace from the battery's + side, through the LED, and back to its − side: a wire stops short somewhere.",
   outOfWire: 'Out of wire! Tap a wire to erase it and try a shorter path.',
+  noStart: "Wires can't start from an empty spot. Start dragging from the battery, a part or a wire.",
   solved: 'Solved! ⚡',
 } as const;
 
@@ -42,7 +46,7 @@ export function pickHint(
   board: Board,
   result: SimulationResult,
   evaluation: Evaluation,
-  outOfWire: boolean,
+  wireNote: 'outOfWire' | 'noStart' | null,
   meantDark: ReadonlySet<number>,
 ): Hint {
   const leds = result.tiles.filter((t) => t?.kind === 'led');
@@ -50,7 +54,7 @@ export function pickHint(
   if (evaluation.complete) return { text: HINTS.solved, tone: 'success' };
   if (result.shortCircuit) return { text: HINTS.short, tone: 'warning' };
   if (any('BURNED_OUT')) return { text: HINTS.burned, tone: 'warning' };
-  if (outOfWire) return { text: HINTS.outOfWire, tone: 'warning' };
+  if (wireNote) return { text: HINTS[wireNote], tone: 'warning' };
   const reversed = leds.filter((t) => t!.status === 'REVERSED');
   const turnable = (cell: number) => {
     const tile = board.cells[cell];
@@ -70,5 +74,20 @@ export function pickHint(
     return t!.voltage > 0.5 * LED_MODELS[tile.color].ratedVoltage && t!.current > 1e-7;
   });
   if (faint) return { text: HINTS.faint, tone: 'info' };
+  const unlinked = leds.some(
+    (t) => t!.status === 'OFF' && Math.abs(t!.current) <= 1e-7 && !meantDark.has(t!.cell),
+  );
+  if (unlinked) return { text: HINTS.unlinked, tone: 'info' };
+  const off = evaluation.goals.find((g) => !g.met && g.mA !== undefined);
+  if (off && 'brightness' in off.goal && off.goal.brightness) {
+    const band = off.goal.brightness;
+    const dim = off.mA! < BRIGHTNESS[band].min * 20;
+    return {
+      text: `An LED glows at ${formatReading(Math.round(off.mA! * 10) / 10)} mA, but this goal wants ${bandText(band)}. ${
+        dim ? 'Too dim: take out some resistance.' : 'Too bright: add more resistance.'
+      }`,
+      tone: 'info',
+    };
+  }
   return { text: intro, tone: 'info' };
 }

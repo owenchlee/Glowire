@@ -25,9 +25,11 @@ export interface Payday {
   earned: number;
   firstClear: boolean;
   surge: number;
+  /** "Solved +⚡5 · ★★ bonus +⚡5". */
+  note?: string;
 }
 
-/** Between boss rounds: Grumble (or whoever the villain is) gloats and sabotages the board. */
+/** Boss rounds: Grumble (or whoever the villain is) gloats and sabotages the board. Round 0 is the opening challenge. */
 export function GrumbleStrike({
   who,
   line,
@@ -56,7 +58,7 @@ export function GrumbleStrike({
             <Portrait who={who} size={84} />
             <View style={cardStyles.flex}>
               <PixelText size={11} color={MUTED} shadow>
-                ROUND {round} CLEARED · {rounds - round} TO GO
+                {round === 0 ? `BOSS BATTLE · ${rounds} ROUNDS` : `ROUND ${round} CLEARED · ${rounds - round} TO GO`}
               </PixelText>
               <View style={cardStyles.hearts}>
                 {Array.from({ length: rounds }, (_, i) => (
@@ -152,6 +154,11 @@ export function WinCard({
             <PixelText size={18} color={payday.earned > 0 ? GOLD_DARK : TEXT_SOFT}>
               {payday.earned > 0 ? `+⚡ ${sparks} sparks${payday.surge > 1 && sparks >= payday.earned ? `  SURGE ×${payday.surge}!` : ''}` : 'No new stars this time'}
             </PixelText>
+            {!!payday.note && (
+              <PixelText size={12} color={GOLD_DARK}>
+                {payday.note}
+              </PixelText>
+            )}
             <View style={cardStyles.flex} />
             {payday.stars < 3 && (
               <PixelText size={11} color={TEXT_SOFT}>
@@ -187,9 +194,41 @@ export const cardStyles = StyleSheet.create({
   introRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginVertical: 6 },
   modalButtons: { flexDirection: 'row', justifyContent: 'flex-end', gap: 10, marginTop: 8 },
   hearts: { flexDirection: 'row', gap: 6, marginVertical: 4 },
+  perch: { position: 'absolute', top: 6, right: 6, alignItems: 'center' },
   heart: { width: 30, height: 9, backgroundColor: RED, borderWidth: 1.5, borderColor: INK, borderRadius: 2 },
   heartGone: { backgroundColor: '#3a3656' },
   winWrap: { width: 460, maxWidth: '100%' },
   winTop: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   starsRow: { flexDirection: 'row', gap: 2 },
 });
+
+/** The boss, perched on the workbench for the whole fight: bobs while you work, leaps when he strikes. */
+export function BossPerch({ who, round, rounds }: { who: string; round: number; rounds: number }) {
+  const bob = useRef(new Animated.Value(0)).current;
+  const leap = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(bob, { toValue: -4, duration: 700, useNativeDriver: true }),
+        Animated.timing(bob, { toValue: 0, duration: 700, useNativeDriver: true }),
+      ]),
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [bob]);
+  useEffect(() => {
+    if (round === 0) return;
+    leap.setValue(-28);
+    Animated.spring(leap, { toValue: 0, friction: 3, useNativeDriver: true }).start();
+  }, [round, leap]);
+  return (
+    <View pointerEvents="none" style={cardStyles.perch} accessibilityLabel={`${speakerName(who)} is watching: round ${round + 1} of ${rounds}`}>
+      <Animated.View style={{ transform: [{ translateY: Animated.add(bob, leap) }] }}>
+        <Portrait who={who} size={56} />
+      </Animated.View>
+      <PixelText size={9} color={GOLD} shadow>
+        BOSS · {round + 1}/{rounds}
+      </PixelText>
+    </View>
+  );
+}
