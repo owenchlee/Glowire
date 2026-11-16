@@ -8,6 +8,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from 'react';
 
@@ -57,15 +58,20 @@ function wearSkin(wireId: string, boardId: string) {
 }
 
 export function GameProvider({ children }: { children: ReactNode }) {
+  // The latest save lives in a ref that commit() updates synchronously, so two changes made
+  // before React re-renders build on each other instead of the second wiping the first.
+  const latest = useRef<SaveData | null>(null);
   const [save, setSave] = useState<SaveData>(() => {
     const loaded = migrate(loadSave());
     // Wear the saved skin before anything renders (a board that opens first would miss it).
     wearSkin(loaded.equipped.wire, loaded.equipped.board);
+    latest.current = loaded;
     return loaded;
   });
 
   // Every change is written straight away: losing a purchase would feel terrible.
   const commit = useCallback((next: SaveData) => {
+    latest.current = next;
     writeSave(next);
     setSave(next);
     return next;
@@ -74,46 +80,53 @@ export function GameProvider({ children }: { children: ReactNode }) {
   // Results are computed from the latest save synchronously, so callers get the payout.
   const finishJob = useCallback(
     (id: number, stars: number, boss = false) => {
-      const payout = recordJob(save, id, stars, boss, Math.random);
-      if (payout.save !== save) commit(payout.save);
+      const prev = latest.current as SaveData;
+      const payout = recordJob(prev, id, stars, boss, Math.random);
+      if (payout.save !== prev) commit(payout.save);
       return payout;
     },
-    [save, commit],
+    [commit],
   );
   const finishDaily = useCallback(
     (day: string, stars: number) => {
-      const payout = recordDaily(save, day, stars, Math.random);
-      if (payout.save !== save) commit(payout.save);
+      const prev = latest.current as SaveData;
+      const payout = recordDaily(prev, day, stars, Math.random);
+      if (payout.save !== prev) commit(payout.save);
       return payout;
     },
-    [save, commit],
+    [commit],
   );
   const finishGame = useCallback(
     (game: string, score: number) => {
-      const payout = recordGame(save, game, score);
-      if (payout.save !== save) commit(payout.save);
+      const prev = latest.current as SaveData;
+      const payout = recordGame(prev, game, score);
+      if (payout.save !== prev) commit(payout.save);
       return payout;
     },
-    [save, commit],
+    [commit],
   );
   const buy = useCallback(
     (id: string) => {
-      const result = buyItem(save, id);
+      const result = buyItem(latest.current as SaveData, id);
       if (result.ok) commit(result.save);
       return result.ok;
     },
-    [save, commit],
+    [commit],
   );
-  const equip = useCallback((id: string) => commit(equipItem(save, id)), [save, commit]);
+  const equip = useCallback(
+    (id: string) => commit(equipItem(latest.current as SaveData, id)),
+    [commit],
+  );
   const markSeen = useCallback(
     (sceneId: string) => {
-      if (!save.seen.includes(sceneId)) commit({ ...save, seen: [...save.seen, sceneId] });
+      const prev = latest.current as SaveData;
+      if (!prev.seen.includes(sceneId)) commit({ ...prev, seen: [...prev.seen, sceneId] });
     },
-    [save, commit],
+    [commit],
   );
   const setUnlockAll = useCallback(
-    (on: boolean) => commit({ ...save, unlockAll: on }),
-    [save, commit],
+    (on: boolean) => commit({ ...(latest.current as SaveData), unlockAll: on }),
+    [commit],
   );
 
   // Cosmetics live in the shared 3D materials, so the board picks them up everywhere.
