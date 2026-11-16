@@ -233,7 +233,7 @@ export interface PanelBoard {
   par: number;
 }
 
-const PANEL_SIZES = [3, 3, 4, 4, 5, 5];
+const PANEL_SIZES = [3, 3, 4];
 
 /** Press cell i: it and its four neighbours flip. */
 export function pressPanel(n: number, on: boolean[], i: number): boolean[] {
@@ -261,7 +261,7 @@ export function panelBoard(round: number, random: Random): PanelBoard {
   const n = PANEL_SIZES[Math.min(round, PANEL_SIZES.length - 1)]!;
   const cells = n * n;
   for (let tries = 0; tries < 50; tries++) {
-    const k = Math.min(cells - 1, 3 + Math.floor(round / 1.5));
+    const k = Math.min(3, 2 + round); // 2, 3, 3 presses: a puzzle, not a grind
     const chosen = new Set<number>();
     while (chosen.size < k) chosen.add(Math.floor(random() * cells));
     let on = new Array<boolean>(cells).fill(true);
@@ -435,9 +435,75 @@ export function brainStars(game: 'probe' | 'pipes' | 'panel' | 'lantern', score:
   const bands: Record<string, [number, number, number]> = {
     probe: [10, 45, 70],
     pipes: [50, 60, 70],
-    panel: [50, 60, 70],
+    panel: [30, 40, 45],
     lantern: [3, 7, 12],
   };
   const [one, two, three] = bands[game]!;
   return score >= three ? 3 : score >= two ? 2 : score >= one ? 1 : 0;
+}
+
+/** How hard the battery pushes on the lamp's path, in volts (a diode eats a little). */
+export const rigPush = (r: Rig) => (r.kind === 'diode' ? Math.max(0, r.volts - DIODE_DROP) : r.volts);
+
+/** Resistance in the lamp's own path, in Ω (a resistor beside the lamp isn't in its way). */
+export const rigInTheWay = (r: Rig) => (r.kind === 'series' ? LAMP_OHMS + r.ohms : r.kind === 'twin' ? 2 * LAMP_OHMS : LAMP_OHMS);
+
+// ── Pip's hints: one concrete next move for the board as it is right now ─────
+
+/** A tile to turn toward the solution, and how many quarter turns it needs. Prefers one touching the lit wire. */
+export function pipeHint(b: PipeBoard): { i: number; turns: number } | null {
+  if (!b.solution || pipesSolved(b)) return null;
+  const on = powered(b);
+  const wrong: { i: number; turns: number }[] = [];
+  b.tiles.forEach((t, i) => {
+    if (!canTurn(t) || t.mask === b.solution![i]) return;
+    let m = t.mask;
+    let turns = 0;
+    while (m !== b.solution![i] && turns < 4) {
+      m = turnMask(m);
+      turns++;
+    }
+    if (turns < 4) wrong.push({ i, turns });
+  });
+  const touchesLit = (i: number) => {
+    const x = i % b.w;
+    const y = Math.floor(i / b.w);
+    return [[x - 1, y], [x + 1, y], [x, y - 1], [x, y + 1]].some(
+      ([nx, ny]) => nx! >= 0 && ny! >= 0 && nx! < b.w && ny! < b.h && on[ny! * b.w + nx!],
+    );
+  };
+  return wrong.find((w) => touchesLit(w.i)) ?? wrong[0] ?? null;
+}
+
+/** The fewest presses that get every clock ticking (first-row guesses, then chase down the rows). */
+export function panelSolution(n: number, on: boolean[]): number[] {
+  let best: number[] | null = null;
+  for (let first = 0; first < 1 << n; first++) {
+    let state = on;
+    const presses: number[] = [];
+    for (let x = 0; x < n; x++)
+      if (first & (1 << x)) {
+        state = pressPanel(n, state, x);
+        presses.push(x);
+      }
+    for (let y = 1; y < n; y++)
+      for (let x = 0; x < n; x++)
+        if (!state[(y - 1) * n + x]) {
+          state = pressPanel(n, state, y * n + x);
+          presses.push(y * n + x);
+        }
+    if (state.every(Boolean) && (!best || presses.length < best.length)) best = presses;
+  }
+  return best ?? [];
+}
+
+/** The next stretch to probe: half of the lamps that could still be dead, or the lamp itself once only one is left. */
+export function probeHint(lamps: number, cleared: boolean[], suspect: [number, number] | null): { from: number; to: number; only: boolean } {
+  const could = Array.from({ length: lamps }, (_, i) => i).filter(
+    (i) => !cleared[i] && (!suspect || (i >= suspect[0] && i <= suspect[1])),
+  );
+  const lo = could[0] ?? 0;
+  const hi = could[could.length - 1] ?? lo;
+  if (lo === hi) return { from: lo, to: lo, only: true };
+  return { from: lo, to: Math.floor((lo + hi) / 2), only: false };
 }

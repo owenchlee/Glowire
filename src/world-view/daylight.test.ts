@@ -68,6 +68,6 @@ describe('daylight', () => {
     setDayOverride('night');
     expect(currentPhase()).toBe(0.75);
     setDayOverride(null);
-    expect(currentPhase()).toBeCloseTo(0.5, 1);
+    expect(currentPhase()).toBe(0.75); // always night
   });
 });

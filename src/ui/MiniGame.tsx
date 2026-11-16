@@ -30,20 +30,21 @@ import {
   nextDrop,
   rng,
 } from '../game/games';
-import { brainDaily, brainStars } from '../game/dailyBrain';
+import { BRAIN_STARS, brainDaily, brainStars } from '../game/dailyBrain';
 import { SECRETS, earnedPuzzleSecrets, secretKey } from '../game/lore';
-import { recordBrainDaily, recordGame } from '../game/save';
+import { payNote, recordBrainDaily, recordGame } from '../game/save';
 import { speakerName } from './Dialog';
 import { SignalLamp } from './SignalLamp';
-import { ClockPanel, DeadLampHunt, DockyardWiring, LanternBudget } from './BrainGames';
+import { type BrainProps, ClockPanel, DeadLampHunt, DockyardWiring, type HintRef, LanternBudget, useHint } from './BrainGames';
 import { useGame } from './game';
 import { buzz } from './haptics';
+import { PipHelp } from './PipHelp';
 import { CREAM, Counter, GOLD, GREEN, INK, NIGHT, NIGHT_DEEP, NameTab, Panel, PixelButton, PixelText, Portrait, RED } from './pixel';
 
 /** Band colours on the board's palette, digit 0 to 9. */
 const BAND_HEX = ['#242118', '#7b4930', '#d14b34', '#e67c44', '#ffe166', '#74a334', '#3da6bd', '#a5608b', '#8d977f', '#f2eaf1'];
 
-type Done = { score: number; earned: number; best: number; stars?: number; bonus?: number; news: string[] };
+type Done = { score: number; earned: number; best: number; runStars: number; note: string; stars?: number; bonus?: number; news: string[] };
 
 /** With `day`, this is the Daily Brain Teaser: today's seed, scored in stars. */
 export function MiniGame({ id, day }: { id: GameId; day?: string }) {
@@ -53,13 +54,17 @@ export function MiniGame({ id, day }: { id: GameId; day?: string }) {
   const [phase, setPhase] = useState<'intro' | 'play' | 'done'>('intro');
   const [done, setDone] = useState<Done | null>(null);
   const [say, setSay] = useState(info.how);
+  const hint = useRef<(() => string | null) | null>(null) as HintRef;
   const [run, setRun] = useState(0);
   const best = save.games[id] ?? 0;
+  const marks = BRAIN_STARS[id];
 
   const finish = useCallback(
     (score: number) => {
       // One write for everything this result changes: best score, daily, new journal pages.
-      const payout = recordGame(save, id, score);
+      // Every run pays by its stars (games without star marks: any score is one star).
+      const runStars = marks ? marks.filter((m) => score >= m).length : score > 0 ? 1 : 0;
+      const payout = recordGame(save, id, score, runStars);
       let next = payout.save;
       let stars: number | undefined;
       let bonus: number | undefined;
@@ -77,13 +82,15 @@ export function MiniGame({ id, day }: { id: GameId; day?: string }) {
         score,
         earned: payout.earned,
         best: Math.max(best, score),
+        runStars,
+        note: [score > best ? 'New best!' : '', payNote(payout, runStars)].filter(Boolean).join('  ·  '),
         stars,
         bonus,
         news: lore.map((l) => l.title),
       });
       setPhase('done');
     },
-    [save, commitSave, id, best, teaser],
+    [save, commitSave, id, best, teaser, marks],
   );
 
   const goBack = () => (router.canGoBack() ? router.back() : router.replace('/'));
@@ -108,12 +115,13 @@ export function MiniGame({ id, day }: { id: GameId; day?: string }) {
           <Counter icon="★" value={`Best ${best}`} />
           <Counter icon="⚡" value={save.sparks} />
         </View>
+        <PipHelp tips={info.tips} ask={() => hint.current?.() ?? null} />
         <View style={styles.flex} />
         <Portrait who={info.host} size={64} />
         <View>
           <NameTab name={speakerName(info.host)} />
           <Panel>
-            <PixelText size={12}>{say}</PixelText>
+            <PixelText size={16}>{say}</PixelText>
           </Panel>
         </View>
       </View>
@@ -129,13 +137,13 @@ export function MiniGame({ id, day }: { id: GameId; day?: string }) {
             <PixelButton label="Start!" tone="orange" size={18} onPress={start} />
           </View>
         )}
-        {phase === 'play' && id === 'colours' && <ColourCode key={run} seed={run} onSay={setSay} onEnd={finish} />}
-        {phase === 'play' && id === 'needle' && <NeedleDrop key={run} seed={run} onSay={setSay} onEnd={finish} />}
-        {phase === 'play' && id === 'probe' && <DeadLampHunt key={run} seed={run} onSay={setSay} onEnd={finish} />}
-        {phase === 'play' && id === 'pipes' && <DockyardWiring key={run} seed={run} onSay={setSay} onEnd={finish} />}
-        {phase === 'play' && id === 'panel' && <ClockPanel key={run} seed={run} onSay={setSay} onEnd={finish} />}
-        {phase === 'play' && id === 'lantern' && <LanternBudget key={run} seed={run} onSay={setSay} onEnd={finish} />}
-        {phase === 'play' && id === 'jars' && <JarCatch key={run} seed={run} onSay={setSay} onEnd={finish} />}
+        {phase === 'play' && id === 'colours' && <ColourCode key={run} seed={run} onSay={setSay} onEnd={finish} hint={hint} />}
+        {phase === 'play' && id === 'needle' && <NeedleDrop key={run} seed={run} onSay={setSay} onEnd={finish} hint={hint} />}
+        {phase === 'play' && id === 'probe' && <DeadLampHunt key={run} seed={run} onSay={setSay} onEnd={finish} hint={hint} />}
+        {phase === 'play' && id === 'pipes' && <DockyardWiring key={run} seed={run} onSay={setSay} onEnd={finish} hint={hint} />}
+        {phase === 'play' && id === 'panel' && <ClockPanel key={run} seed={run} onSay={setSay} onEnd={finish} hint={hint} />}
+        {phase === 'play' && id === 'lantern' && <LanternBudget key={run} seed={run} onSay={setSay} onEnd={finish} hint={hint} />}
+        {phase === 'play' && id === 'jars' && <JarCatch key={run} seed={run} onSay={setSay} onEnd={finish} hint={hint} />}
         {phase === 'play' && id === 'signal' && (
           <SignalLamp
             key={run}
@@ -153,9 +161,19 @@ export function MiniGame({ id, day }: { id: GameId; day?: string }) {
             <PixelText size={22} color={GOLD} shadow>
               Score: {done.score}
             </PixelText>
-            <PixelText size={14} color={CREAM} shadow style={styles.centerText}>
-              {done.earned > 0 ? `New best! ⚡${done.earned} sparks.` : `Your best is ${done.best}. So close!`}
+            {!teaser && marks && (
+              <PixelText size={24} color={GOLD} shadow>
+                {'★'.repeat(done.runStars) + '☆'.repeat(3 - done.runStars)}
+              </PixelText>
+            )}
+            <PixelText size={18} color={done.earned > 0 ? GOLD : CREAM} shadow style={styles.centerText}>
+              {done.earned > 0 ? `+⚡ ${done.earned} sparks` : `Your best is ${done.best}. So close!`}
             </PixelText>
+            {!!done.note && (
+              <PixelText size={13} color={CREAM} shadow style={styles.centerText}>
+                {done.note}
+              </PixelText>
+            )}
             {done.stars !== undefined && (
               <PixelText size={done.stars > 0 ? 24 : 14} color={GOLD} shadow style={styles.centerText}>
                 {done.stars > 0
@@ -182,13 +200,18 @@ export function MiniGame({ id, day }: { id: GameId; day?: string }) {
 
 // ── Colour Code ──────────────────────────────────────────────────────────────
 
-function ColourCode({ seed, onSay, onEnd }: { seed: number; onSay: (s: string) => void; onEnd: (score: number) => void }) {
+function ColourCode({ seed, onSay, onEnd, hint }: BrainProps) {
   const random = useMemo(() => rng(seed), [seed]);
   const [round, setRound] = useState(0);
   const [q, setQ] = useState<ColourQuestion>(() => colourQuestion(0, random));
   const [left, setLeft] = useState(COLOUR_TIME);
   const [score, setScore] = useState(0);
   const [picked, setPicked] = useState<number | null>(null);
+  useHint(hint, () => {
+    if (picked !== null) return null;
+    const [a, b, z] = q.bands;
+    return `${BAND_NAMES[a]} is ${a}, ${BAND_NAMES[b]} is ${b}, and ${BAND_NAMES[z]} means ${z} zero${z === 1 ? '' : 's'}. So write ${a}${b}, then add the zeros.`;
+  });
 
   const next = useCallback(
     (gained: number) => {
@@ -293,13 +316,20 @@ const LAMP_NAME: Record<LampColour, string> = { red: 'red', green: 'green', blue
 /** The meter's full scale, in milliamps. */
 const DIAL_MA = 30;
 
-function NeedleDrop({ seed, onSay, onEnd }: { seed: number; onSay: (s: string) => void; onEnd: (score: number) => void }) {
+function NeedleDrop({ seed, onSay, onEnd, hint }: BrainProps) {
   const random = useMemo(() => rng(seed), [seed]);
   const [round, setRound] = useState(0);
   const [q, setQ] = useState<NeedleQuestion>(() => needleQuestion(0, random));
   const [left, setLeft] = useState(NEEDLE_TIME);
   const [score, setScore] = useState(0);
   const [picked, setPicked] = useState<number | null>(null);
+  useHint(hint, () => {
+    if (picked !== null) return null;
+    // The lamp keeps about 2 V for itself (blue nearer 3); the resistor sets the current with the rest.
+    const left = q.volts - (q.lamp === 'blue' ? 3 : 2);
+    const guess = Math.round(left / (q.target / 1000) / 10) * 10;
+    return `You want ${q.target} mA from ${q.volts} V. The lamp keeps about ${q.volts - left} V, so try a resistor near ${guess} Ω (volts left ÷ amps).`;
+  });
 
   const next = useCallback(
     (gained: number) => {
@@ -416,7 +446,7 @@ interface JarState {
 
 const JAR_W = 0.13;
 
-function JarCatch({ seed, onSay, onEnd }: { seed: number; onSay: (s: string) => void; onEnd: (score: number) => void }) {
+function JarCatch({ seed, onSay, onEnd }: BrainProps) {
   const random = useMemo(() => rng(seed), [seed]);
   const game = useRef<JarState>({ t: 0, x: 0.5, steer: 0, charge: 0, score: 0, drops: [], nextAt: 0.5, nextId: 1, pouring: 0, splash: 0 });
   // What's drawn: a copy of the game taken every frame.
@@ -561,7 +591,7 @@ const styles = StyleSheet.create({
   screen: { flex: 1, flexDirection: 'row', backgroundColor: NIGHT_DEEP },
   flex: { flex: 1 },
   row: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  side: { width: 250, padding: 12, gap: 8, backgroundColor: NIGHT, borderRightWidth: 2, borderColor: INK },
+  side: { width: 280, padding: 12, gap: 8, backgroundColor: NIGHT, borderRightWidth: 2, borderColor: INK },
   main: { flex: 1, padding: 16 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 16 },
   centerText: { textAlign: 'center', maxWidth: 420 },

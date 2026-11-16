@@ -30,6 +30,8 @@ export interface WorldObject {
   group?: string;
   /** Only drawn until this group is lit (a barricade that goes once the way is open). */
   until?: string;
+  /** Only drawn once this group is lit (the opened chest that replaces a closed one). */
+  after?: string;
   /** Drawn flat on the ground, under everyone (rugs, bridges, crops). */
   flat?: boolean;
   /** Moves in the wind (trees, bushes, reeds, flowers). */

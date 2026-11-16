@@ -37,6 +37,22 @@ for (const info of WORLDS.filter((w) => w.build)) {
       }
     });
 
+    it('lights an area bit by bit: each job turns on its share, the last one all of it', () => {
+      const k = map.areas.findIndex((a) => a.jobs.length > 1);
+      const area = map.areas[k]!;
+      const lamps = (solved: (id: number) => boolean) => {
+        const lit = litGroups(map, solved);
+        return map.lights.filter((l) => lit.has(l.group)).length;
+      };
+      const before = upTo(k);
+      const none = lamps(before);
+      const one = lamps((id) => before(id) || id === area.jobs[0]);
+      const all = lamps(upTo(k + 1));
+      expect(one).toBeGreaterThan(none);
+      expect(all).toBeGreaterThan(one);
+      expect(map.lights.some((l) => l.group === `area:${area.id}`)).toBe(false);
+    });
+
     it('keeps everything inside the map', () => {
       for (const o of map.objects) {
         expect(o.x).toBeGreaterThanOrEqual(-1);

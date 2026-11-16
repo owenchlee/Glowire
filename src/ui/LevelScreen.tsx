@@ -1,3 +1,4 @@
+import { payNote } from '../game/save';
 import { router } from 'expo-router';
 import {
   useCallback,
@@ -66,6 +67,8 @@ import type { BackdropSpec } from '../render/Backdrop';
 import { litGroups, presentResidents } from '../world/logic';
 import { jobPlace, worldMap } from '../world/worlds';
 import { useGame } from './game';
+import { Dialog } from './Dialog';
+import { BRIGHTNESS_LESSON, BRIGHTNESS_LESSON_SEEN, CIRCUIT_LESSON, CIRCUIT_LESSON_SEEN } from '../world-view/guide';
 import { useLiveCircuit } from './useLiveCircuit';
 import { PART_ORDER, formatSeconds, partLabel, tileForPart, tileTag } from './levelParts';
 import { buzz } from './haptics';
@@ -87,7 +90,8 @@ import {
   TEXT_SOFT,
 } from './pixel';
 import { PartIcon } from '../puzzle-view/PartIcon';
-import { GrumbleStrike, MUTED, type Payday, WinCard, cardStyles } from './LevelCards';
+import { startMusic } from '../audio/audio';
+import { BossPerch, GrumbleStrike, MUTED, type Payday, WinCard, cardStyles } from './LevelCards';
 
 type Drag =
   { source: 'tray'; tile: Tile } | { source: 'board'; tile: Tile; from: number; id: number };
@@ -117,7 +121,24 @@ function backdropFor(id: number, day: string | undefined, save: { stars: Record<
  * star goals, and payday when it's done.
  */
 export function LevelScreen({ level, day }: { level: LevelDef; day?: string }) {
-  const { save, finishJob, finishDaily } = useGame();
+  const { save, finishJob, finishDaily, markSeen } = useGame();
+  // Pip's circuit lesson: on its own before the very first puzzle, and behind "Need help?" in all of them.
+  const [lesson, setLesson] = useState(() => level.id === 1 && !day && !save.seen.includes(CIRCUIT_LESSON_SEEN));
+  // Pip's brightness lesson: on its own the first time a job asks for dim, medium or bright.
+  const wantsBrightness = [level, ...(level.phases ?? [])].some((p) =>
+    p.goals?.some((g) => 'brightness' in g && g.brightness && g.brightness !== 'any'),
+  );
+  // Boss fights: the villain shows up before you start, and the music turns.
+  const villain = level.villain ?? 'grumble';
+  const [bossIntro, setBossIntro] = useState(!!level.boss);
+  useEffect(() => {
+    if (!level.boss) return;
+    startMusic('boss');
+    return () => startMusic('town');
+  }, [level.boss]);
+  const [brightLesson, setBrightLesson] = useState(
+    () => wantsBrightness && !day && !save.seen.includes(BRIGHTNESS_LESSON_SEEN),
+  );
   const backdrop = useMemo(() => backdropFor(level.id, day, save), [level.id, day, save]);
   const [history, dispatch] = useReducer(historyReducer, level, (l) => ({
     board: createLevelBoard(l),
@@ -162,7 +183,7 @@ export function LevelScreen({ level, day }: { level: LevelDef; day?: string }) {
   const [drag, setDrag] = useState<Drag | null>(null);
   const [hover, setHover] = useState<Hover>(null);
   const [shake, setShake] = useState({ id: 0, key: 0 });
-  const [outOfWire, setOutOfWire] = useState(false);
+  const [wireNote, setWireNote] = useState<'outOfWire' | 'noStart' | null>(null);
   const [showWin, setShowWin] = useState(false);
   const [payday, setPayday] = useState<Payday | null>(null);
   const [celebrateKey, setCelebrateKey] = useState(0);
@@ -205,7 +226,7 @@ export function LevelScreen({ level, day }: { level: LevelDef; day?: string }) {
     const first = bestStars.current === 0;
     bestStars.current = stars;
     const payout = day ? finishDaily(day, stars) : finishJob(level.id, stars, level.boss);
-    setPayday({ stars, earned: payout.earned, firstClear: first, surge: payout.surge ?? 1 });
+    setPayday({ stars, earned: payout.earned, firstClear: first, surge: payout.surge ?? 1, note: payNote(payout, stars) });
     setShowWin(true);
     if (first) setCelebrateKey((k) => k + 1);
     buzz.win();
@@ -213,7 +234,7 @@ export function LevelScreen({ level, day }: { level: LevelDef; day?: string }) {
 
   const meantDark = useMemo(() => cellsMeantDark(active), [active]);
   const engineBoard = useMemo(() => toEngineBoard(board), [board]);
-  const problemHint = pickHint(active.intro, engineBoard, result, evaluation, outOfWire, meantDark);
+  const problemHint = pickHint(active.intro, engineBoard, result, evaluation, wireNote, meantDark);
   const hint: Hint =
     said && said.board === history.board && problemHint.tone !== 'success'
       ? { text: said.text, tone: 'info' }
@@ -360,7 +381,7 @@ export function LevelScreen({ level, day }: { level: LevelDef; day?: string }) {
       for (const step of stepsBetween(b, prev, cell)) {
         const r = drawSegment(b, prev, step, level.wireBudget);
         if (r.outOfWire) {
-          if (!g.out) setOutOfWire(true);
+          if (!g.out) setWireNote('outOfWire');
           g.out = true;
           break;
         }
@@ -390,7 +411,7 @@ export function LevelScreen({ level, day }: { level: LevelDef; day?: string }) {
         } else if (isLocked(b, cell)) shakeTile(cell);
         else if (tile.kind === 'wire') edit((s) => eraseWire(s, cell));
         else edit((s) => rotateAt(s, cell));
-        setOutOfWire(false);
+        setWireNote(null);
       });
 
     const pan = Gesture.Pan()
@@ -414,12 +435,16 @@ export function LevelScreen({ level, day }: { level: LevelDef; day?: string }) {
           return;
         }
         if (level.twist) return; // twist levels: turning only, no new wire
-        // Empty cells, wires and fixed parts (like the battery) start a wire.
+        // Wires only grow out of something already there: a wire or a fixed part (like the battery).
+        if (!placed) {
+          setWireNote('noStart');
+          return;
+        }
         g.mode = 'draw';
         g.last = cell;
         g.board = b;
         g.out = false;
-        setOutOfWire(false);
+        setWireNote(null);
         extendStroke(e.x, e.y);
       })
       .onUpdate((e) => {
@@ -499,6 +524,9 @@ export function LevelScreen({ level, day }: { level: LevelDef; day?: string }) {
           <PixelText size={12} style={styles.flex}>
             {hint.text}
           </PixelText>
+        </View>
+        <View style={styles.helpRow}>
+          <PixelButton label="Need help?" tone="teal" size={11} onPress={() => setLesson(true)} />
         </View>
 
         <ScrollView style={styles.flex} contentContainerStyle={styles.goals}>
@@ -595,6 +623,7 @@ export function LevelScreen({ level, day }: { level: LevelDef; day?: string }) {
           ledCount={ledCount}
           switchCount={switchCount}
         />
+        {level.boss && !solved && <BossPerch who={villain} round={phase} rounds={phaseCount(level)} />}
         <GestureDetector gesture={boardGesture}>
           <View style={StyleSheet.absoluteFill} collapsable={false} />
         </GestureDetector>
@@ -650,9 +679,19 @@ export function LevelScreen({ level, day }: { level: LevelDef; day?: string }) {
         </Animated.View>
       )}
 
+      {bossIntro && (
+        <GrumbleStrike
+          who={villain}
+          line={level.taunt ?? 'So you’re the new sparky? Go on, build something. I’ll be right here… waiting.'}
+          round={0}
+          rounds={phaseCount(level)}
+          onFight={() => setBossIntro(false)}
+        />
+      )}
+
       {phaseCleared && (
         <GrumbleStrike
-          who={level.villain ?? 'grumble'}
+          who={villain}
           line={level.phases![phase]!.grumble}
           round={phase + 1}
           rounds={phaseCount(level)}
@@ -662,7 +701,31 @@ export function LevelScreen({ level, day }: { level: LevelDef; day?: string }) {
 
       {showWin && payday && <WinCard level={level} payday={payday} onKeepPlaying={() => setShowWin(false)} onDone={goBack} day={day} />}
 
-      {showIntro && level.newPart && (
+      {lesson && !bossIntro && (
+        <Dialog
+          lines={[
+            ...CIRCUIT_LESSON,
+            ...(wantsBrightness ? BRIGHTNESS_LESSON : []),
+            ...(level.tip ? [{ who: 'pip', text: `For this one: ${level.tip}` }] : []),
+          ]}
+          onClose={() => {
+            markSeen(CIRCUIT_LESSON_SEEN);
+            setLesson(false);
+          }}
+        />
+      )}
+
+      {!lesson && !bossIntro && brightLesson && (
+        <Dialog
+          lines={BRIGHTNESS_LESSON}
+          onClose={() => {
+            markSeen(BRIGHTNESS_LESSON_SEEN);
+            setBrightLesson(false);
+          }}
+        />
+      )}
+
+      {!lesson && showIntro && level.newPart && (
         <View style={cardStyles.cover}>
           <Panel style={cardStyles.modal}>
             <PixelText size={11} color={TEXT_SOFT}>
@@ -846,6 +909,7 @@ const styles = StyleSheet.create({
   hintWarning: { backgroundColor: '#f6d6c8' },
   hintSuccess: { backgroundColor: '#dcefc4' },
   pip: { alignItems: 'center' },
+  helpRow: { flexDirection: 'row', justifyContent: 'flex-end', marginTop: 4 },
   tipBadge: {
     marginTop: -8,
     paddingHorizontal: 5,

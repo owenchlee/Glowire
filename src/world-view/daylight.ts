@@ -6,6 +6,8 @@
 
 /** Real seconds for one whole day. */
 export const DAY_SECONDS = 420;
+/** The game is set in one long blackout night: the clock sits at midnight unless pinned (?time=). */
+export const NIGHT_PHASE = 0.75;
 /** Where the clock starts (dusk). */
 export const START_PHASE = 0.5;
 
@@ -127,5 +129,6 @@ export function dayClockSeconds(now = Date.now()): number {
 }
 
 export function currentPhase(now = Date.now()): number {
-  return override === null ? wrapPhase(START_PHASE + (now - t0) / 1000 / DAY_SECONDS) : override;
+  void now;
+  return override ?? NIGHT_PHASE;
 }

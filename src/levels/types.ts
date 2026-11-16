@@ -152,6 +152,8 @@ export interface LevelDef {
   boss?: boolean;
   /** Who does the sabotage between boss phases (a cast id): Grumble unless it says otherwise. */
   villain?: string;
+  /** Boss fights: what the villain says as the fight opens. */
+  taunt?: string;
   /**
    * Boss fights: after the first goals are met, Grumble sabotages the board and sets new
    * goals, once per phase. The level's own goals, intro and solution are phase one.

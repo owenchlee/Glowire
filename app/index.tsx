@@ -1,3 +1,3 @@
-import { WorldSelect } from '../src/ui/WorldSelect';
+import { TitleScreen } from '../src/ui/TitleScreen';
 
-export default WorldSelect;
+export default TitleScreen;

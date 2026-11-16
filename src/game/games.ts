@@ -20,6 +20,8 @@ export interface GameInfo {
   /** Who runs it (a cast id), shown with the instructions. */
   host: string;
   how: string;
+  /** Pip's tips, one per tap of "Ask Pip". */
+  tips: string[];
 }
 
 export const GAMES: Record<GameId, GameInfo> = {
@@ -28,48 +30,56 @@ export const GAMES: Record<GameId, GameInfo> = {
     title: 'Colour Code',
     host: 'ito',
     how: 'Every resistor wears its value as colour bands. First band, second band: two digits. Third band: how many zeros come after. Brown-black-red is 1, 0, and two zeros: 1000 Ω.',
+    tips: ["Read from the end the bands are bunched toward. First two bands are digits, the third is how many zeros.","Brown is 1, red 2, orange 3, yellow 4. Remember: Black Brown Red Orange Yellow Green Blue Violet Grey White, 0 to 9.","Watch for the trick answers: the right digits with one zero too many or too few."],
   },
   signal: {
     id: 'signal',
     title: 'Signal Lamp',
     host: 'gus',
     how: 'Watch the lighthouse flash its colours, then flash them back in the same order. Every round, one more flash. How long can you keep up?',
+    tips: ["Say the colours out loud as they flash. It's much easier to remember a little tune.","Every round only adds ONE flash on the end. You already know the rest!"],
   },
   needle: {
     id: 'needle',
     title: 'Needle Drop',
     host: 'moth',
     how: 'Grandpa’s old meter game! A battery, a lamp, and a meter. Pick the resistor that puts the needle where it’s asked. Bigger resistor, less current. Quick answers score double.',
+    tips: ["More resistance, less current. Want the needle lower? Pick a bigger resistor.","Current = volts ÷ ohms. 3 V across 300 Ω is 10 mA."],
   },
   jars: {
     id: 'jars',
     title: 'Jar Catch',
     host: 'pearl',
     how: 'Catch the falling sparks in your jar, then POUR it into the lamp before it overflows. A full jar holds five. Dodge the dark drops: they drink your jar dry!',
+    tips: ["Pour before the jar is full: five sparks and it overflows.","Dark drops drain your jar. Step aside and let them fall."],
   },
   probe: {
     id: 'probe',
     title: 'Dead Lamp Hunt',
     host: 'gran',
     how: 'Grumble’s zap killed ONE lamp in the string. A dead lamp is a gap, so the whole battery pushes across it. Probe a stretch: volts means it’s in there, 0 means it isn’t. Few probes! Then name the lamp.',
+    tips: ["Always probe half the string. Volts? The dead lamp is in that half. 0 V? It's in the other half.","Tap one lamp, then another, to pick a stretch, then press Probe.","When only one lamp is left that could be dead, tap it and say 'It's this one!'"],
   },
   pipes: {
     id: 'pipes',
     title: 'Dockyard Wiring',
     host: 'bolt',
     how: 'Tap a tile to turn it and carry power from the battery to EVERY lamp. Wires must meet end to end. A diode (arrow) is bolted down and only passes power the way it points.',
+    tips: ["Start at the battery and follow the lit wire. Turn the first dark tile until it joins up.","Tiles turn clockwise. Every tile on the board is part of the circuit, so none are spare.","A diode is bolted down. Its arrow says which way power goes, so wire INTO its back end."],
   },
   panel: {
     id: 'panel',
     title: 'Clock Panel',
     host: 'hazel',
     how: 'Every clock stopped at 11:52. Each switch flips ITSELF and the ones touching it. Get them all ticking. Beat par for a bonus. Pressing twice undoes it.',
+    tips: ["Pressing a clock twice undoes it, and order doesn't matter. Never press the same one twice.","Look for a plus shape of stopped clocks: one press in its middle fixes all five.","Stuck? Hit Reset. Each panel only needs 2 or 3 presses."],
   },
   lantern: {
     id: 'lantern',
     title: 'Lantern Budget',
     host: 'pearl',
     how: 'Your lantern burns down and the Hush is hungry. Pick the circuit that lights the lamp BRIGHTEST. Right refills it; wrong feeds the Hush. A resistor beside the lamp isn’t in its way.',
+    tips: ["More volts, more current. More ohms, less current.","A resistor beside the lamp (not in its loop) doesn't dim it.","A diode eats a little voltage, about 0.7 V."],
   },
 };
 

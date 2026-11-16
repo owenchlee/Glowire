@@ -1,5 +1,5 @@
-// The title screen: pick a world. Each world is its own town with its own jobs; new ones
-// arrive as the game grows.
+// Story: pick a world. Each world is its own town with its own jobs, one stop on the journey
+// to find out where the light went. (The home screen is TitleScreen.)
 
 import { router } from 'expo-router';
 import { type ReactNode, useEffect, useMemo, useRef } from 'react';
@@ -13,9 +13,13 @@ import { CHAPTERS } from '../levels/levels';
 import { WORLDS, type WorldInfo } from '../world/worlds';
 import { FACES } from './faces.generated';
 import { starsFor, useGame } from './game';
+import { metKey } from '../world-view/targets';
 import { CREAM, Counter, GOLD, NIGHT_DEEP, Panel, PixelButton, PixelText, TEXT_SOFT } from './pixel';
 
-/** A snapshot of each world for its card (made with `npm run map-preview`, see docs/PLAN-polish.md). */
+/**
+ * A corner of each world at full pixel size for its card, made with
+ * `MAP_IDS=<id> MAP_CROP=0,16,24,14 MAP_SCALE=1 npm run map-preview` (rows differ per world).
+ */
 const WORLD_ART: Record<string, number> = {
   glowtown: require('../../assets/art/worlds/glowtown.png'),
   harbour: require('../../assets/art/worlds/harbour.png'),
@@ -30,27 +34,22 @@ export function WorldSelect() {
       <Sky />
       <SafeAreaView style={styles.flex} edges={['left', 'right']}>
         <View style={styles.top}>
+          <PixelButton label="‹ Home" tone="teal" size={13} onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))} />
           <View>
-            <GlowLogo />
+            <PixelText size={30} color={GOLD} shadow>
+              Story
+            </PixelText>
             <PixelText size={13} color="#c9c3e6" shadow>
-              Fix the lights. Save the towns.
+              Every light in the world went out at once. Start in Glowtown and follow the trail.
             </PixelText>
           </View>
           <View style={styles.flex} />
           <Counter icon="⚡" value={save.sparks} />
           <Counter icon="★" value={totalStars(save)} />
-          <PixelButton label="Lucky Lantern" tone="gold" size={13} onPress={() => router.push('/casino')} />
-          <PixelButton label="Shop" tone="teal" size={13} onPress={() => router.push('/shop')} />
         </View>
         <ScrollView horizontal contentContainerStyle={styles.row} showsHorizontalScrollIndicator={false}>
-          <Rise index={0}>
-            <DailyCard />
-          </Rise>
-          <Rise index={1}>
-            <BrainDailyCard />
-          </Rise>
           {WORLDS.map((w, i) => (
-            <Rise key={w.id} index={i + 2}>
+            <Rise key={w.id} index={i}>
               <WorldCard world={w} number={i + 1} />
             </Rise>
           ))}
@@ -61,7 +60,7 @@ export function WorldSelect() {
 }
 
 /** A card that slides up and fades in, a beat after the one before it. */
-function Rise({ index, children }: { index: number; children: ReactNode }) {
+export function Rise({ index, children }: { index: number; children: ReactNode }) {
   const t = useRef(new Animated.Value(0)).current;
   useEffect(() => {
     Animated.timing(t, { toValue: 1, duration: 420, delay: 120 + index * 110, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start();
@@ -74,7 +73,7 @@ function Rise({ index, children }: { index: number; children: ReactNode }) {
 }
 
 /** The title, wired up like the game: every few seconds a surge runs along it and each letter flickers. */
-function GlowLogo() {
+export function GlowLogo({ size = 40 }: { size?: number }) {
   const letters = 'GLOWIRE'.split('');
   const flick = useRef(letters.map(() => new Animated.Value(1))).current;
   useEffect(() => {
@@ -101,7 +100,7 @@ function GlowLogo() {
     <View style={styles.logoRow}>
       {letters.map((l, i) => (
         <Animated.View key={i} style={{ opacity: flick[i]! }}>
-          <PixelText size={40} color={GOLD} shadow style={styles.logo}>
+          <PixelText size={size} color={GOLD} shadow style={styles.logo}>
             {l}
           </PixelText>
         </Animated.View>
@@ -110,7 +109,7 @@ function GlowLogo() {
   );
 }
 
-function DailyCard() {
+export function DailyCard() {
   const { save } = useGame();
   const today = dayKey(new Date());
   const best = save.daily.stars[today] ?? 0;
@@ -146,7 +145,7 @@ function DailyCard() {
   );
 }
 
-function BrainDailyCard() {
+export function BrainDailyCard() {
   const { save } = useGame();
   const today = dayKey(new Date());
   const best = save.brainDaily.stars[today] ?? 0;
@@ -209,9 +208,18 @@ function WorldCard({ world, number }: { world: WorldInfo; number: number }) {
         {world.tagline}
       </PixelText>
       <View style={styles.faces}>
-        {faces.map((f) => (
-          <Image key={f} source={FACES[f]} style={[styles.face, !open && styles.faceDark]} />
-        ))}
+        {faces.map((f) =>
+          // A mystery until they've spoken to you (or you've already done one of their jobs).
+          save.seen.includes(metKey(f)) || jobs.some((l) => l.job!.client === f && starsFor(save, l.id) > 0) ? (
+            <Image key={f} source={FACES[f]} style={[styles.face, !open && styles.faceDark]} />
+          ) : (
+            <View key={f} style={[styles.face, styles.mystery]}>
+              <PixelText size={20} color={CREAM}>
+                ?
+              </PixelText>
+            </View>
+          ),
+        )}
       </View>
       {open ? (
         <View style={styles.cardFoot}>
@@ -276,8 +284,8 @@ const styles = StyleSheet.create({
   top: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 20, paddingTop: 14 },
   logo: { letterSpacing: 3 },
   logoRow: { flexDirection: 'row' },
-  row: { gap: 18, paddingHorizontal: 20, paddingVertical: 16, alignItems: 'center' },
-  card: { width: 300 },
+  row: { gap: 22, paddingHorizontal: 20, paddingVertical: 16, alignItems: 'center', justifyContent: 'center', flexGrow: 1 },
+  card: { width: 340 },
   dailyTitle: { marginTop: 8 },
   dailyCopy: { marginTop: 8, minHeight: 54 },
   dailyFoot: {
@@ -289,10 +297,11 @@ const styles = StyleSheet.create({
   },
   locked: { opacity: 0.92 },
   tagline: { marginTop: 2, minHeight: 36 },
-  art: { width: '100%', height: 58, borderWidth: 3, borderColor: '#141b1b', marginBottom: 6, imageRendering: 'pixelated' } as ImageStyle,
+  art: { width: '100%', height: 180, borderWidth: 3, borderColor: '#141b1b', marginBottom: 8, imageRendering: 'pixelated' } as ImageStyle,
   faces: { flexDirection: 'row', gap: 4, marginTop: 8 },
   face: { width: 38, height: 38, borderRadius: 3 },
   faceDark: { opacity: 0.35 },
+  mystery: { backgroundColor: NIGHT_DEEP, alignItems: 'center', justifyContent: 'center' },
   cardFoot: {
     marginTop: 12,
     flexDirection: 'row',

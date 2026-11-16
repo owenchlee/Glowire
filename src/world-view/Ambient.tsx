@@ -64,9 +64,9 @@ export type AmbientKind = { fireflies: readonly [number, number, number]; leaves
 
 /** What drifts in each world. */
 export const AMBIENT: Record<string, AmbientKind> = {
-  glowtown: { fireflies: [1.0, 0.85, 0.4], leaves: [[0.98, 0.7, 0.75], [0.72, 0.78, 0.25]] },
+  glowtown: { fireflies: [1.0, 0.85, 0.4] },
   harbour: { fireflies: [0.75, 0.95, 1.0] },
-  mossbell: { fireflies: [0.65, 1.0, 0.55], leaves: [[0.9, 0.55, 0.25]] },
+  mossbell: { fireflies: [0.65, 1.0, 0.55] },
 };
 
 /** Fireflies blinking in place and leaves falling past, spread over whatever the camera sees. */

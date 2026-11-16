@@ -410,7 +410,7 @@ describe('goal text', () => {
     const l10 = getLevel(10)!;
     const names10 = ledNamesFor(l10);
     expect(describeGoal(l10.goals[0]!, names10, 2)).toBe(
-      'Light the LED at medium brightness when S1 and S2 are ON',
+      'Light the LED at medium brightness (4–8.4 mA) when S1 and S2 are ON',
     );
     expect(describeGoal(l10.goals[1]!, names10, 2)).toBe('Keep the LED dark when only S1 is ON');
     expect(describeGoal(getLevel(8)!.goals[1]!, ledNamesFor(getLevel(8)!), 1)).toBe(
@@ -427,8 +427,8 @@ describe('goal text', () => {
     );
     const middle = getLevel(25)!;
     expect(ledNamesFor(middle)).toEqual({ A: 'A', B: 'B', C: 'the blue LED' });
-    expect(describeGoal(middle.goals[0]!, ledNamesFor(middle), 0)).toBe('Light every LED brightly');
-    expect(describeGoal(getLevel(24)!.goals[0]!, {}, 0)).toBe('Light all 4 LEDs brightly');
+    expect(describeGoal(middle.goals[0]!, ledNamesFor(middle), 0)).toBe('Light every LED brightly (9+ mA)');
+    expect(describeGoal(getLevel(24)!.goals[0]!, {}, 0)).toBe('Light all 4 LEDs brightly (9+ mA)');
   });
 });
 
@@ -589,5 +589,20 @@ describe('meters (chapter 6)', () => {
     const l44 = getLevel(44)!;
     expect(describeGoal(l42.goals[1]!, ledNamesFor(l42), 0, goalWordsFor(l42))).toBe('Make the meter read 5–6 mA');
     expect(describeGoal(l44.goals[0]!, ledNamesFor(l44), 0, goalWordsFor(l44))).toBe('Make the meter read 1.4–1.6 V');
+  });
+});
+
+describe('the resistor lesson numbers (level 1 card)', () => {
+  // 3 V battery, red LED wants ~2 V, 220 Ω takes the other ~1 V: about 5 mA. Without it: burns.
+  const withR = ['┌  R220 ┐', 'B^ .    Lv', '└  ─    ┘'];
+  const without = ['┌  ─ ┐', 'B^ . Lv', '└  ─ ┘'];
+  it('the card’s numbers match the simulator', () => {
+    const led = simulate(parseBoard(withR)).tiles[5]!;
+    expect(led.status).toBe('OK');
+    expect(led.voltage).toBeGreaterThan(1.7);
+    expect(led.voltage).toBeLessThan(2.3);
+    expect(led.current * 1000).toBeGreaterThan(3);
+    expect(led.current * 1000).toBeLessThan(7);
+    expect(simulate(parseBoard(without)).tiles[5]!.status).toBe('BURNED_OUT');
   });
 });

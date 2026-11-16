@@ -1,0 +1,150 @@
+{
+  "grumble": {
+    "voice": "zauh4pbY6h1ZRErsRiAJ",
+    "note": "VALF goblin, raspy"
+  },
+  "gus": {
+    "voice": "pqHfZKP75CvOlQylNhV4",
+    "note": "Bill, wise old"
+  },
+  "marlo": {
+    "voice": "fGIZlgPQ75MMlvQ6WxgY",
+    "note": "Gerald, old British"
+  },
+  "lumen": {
+    "voice": "qkG6pQFWpZTnYnoQZGFs",
+    "note": "Timothy, posh British"
+  },
+  "finch": {
+    "voice": "0SqKG8YoEv9xwrHlKCfF",
+    "note": "Lee, soft British"
+  },
+  "okoro": {
+    "voice": "jhBzyKbsdeM6F66SZCaK",
+    "note": "Sterling, steady and rough"
+  },
+  "rafi": {
+    "voice": "nPczCjzI2devNBz1zQrb",
+    "note": "Brian, deep and comforting"
+  },
+  "benny": {
+    "voice": "yZ3w1DL4ZAxIdOscv2t8",
+    "note": "Wilf, cheerful Northern"
+  },
+  "arjun": {
+    "voice": "iP95p4xoKVk53GoZ742B",
+    "note": "Chris, down-to-earth"
+  },
+  "bram": {
+    "voice": "xVvh7KgfbHX1WS6JTNXX",
+    "note": "Nordic narrator, calm"
+  },
+  "sal": {
+    "voice": "TX3LPaxmHKxFdv7VOQHJ",
+    "note": "Liam, energetic"
+  },
+  "ito": {
+    "voice": "Xb7hH8MSUJpSbSDYk0k2",
+    "note": "Alice, clear educator"
+  },
+  "dot": {
+    "voice": "EXAVITQu4vr4xnSDxMaL",
+    "note": "Sarah, confident"
+  },
+  "rosa": {
+    "voice": "pFZP5JQG7iQjIQuC4Bku",
+    "note": "Lily, velvety British"
+  },
+  "mei": {
+    "voice": "hpp4J3VqNfWAUOO0d1Us",
+    "note": "Bella, bright and warm"
+  },
+  "coral": {
+    "voice": "FGY2WhTYpPnrIDTdsKH5",
+    "note": "Laura, quirky"
+  },
+  "sunny": {
+    "voice": "cgSgspJ2msm6clMCkdW9",
+    "note": "Jessica, playful"
+  },
+  "iris": {
+    "voice": "XrExE9yKIg1WjnnlVkGX",
+    "note": "Matilda, upbeat"
+  },
+  "tess": {
+    "voice": "SAz9YHcvj6GT2YYXdXww",
+    "note": "River, calm and relaxed"
+  },
+  "pip": {
+    "design": "A tiny, bubbly electric spark sprite, a cartoon sidekick. High-pitched, quick, cheeky and excitable, with a playful bright energy. Youthful and gender-neutral.",
+    "voice": "i8symaVECxItUtvga3NA"
+  },
+  "gran": {
+    "design": "A warm, witty British grandmother in her seventies, a retired electrician. Slightly raspy, kind but no-nonsense, with a twinkle of humour. Clear, moderate pace.",
+    "voice": "LgkFzRmFvSZBarAzc5Av"
+  },
+  "wren": {
+    "design": "A bright, adventurous young adult voice with a youthful, cartoon-hero energy. Quick, breathless with excitement and friendly. Clear American accent.",
+    "voice": "hpTW3JMQ0ctv7oFUqGG8"
+  },
+  "hazel": {
+    "design": "A very old, soft-spoken woman, the last miller in a remote foggy village. Gentle, slow, slightly creaky and wistful, with a faint West Country English accent.",
+    "voice": "8B6ki416GwFm7gNl72uG"
+  },
+  "moth": {
+    "design": "A soft, earnest young adult voice with a small, youthful, cartoon-style tone. Half-whispering, slightly nervous and imaginative, as if telling a ghost story.",
+    "voice": "r8PigQYEKBSk3Tb6wAQT"
+  },
+  "pearl": {
+    "design": "A bold, bright young adult voice with a youthful, cartoon-style bounce. Confident, a little bossy and fast-talking, full of big ideas.",
+    "voice": "kTdzbPWP8Xs5dqmhavIg"
+  },
+  "theo": {
+    "design": "A small, high, youthful young adult voice in an animated-cartoon style. Earnest and trying very hard to sound brave, with a wobble of nerves.",
+    "voice": "NX8Kxd7MXEsoSX8dT0YV"
+  },
+  "twins": {
+    "design": "A loud, youthful young adult voice in an animated-cartoon style. Comically indignant and insistent that everything must be exactly fair.",
+    "voice": "8e5tmmEDq0kx658Krp3x"
+  },
+  "glimmer": {
+    "design": "A gentle spirit made of light. Airy, luminous and soft, timeless and kind, with a dreamy otherworldly calm.",
+    "voice": "JPmnDg6f7RDrsnTqAgeK"
+  },
+  "hush": {
+    "design": "An ancient, lonely creature in the deep sea that swallows light. A very soft, breathy, sibilant whisper, sad and gentle. Slow and eerie, never menacing.",
+    "voice": "bAHjuj88kYxDk1vJOqge"
+  },
+  "marigold": {
+    "design": "A kind, determined woman in her thirties, an inventor from a hundred years ago, reading aloud from her own notebook. Warm, clear and thoughtful, old-fashioned English.",
+    "voice": "xDRwZW4Cb6ZwcatQPDif"
+  },
+  "echo": {
+    "design": "A very old brass diving robot who talks about herself in the third person. Precise, polite and slightly tinny and metallic, a little nervous and endearing.",
+    "voice": "FmzN2CZJ78x13zbv6f2N"
+  },
+  "bolt": {
+    "design": "An old warehouse robot who loves rules. Deep, stiff, flat and metallic, very formal and literal, with dry comic timing.",
+    "voice": "ywttGG5uIqKnGzfTEZ4U"
+  },
+  "luca": {
+    "design": "A loud, jolly, big-hearted Italian pizza chef in his forties. Booming and warm, with a strong Italian accent.",
+    "voice": "FFmefufwhgVktTowX5uJ"
+  },
+  "pell": {
+    "design": "A sweet, chatty elderly English lady who grows prize tomatoes. Fluttery, warm, a little fussy and very polite.",
+    "voice": "M19pj8VNMwh3DGz3WbWg"
+  },
+  "nadia": {
+    "design": "An exhausted but warm new mother in her thirties, speaking softly so she won't wake the baby. Sleepy, gentle, with quiet humour.",
+    "voice": "pWtRmjDSIRCxS1x5p5jy"
+  },
+  "juniper": {
+    "design": "A cheerful, hardy mountain-hut dweller in their sixties. Crisp and hearty, outdoorsy, with a laugh in the voice and a Scottish accent.",
+    "voice": "yK9fCUudja76Ukl8vzT0"
+  },
+  "nimbus": {
+    "design": "An eccentric, theatrical old storm scientist who runs a lightning engine on a mountain peak. Dramatic, excitable, mad-professor energy.",
+    "voice": "5nyUCMdXNtmqOCwqoqx6"
+  }
+}

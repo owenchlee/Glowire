@@ -9,7 +9,8 @@ import { SCENES_MOSSBELL } from './extras/mossbell';
 // The lore, in short. A hundred years ago Marigold Watts (Gran's grandmother) joined up
 // the Glowire, one copper line that carries light to every lamp in town. The night she
 // first switched it on, lightning struck it and left a little storm cloud behind: Grumble.
-// He hides from bright lights and hums in the dark, and last night he zapped the power.
+// He hides from bright lights and hums in the dark. At midnight every light in every town
+// died at once, and the current is being pulled away towards the sea (it wasn't Grumble).
 // Marigold's pages hint that the Glowire is older than her, and runs in from the sea.
 //
 // After Star Night, one light stays on far up the valley, in Mossbell Hollow, where a
@@ -43,13 +44,19 @@ export interface Note {
 const scene = (id: string, lines: Line[]): Scene => ({ id, lines });
 
 export const PROLOGUE: Scene = scene('prologue', [
-  { who: 'gran', text: 'Pip! Wake up! The whole town has gone dark.' },
-  { who: 'pip', text: 'Bzzt! Wha…? Oh no. Not again. Was it Grumble?' },
+  { who: 'gran', text: 'Pip! Wake up! Every light in Glowtown just went out. All at once, on the stroke of midnight.' },
+  { who: 'pip', text: 'Bzzt! Wha…? Was it Grumble again?' },
+  { who: 'grumble', text: 'Wasn’t me! HMPH. I like the dark… but not THIS dark. Something down there is hungry.' },
   {
     who: 'gran',
-    text: 'That grumpy little thundercloud zapped the power station last night. Every light in Glowtown is out.',
+    text: 'The radio says Driftwood Harbour went dark at the same moment. And the valley. Power doesn’t just fail everywhere at once, Pip.',
   },
-  { who: 'grumble', text: 'HMPH. Too bright. Too cheerful. Much better now.' },
+  {
+    who: 'gran',
+    text: 'Put your hand on the Glowire. Feel that? The current isn’t gone. It’s being pulled. Away from the town, down towards the sea.',
+  },
+  { who: 'pip', text: 'Pulled? By WHAT?' },
+  { who: 'gran', text: 'That’s what we find out. But a town in the dark can’t help anybody, so we start here.' },
   {
     who: 'gran',
     text: 'See the road out of my yard? The Glowire runs under it. My grandmother Marigold laid it a hundred years ago, and every lamp in town hangs off it.',
@@ -63,12 +70,20 @@ export const PROLOGUE: Scene = scene('prologue', [
     text: 'Start with Maple Lane, past my gate. Use real electronics, mind. No shortcuts.',
   },
   { who: 'pip', text: 'And they pay in sparks! Let’s light this town up!' },
+  {
+    who: 'gran',
+    text: 'Look down at the road. See those gold dots glowing? That’s the Glowire shining up through the stones. It always leads to the next home that needs power.',
+  },
+  {
+    who: 'pip',
+    text: 'I’ll be your guide! Follow the gold dots, and watch the box in the corner. I’ll tell you what to do. Tap “Need help?” any time.',
+  },
 ]);
 
 export const SCENES: Record<string, Scene> = Object.fromEntries(
   [
     PROLOGUE,
-    scene('gran-home', [{ who: 'gran', text: 'Maple Lane’s just down the road. Follow the Glowire, kiddo!' }]),
+    scene('gran-home', [{ who: 'gran', text: 'Maple Lane’s just down the road. Follow the gold dots in the road, that’s the Glowire glowing. Mrs. Pell’s porch is first, kiddo!' }]),
 
     // ── Glowtown ──
     scene('maple-intro', [

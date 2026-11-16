@@ -1,0 +1,3062 @@
+[
+ {
+  "key": "db83b2d3",
+  "who": "gran",
+  "text": "You found the dead lamp quickly. Do you know who taught me that trick? Marigold, on the very first night."
+ },
+ {
+  "key": "635a2ef8",
+  "who": "gran",
+  "text": "One lamp went dark and the whole string went with it. She walked along with a little meter and said, “Where the voltage is, the break is.”"
+ },
+ {
+  "key": "d7fad6f2",
+  "who": "pip",
+  "text": "Because a gap in the loop takes ALL the push. Zero volts here, full battery there. Bzzt. The meter points right at it."
+ },
+ {
+  "key": "6f947a3e",
+  "who": "gran",
+  "text": "Sixteen lamps and you only used four probes? Marigold called that “halving”. Check the middle, throw away half the string, repeat."
+ },
+ {
+  "key": "b2f055ef",
+  "who": "pip",
+  "text": "Sixteen, eight, four, two, one. Every probe cuts the hunt in half. That’s why the game gives you just enough probes."
+ },
+ {
+  "key": "6f853b77",
+  "who": "gran",
+  "text": "Electricians do it with cables a mile long. Same trick, bigger string."
+ },
+ {
+  "key": "21d4e861",
+  "who": "ito",
+  "text": "Sixteen points! You read the bands like a book. Marigold painted them on every resistor herself, with a tiny brush."
+ },
+ {
+  "key": "9fd5159b",
+  "who": "ito",
+  "text": "Her reason: a resistor is far too small to print numbers on. So the number wears a colour. Brown is one, red is two, orange is three."
+ },
+ {
+  "key": "d0ca4ad7",
+  "who": "pip",
+  "text": "A rainbow that tells you how much a wire pushes back. I’m never forgetting brown-black-red."
+ },
+ {
+  "key": "5a70de97",
+  "who": "bolt",
+  "text": "BEEP. Memory file 0007 unlocked by your wiring. Playing. The old dock grid: one battery, forty lamps, no loose ends."
+ },
+ {
+  "key": "fe7737e4",
+  "who": "bolt",
+  "text": "Every wire met the next wire end to end. A lamp is only on if power can walk all the way to it from the battery and back."
+ },
+ {
+  "key": "e4d5164b",
+  "who": "pip",
+  "text": "So a dark lamp has no path home. Find where the road breaks and turn a tile. That’s the whole game, Bolt!"
+ },
+ {
+  "key": "36a5d836",
+  "who": "bolt",
+  "text": "AFFIRMATIVE. BOOP."
+ },
+ {
+  "key": "6aa3e699",
+  "who": "bolt",
+  "text": "You turned past the diode tiles. Memory file 0012: the dock gate."
+ },
+ {
+  "key": "8e11a5f3",
+  "who": "bolt",
+  "text": "A diode is a one-way door for electricity. The arrow shows the way through. The workers bolted them in so no lamp could feed the battery backwards."
+ },
+ {
+  "key": "94276ad5",
+  "who": "pip",
+  "text": "That’s why you can’t turn the arrow tiles. Some doors only open one way. Bzzt."
+ },
+ {
+  "key": "9115a96b",
+  "who": "gus",
+  "text": "Six flashes back, flawless! My grandad could do thirty. Ships out at sea read the lamp the way you read a book."
+ },
+ {
+  "key": "0d7b27da",
+  "who": "gus",
+  "text": "A light is the oldest message there is. On, off, on, off, with nothing in between. Real computers talk like that, every one of them."
+ },
+ {
+  "key": "62f728d4",
+  "who": "pip",
+  "text": "So a blink is a letter and a pattern is a word. Gus, can the lamp say my name?"
+ },
+ {
+  "key": "a1d7bf83",
+  "who": "hazel",
+  "text": "Every clock in the mill stopped at 11:52, and I found out why. They all hang on one switchboard, and each switch is wired to its neighbours."
+ },
+ {
+  "key": "47fc4235",
+  "who": "hazel",
+  "text": "Flip one and its neighbours flip too. Whoever built it wanted nobody to fix a clock alone. You fix them in the right ORDER, or not at all."
+ },
+ {
+  "key": "72799ef6",
+  "who": "pip",
+  "text": "Switches that are joined together. Press the right ones, one after another, and they all come on. Order matters!"
+ },
+ {
+  "key": "73b9ec4d",
+  "who": "hazel",
+  "text": "Beat par on the old panel? Then you know the secret: pressing a switch twice undoes it. Never waste a press."
+ },
+ {
+  "key": "d512e606",
+  "who": "hazel",
+  "text": "My grandmother wrote it on the wall in chalk: “Think before the click.” Electricians call it a plan."
+ },
+ {
+  "key": "37a292a3",
+  "who": "pip",
+  "text": "And every light is only ever on or off. Two choices each. Bzzt, I like those odds."
+ },
+ {
+  "key": "844d8e68",
+  "who": "moth",
+  "text": "Your needle landed right on the line! Grandpa would be doing a little dance."
+ },
+ {
+  "key": "56639a73",
+  "who": "moth",
+  "text": "A meter in the loop counts how much current flows. A bigger resistor squeezes harder, so the needle drops. Smaller, and it climbs."
+ },
+ {
+  "key": "945d2d08",
+  "who": "pip",
+  "text": "Ohm’s law with a pointer: more squeeze, less flow. Bzzt. I could watch that needle all day."
+ },
+ {
+  "key": "5a011e2f",
+  "who": "pearl",
+  "text": "You keep picking the brightest circuit. Do you know what a lamp wants? Plenty of current and nothing in the way."
+ },
+ {
+  "key": "af3aac66",
+  "who": "pearl",
+  "text": "A resistor in the lamp’s own path dims it. A resistor on a side branch leaves it alone. The old lamplighters read circuits like I read the tide."
+ },
+ {
+  "key": "e059f7b8",
+  "who": "pip",
+  "text": "Series: everything shares the same trickle. Parallel: each lamp gets its own road. Bzzt."
+ },
+ {
+  "key": "ed73ccdc",
+  "who": "pearl",
+  "text": "Eight right while the Hush breathes down your neck. She isn’t cruel, you know. She’s cold. A wrong answer is just a lamp she gets to hold."
+ },
+ {
+  "key": "0a953495",
+  "who": "pearl",
+  "text": "The lamplighters’ rule was: spend your light wisely. Every bit you waste, somebody downstream goes without."
+ },
+ {
+  "key": "5fe064ca",
+  "who": "pip",
+  "text": "A budget! The lantern burns down like a battery. Pick the best circuit and none of it goes to waste."
+ },
+ {
+  "key": "fbd4855e",
+  "who": "marlo",
+  "text": "Twelve! In my day that earned you the lamplighters’ gold badge. I kept the book. Every lamp lit, every drop of storm spent."
+ },
+ {
+  "key": "f482f323",
+  "who": "marlo",
+  "text": "Marigold borrowed it, once. She copied one line into her notebook: “Light is only ever moved, never made. Count it carefully.”"
+ },
+ {
+  "key": "728740ab",
+  "who": "pip",
+  "text": "Energy is never made or lost, only moved. Even the Heart Jar can only hand out what it was given."
+ },
+ {
+  "key": "3e30431b",
+  "who": "pip",
+  "text": "From up here you can see every lamp on the street. They’re all joined in one long loop, wire to jar to wire."
+ },
+ {
+  "key": "7f77d5e9",
+  "who": "pip",
+  "text": "Someone scratched into the sand: “Current has to get home. Never leave a loop open.” The first rule of lamplighting!"
+ },
+ {
+  "key": "dc420f43",
+  "who": "pip",
+  "text": "Dead jars, all in a row, each with a paper tag tied to its neck. “Retired: the winter Marigold left.”"
+ },
+ {
+  "key": "e95a0874",
+  "who": "pip",
+  "text": "Ninety years of lamps, switched off one by one. Marlo kept every single one. He couldn’t throw out a light."
+ },
+ {
+  "key": "06c36392",
+  "who": "pip",
+  "text": "A tiny dome, hidden behind the coral. Inside: a workbench, and a jar with a note stuck to the glass."
+ },
+ {
+  "key": "0c48b7cf",
+  "who": "pip",
+  "text": "“Lightning wants to go home. Give it a loop to run round and it will stay as long as you like. Signed, the First Lamplighters.”"
+ },
+ {
+  "key": "2787d948",
+  "who": "pip",
+  "text": "They worked it out before anyone wrote it down. A loop, a jar, and a lot of patience."
+ },
+ {
+  "key": "03f13be6",
+  "who": "pip",
+  "text": "Two names carved on the rock, side by side: MARIGOLD and MARLO, and a little lamp between them."
+ },
+ {
+  "key": "2a476091",
+  "who": "pip",
+  "text": "Underneath, in two different hands: “Her lantern. His lamps.” They looked after this place together, once."
+ },
+ {
+  "key": "068496a8",
+  "who": "pip",
+  "text": "The sand here is cold. Properly cold. And all round it, the footprints of something that sat very still and very small."
+ },
+ {
+  "key": "42912aac",
+  "who": "pip",
+  "text": "There’s a jar lid beside it, licked clean of light. Whatever it is, it was only trying to get warm."
+ },
+ {
+  "key": "24f597ac",
+  "who": "pip",
+  "text": "A smaller bell, hung beside the hall. Same bronze as the one in Mossbell, same writing on the lip: “Cast together.”"
+ },
+ {
+  "key": "d6fd24a7",
+  "who": "pip",
+  "text": "When the big bell rings up top, this one hums without anyone touching it. Same note, same moment. That’s the thirteenth ring."
+ },
+ {
+  "key": "8ea79b58",
+  "who": "pip",
+  "text": "A hairline crack runs down the Heart Jar, thin as a whisker. Cold air whistles out of it. And a very quiet humming."
+ },
+ {
+  "key": "6ec28074",
+  "who": "pip",
+  "text": "It’s not a sad noise. It’s a lullaby, hummed by someone who forgot the words. Hush? Is that you?"
+ },
+ {
+  "key": "44edf918",
+  "who": "pearl",
+  "text": "See the sandy hill north of the street? Grandpa says the lamplighters sat up there. There’s a ladder and everything."
+ },
+ {
+  "key": "c77e1049",
+  "who": "pearl",
+  "text": "And the crabs all hide behind the kelp at the west end. They only go in through one gap. I bet there’s something in there."
+ },
+ {
+  "key": "9fcc0d2d",
+  "who": "wren",
+  "text": "There’s a dome up in the corner, all walled in with kelp. I can see its roof but I can’t find the door."
+ },
+ {
+  "key": "1081dfbc",
+  "who": "wren",
+  "text": "A jar is glowing right beside the wall. Lamps don’t glow beside nothing."
+ },
+ {
+  "key": "d3a63366",
+  "who": "tess",
+  "text": "My coral always leans one way: toward the old lamp by the corner dome. Follow where the branches point."
+ },
+ {
+  "key": "60ff06c1",
+  "who": "tess",
+  "text": "And the vents to the north are warm, if you ever get cold. The fish go there to sulk."
+ },
+ {
+  "key": "ba5457e2",
+  "who": "glimmer",
+  "text": "There’s a ring of kelp in the west where the sand is cold. Not cold like water. Cold like someone is lonely."
+ },
+ {
+  "key": "72a27aa3",
+  "who": "glimmer",
+  "text": "Don’t be scared of it. I think it just wants someone to sit with."
+ },
+ {
+  "key": "31f59e56",
+  "who": "echo",
+  "text": "Echo has mapped the wreck. A second hull lies south-east, with a hold that has one gap in its side. A lamp marks the gap."
+ },
+ {
+  "key": "cc0b7007",
+  "who": "echo",
+  "text": "Echo has also noted a ladder behind the camera. Echo is afraid of ladders. Echo does not know why."
+ },
+ {
+  "key": "ae0d60e8",
+  "who": "marlo",
+  "text": "The two of us used to sit on a rock in the north-east corner of the hall and watch the jar. Marigold and me."
+ },
+ {
+  "key": "263dd9b6",
+  "who": "marlo",
+  "text": "There’s a ladder up it now. Go on. Mind the lamp. I never could bring myself to switch that one off."
+ },
+ {
+  "key": "af386b65",
+  "who": "pip",
+  "text": "Shelves of spare bulbs, every one labelled in Gran’s tiny writing. And a tin marked “M.W. – DO NOT LOSE”."
+ },
+ {
+  "key": "462bb24f",
+  "who": "pip",
+  "text": "Inside is a bulb with a really, really thin wire. Gran’s note says: “It glows because the current has to squeeze through. Squeeze = heat = light.”"
+ },
+ {
+  "key": "7cabfd00",
+  "who": "pip",
+  "text": "So a resistor is just a polite traffic jam. Bzzt. I like it."
+ },
+ {
+  "key": "0fe88118",
+  "who": "pip",
+  "text": "Letters cut deep into the bench: “M.W. made the first one here. One battery, one bulb, one switch. A circle of wire.”"
+ },
+ {
+  "key": "6dbc73d4",
+  "who": "pip",
+  "text": "Under it, scratched smaller: “It would not light until I closed the circle. Everything is a circle, Gran.”"
+ },
+ {
+  "key": "f90abbb4",
+  "who": "gran",
+  "text": "(Faintly, from far away.) That’s my grandmother’s bench. I wondered who’d find it."
+ },
+ {
+  "key": "0151d6ed",
+  "who": "pip",
+  "text": "A grotto full of old jars, and in each one a shrivelled lemon with a copper coin and a nail stuck in it."
+ },
+ {
+  "key": "d401d9d0",
+  "who": "pip",
+  "text": "A card says: “Two different metals plus something sour makes a battery. Marigold’s trick, for when the shop was shut.”"
+ },
+ {
+  "key": "e95bb2aa",
+  "who": "pip",
+  "text": "A tiny bulb is still wired to the last lemon. It’s glowing. A hundred years of lemons? Bzzt. That’s not how lemons work."
+ },
+ {
+  "key": "f022ae19",
+  "who": "pip",
+  "text": "Black marks all over the rock inside, in a long zigzag from the roof to the floor."
+ },
+ {
+  "key": "86e3be73",
+  "who": "pip",
+  "text": "It’s where lightning found the shortest way to the ground. Electricity is lazy: it always takes the easy road."
+ },
+ {
+  "key": "2c61d581",
+  "who": "grumble",
+  "text": "…I did NOT make those. Okay I did. I was LITTLE. It was my first zap and I couldn’t find the OFF switch."
+ },
+ {
+  "key": "4b1ccc56",
+  "who": "pip",
+  "text": "The Glowire’s power station: a stone kiln with a lightning rod next to it. The main fuse is on the wall, and it’s snapped."
+ },
+ {
+  "key": "a43e8f57",
+  "who": "pip",
+  "text": "A fuse is a thin wire built to break first when too much current comes. It sacrifices itself so the lamps don’t have to."
+ },
+ {
+  "key": "24d11421",
+  "who": "pip",
+  "text": "Last night’s zap blew it. We can’t just put it back. We’d have to find out WHY it blew, or Grumble will do it again."
+ },
+ {
+  "key": "2c31141b",
+  "who": "pip",
+  "text": "A hollow in the ridge, dark and tidy, lined with feathers of storm. And a drawing scratched in the rock: two little clouds, holding hands."
+ },
+ {
+  "key": "3d93e01d",
+  "who": "pip",
+  "text": "One is shaded in dark. The other has been rubbed out, over and over, like someone kept trying to draw her back."
+ },
+ {
+  "key": "9ff8b6e9",
+  "who": "grumble",
+  "text": "…don’t look at that. Everybody has a twin. Mine just happens to be somewhere I can’t go."
+ },
+ {
+  "key": "0ddca52c",
+  "who": "pip",
+  "text": "A dusty ledger in the alley. Every page is lamp oil, lamp oil, lamp oil, in a hundred years of handwriting."
+ },
+ {
+  "key": "ae3b968c",
+  "who": "pip",
+  "text": "Until one page: “Sold: one copper wire, to M. Watts, 11:40 p.m. Paid in lemons.” And the next page has been torn out."
+ },
+ {
+  "key": "a6993e75",
+  "who": "pip",
+  "text": "11:40 p.m. Twelve minutes before the clock stopped. Bzzt. She was in a hurry."
+ },
+ {
+  "key": "1835330b",
+  "who": "pip",
+  "text": "Down in the storm drain there’s a thick copper wire, green with age, running along under the road. And it’s WARM."
+ },
+ {
+  "key": "3ed85b93",
+  "who": "pip",
+  "text": "It runs east to west, the way the Glowire does… but there’s a second branch. That one doesn’t go to any building. It goes out of town. Towards the sea."
+ },
+ {
+  "key": "78884696",
+  "who": "pip",
+  "text": "Where does the Glowire really start? Gran said it started with Marigold. I’m not sure that’s true."
+ },
+ {
+  "key": "026f002c",
+  "who": "pip",
+  "text": "On the water the Market Clock’s reflection shows the same time: 11:52. Obviously."
+ },
+ {
+  "key": "6648f937",
+  "who": "pip",
+  "text": "But the water is rippling and the hands in the water are… moving. Slowly. Backwards."
+ },
+ {
+  "key": "967ff054",
+  "who": "pip",
+  "text": "Then a ripple, and they’re stuck at 11:52 again. Bzzt. I didn’t see that. I definitely didn’t see that."
+ },
+ {
+  "key": "6f787330",
+  "who": "pip",
+  "text": "A little cellar under the ridge. There’s a switch on the wall, an old brass knife switch, left in the ON position."
+ },
+ {
+  "key": "8bb83916",
+  "who": "pip",
+  "text": "Beside it: “M.W. 11:52. It lit. Then it lit too much.” The wire from it goes up, into the foot of the Market Clock."
+ },
+ {
+  "key": "656eb11a",
+  "who": "pip",
+  "text": "A clock’s motor needs a steady push from the circuit. When the push stops, so does the clock. That’s why every clock on the Glowire shows 11:52."
+ },
+ {
+  "key": "602b98ac",
+  "who": "wren",
+  "text": "I’m mapping the Glowire, bend by bend. This lane is marked “three odd things, one cheeky pond”."
+ },
+ {
+  "key": "51ce7f74",
+  "who": "wren",
+  "text": "There’s a rocky outcrop to the west with a cave in it. And south-west, a path that just… stops, next to a very large pink tree. I didn’t dig. Not my map to dig."
+ },
+ {
+  "key": "1e3591ca",
+  "who": "wren",
+  "text": "Up that ladder behind the school is the old power station. Be careful with the fuse: it’s thin on purpose, so it breaks before everything else does."
+ },
+ {
+  "key": "86dd2bf5",
+  "who": "wren",
+  "text": "And there’s a boardwalk at the south of the schoolyard that goes right out over the pond. Why would anyone build a dock to nowhere? Unless it’s not nowhere."
+ },
+ {
+  "key": "495cb14d",
+  "who": "moth",
+  "text": "I’ve seen the Lantern Lady twice. But I’ve also heard something grumbling up in the north ridge, behind the trees."
+ },
+ {
+  "key": "c0295b48",
+  "who": "moth",
+  "text": "And the fireflies at the dark pool in the south-west? They only sit over one spot. Why would they do that?"
+ },
+ {
+  "key": "ad6602f4",
+  "who": "pip",
+  "text": "A glass jar, half buried in the sand. There’s a paper inside, rolled up tight."
+ },
+ {
+  "key": "b3a44c1a",
+  "who": "pip",
+  "text": "“To whoever finds this: the lamps under the water are not broken. They are WAITING. Keep the light on. —M.W.”"
+ },
+ {
+  "key": "a39ef812",
+  "who": "pip",
+  "text": "M.W. again! She’s been writing to us for a hundred years. Bzzt."
+ },
+ {
+  "key": "95b0a037",
+  "who": "pip",
+  "text": "A nest made of bottle caps, bits of rope… and one tiny striped resistor. The gulls think it’s a candy."
+ },
+ {
+  "key": "2c2b22c3",
+  "who": "pip",
+  "text": "A resistor’s a speed bump for current. It doesn’t stop the flow, it just slows it down so the LED lives."
+ },
+ {
+  "key": "12d071bd",
+  "who": "pip",
+  "text": "I’m leaving it. The gulls would never forgive me."
+ },
+ {
+  "key": "9b71daea",
+  "who": "pip",
+  "text": "The lighthouse keeper’s log, in tidy ink. “Night 9,999. Lamp lit. Sea quiet.” Then, in a shakier hand:"
+ },
+ {
+  "key": "96ba1c47",
+  "who": "gus",
+  "text": "“…Night 10,000. Sea not quiet. Something below the waves blinked back at me. Not once. In ROWS.”"
+ },
+ {
+  "key": "7e4bbd74",
+  "who": "pip",
+  "text": "That’s Old Gus’s handwriting! He told us nothing had ever answered. He was fibbing a little."
+ },
+ {
+  "key": "f2a4f17c",
+  "who": "pip",
+  "text": "Inside the cave the wall is covered in little drawings of lamps. Rows and rows of them, going down and down."
+ },
+ {
+  "key": "5b8c3903",
+  "who": "pip",
+  "text": "Below the lamps, scratched in a child’s hand: “Grandad says they get switched on from underneath.”"
+ },
+ {
+  "key": "f443e21f",
+  "who": "pip",
+  "text": "Underneath what? The sea? Whoever draws a ROW of lamps wants to say they’re in PARALLEL. Interesting, bzzt."
+ },
+ {
+  "key": "77509741",
+  "who": "pip",
+  "text": "A row of old glass jars, half buried, with a wire running between them. They’re not dead. They’re DIM."
+ },
+ {
+  "key": "b6c8cc63",
+  "who": "pip",
+  "text": "Lamps in a row on one wire, Gus’s grandad was right. Someone made these in a line, and sent them under the sea."
+ },
+ {
+  "key": "95de3673",
+  "who": "pip",
+  "text": "If one of them went out, would the others keep burning? Only if each had its own path. Bzzt!"
+ },
+ {
+  "key": "55f0c699",
+  "who": "pip",
+  "text": "A fat notebook with BOLT’S RULES on the cover. It’s mostly sticky notes."
+ },
+ {
+  "key": "0492f7ff",
+  "who": "bolt",
+  "text": "Rule 4: every alley is one-way. Rule 4b: a diode is an alley for current. Rule 4c: it has a stripe at the exit end."
+ },
+ {
+  "key": "620fcca2",
+  "who": "bolt",
+  "text": "Rule 99: if the rulebook goes missing, assume the gulls have it. Rule 100: do not read Rule 99 aloud."
+ },
+ {
+  "key": "3d96ddaf",
+  "who": "pip",
+  "text": "You put your ear to the cave wall. Bong… bong… bong… all the way to twelve. Right on the hour."
+ },
+ {
+  "key": "130fc817",
+  "who": "pip",
+  "text": "…and then, a long way off, a thirteenth. Very faint. Like something deep under the sea just answered."
+ },
+ {
+  "key": "6aa62fcc",
+  "who": "pip",
+  "text": "Gus’s bell and the Hollow’s bell. Are they the same bell? Bzzt. Don’t tell the Professor. He’ll want to measure it."
+ },
+ {
+  "key": "19a5a058",
+  "who": "pip",
+  "text": "You squint through the old brass telescope. The harbour looks tiny, with the lighthouse blinking at its tip."
+ },
+ {
+  "key": "a272af3a",
+  "who": "pip",
+  "text": "And far to the east, up the valley, a second light. Small and gold. It’s blinking the SAME pattern, a little late."
+ },
+ {
+  "key": "93db3e63",
+  "who": "pip",
+  "text": "Somebody’s answering our lighthouse. From Mossbell Hollow? Bzzt."
+ },
+ {
+  "key": "dce1c780",
+  "who": "sal",
+  "text": "See the rock ridge north of the market? Ladder on it. The gulls nest up there and they pinch anything shiny."
+ },
+ {
+  "key": "6a197e47",
+  "who": "sal",
+  "text": "I’d go and look, but I get dizzy. And seasick. And ladder-sick."
+ },
+ {
+  "key": "04cfeeae",
+  "who": "sal",
+  "text": "The seals hide in the cove past the pier. Two rocks stand guard, with a gap just wide enough for a seal. Or you."
+ },
+ {
+  "key": "7089a2ab",
+  "who": "sal",
+  "text": "Some old glass jars wash in there. They twinkle after dark. Don’t tell anyone I said."
+ },
+ {
+  "key": "56a3802d",
+  "who": "gus",
+  "text": "My grandad wrote everything in his log. His last page went in the tide cave, at the foot of the east rocks."
+ },
+ {
+  "key": "71b01252",
+  "who": "gus",
+  "text": "He said the waves had lamps in them, in rows, and that one night they all went out at once. Eight minutes to midnight."
+ },
+ {
+  "key": "8997816b",
+  "who": "bolt",
+  "text": "Rule 4: alleys are one-way. IN on the left, OUT on the right. A diode works the same: current passes one way, never back."
+ },
+ {
+  "key": "a5a9e6df",
+  "who": "bolt",
+  "text": "My rulebook is in the back lane behind the warehouses. It is not lost. It is misfiled."
+ },
+ {
+  "key": "3ff87c29",
+  "who": "lumen",
+  "text": "Hm! There is a terrace north of the hill path, with a cave in its foot. Put your ear to the rock at midnight."
+ },
+ {
+  "key": "14234c12",
+  "who": "lumen",
+  "text": "I counted thirteen bongs once. The bell tower only has twelve. Fascinating. I wrote it down. I lost the paper."
+ },
+ {
+  "key": "1a6c8de7",
+  "who": "pip",
+  "text": "Footprints in the mud. Small. Bare. And WET, like someone just stepped out of the pond."
+ },
+ {
+  "key": "38d121ff",
+  "who": "pip",
+  "text": "They start at the water. They go up the boardwalk. They stop at the bus stop. Bzzt. Nobody has arrived on that bus in fifty years."
+ },
+ {
+  "key": "fa31dead",
+  "who": "pip",
+  "text": "A lamp burning on the island. No wire. No oil. No battery. Nothing connected to anything."
+ },
+ {
+  "key": "a5541538",
+  "who": "pip",
+  "text": "A lamp needs a complete loop to glow. So either there is a loop I cannot see… or somebody is being the loop."
+ },
+ {
+  "key": "6abfb8b1",
+  "who": "pip",
+  "text": "The glass is cold. The light is not. I think I would like to go back now."
+ },
+ {
+  "key": "6a060d76",
+  "who": "pip",
+  "text": "Standing in the middle of the ring, my fan goes quiet. Everything goes quiet. Then: a hum, very low, from the stones."
+ },
+ {
+  "key": "c109ddee",
+  "who": "pip",
+  "text": "It is the exact note a transformer makes. Hazel says her grandmother used to tune the mill wheel to it."
+ },
+ {
+  "key": "5347aac0",
+  "who": "pip",
+  "text": "Inside the grotto: a huge clay mould, split in two. Stamped on it: BRIGHTWATER FOUNDRY, ONE OF TWO."
+ },
+ {
+  "key": "5f746d35",
+  "who": "pip",
+  "text": "I tap it. Far away, under a lot of water, something taps back. One. Two. Bzzt. I am not tapping it again."
+ },
+ {
+  "key": "470ab1a2",
+  "who": "pip",
+  "text": "In the collapsed chapel: two bell ropes hanging side by side. One is grey and frayed to a thread."
+ },
+ {
+  "key": "e927d5cb",
+  "who": "pip",
+  "text": "The other is brand new. And it is swinging. Gently. Like someone has just let go of it."
+ },
+ {
+  "key": "c4dc5a05",
+  "who": "pip",
+  "text": "A ring of mushrooms, and in the middle, a little tin of lantern oil. I touch it. It is still warm."
+ },
+ {
+  "key": "cc02c74b",
+  "who": "pip",
+  "text": "Warm, like it has been held in someone’s hands all evening. There are two cups beside it. Both are full of tea."
+ },
+ {
+  "key": "3ad884f0",
+  "who": "pip",
+  "text": "Somebody is expected. I really hope it is not us."
+ },
+ {
+  "key": "4554a514",
+  "who": "pip",
+  "text": "The cave is full of fog. It breathes in, slowly, and out. It smells like rain and wet pennies."
+ },
+ {
+  "key": "f2364994",
+  "who": "pip",
+  "text": "Every time it breathes out, a tiny bit of it drifts along the wire and away up the valley. It is thin and cold and it sounds, almost, like a sigh."
+ },
+ {
+  "key": "e2b8be42",
+  "who": "pip",
+  "text": "…Like something that is only very, very cold. Bzzt. I feel strange. I think I feel sorry for it."
+ },
+ {
+  "key": "e0663729",
+  "who": "gran",
+  "text": "Hazel Thorn still keeps the mill, I think. If anyone knows what’s going on up here, she will."
+ },
+ {
+  "key": "f78d5608",
+  "who": "gran",
+  "text": "And if you see little wet footprints out on that pond boardwalk, don’t tell me which way they go. I would rather not know."
+ },
+ {
+  "key": "5b981dfe",
+  "who": "wren",
+  "text": "My map says the Glowire runs right through the middle of the village… and ends at a bell."
+ },
+ {
+  "key": "c890e055",
+  "who": "wren",
+  "text": "There is a ladder behind the kiln, up the ridge. Locals leave little things on top for whoever climbs it next. I left a coin."
+ },
+ {
+  "key": "a16aa861",
+  "who": "hazel",
+  "text": "There is a ring of standing stones behind my mill. Hum when it rains. Stand in the middle and tell me it is only wind."
+ },
+ {
+  "key": "9b904958",
+  "who": "hazel",
+  "text": "And there is a lamp lit out on the bog island, been burning since the Long Dark. I have never put oil in it. Nobody has."
+ },
+ {
+  "key": "c2b23a7b",
+  "who": "wren",
+  "text": "The north marsh has a boardwalk all the way round. In the middle of it there is a reed island with something shiny on it."
+ },
+ {
+  "key": "1383e9e2",
+  "who": "wren",
+  "text": "And a cave at the far end that smells of the sea. My map does not have a sea. I checked."
+ },
+ {
+  "key": "a506c88c",
+  "who": "moth",
+  "text": "There is a path behind the old tree, the crooked one. It looks like it stops. It does not."
+ },
+ {
+  "key": "68f2c2ae",
+  "who": "moth",
+  "text": "At the end is a ring of mushrooms and a cup of tea that is always warm. I never drink it. It is hers."
+ },
+ {
+  "key": "8ad43f5e",
+  "who": "moth",
+  "text": "Up on Chapel Hill there are two bell ropes. Only one of them was ever pulled. By me, I mean. The other one pulls itself."
+ },
+ {
+  "key": "63750d50",
+  "who": "pip",
+  "text": "Coins at the bottom of the fountain. Most are new. This one’s ancient… it says “M.W. 1926”."
+ },
+ {
+  "key": "d3780704",
+  "who": "pip",
+  "text": "And it’s WARM. Like someone was holding it a minute ago. Bzzt. Nobody’s here."
+ },
+ {
+  "key": "b524bb13",
+  "who": "pip",
+  "text": "Under the Market Clock, someone has scratched little marks into the stone. Lots of them."
+ },
+ {
+  "key": "62d5eb99",
+  "who": "pip",
+  "text": "…ninety-eight, ninety-nine, a hundred. One for every year since the Glowire was switched on?"
+ },
+ {
+  "key": "b86cff6c",
+  "who": "pip",
+  "text": "The clock is stuck at 8 minutes to midnight. Dot says it ALWAYS stops at 11:52."
+ },
+ {
+  "key": "97c0c3bd",
+  "who": "pip",
+  "text": "Inside the hollow stump: a little nest of golden sparks, still warm."
+ },
+ {
+  "key": "d1d906f1",
+  "who": "pip",
+  "text": "There’s a feather in it. A feather made of light. It fades when you touch it."
+ },
+ {
+  "key": "89272eb7",
+  "who": "grumble",
+  "text": "…don’t touch that. It’s not yours. It’s not MINE either. Leave it."
+ },
+ {
+  "key": "91eeff37",
+  "who": "pip",
+  "text": "D-d-did you SEE that?! Between the trees! Someone with a lantern!"
+ },
+ {
+  "key": "2550b251",
+  "who": "pip",
+  "text": "And then they just… went out. Like a light. Bzzt. I am NOT scared. My fan is just very loud right now."
+ },
+ {
+  "key": "17a55358",
+  "who": "pip",
+  "text": "There! By Theo’s window! A lady, glowing all over, with a lantern!"
+ },
+ {
+  "key": "cbb9651c",
+  "who": "pip",
+  "text": "…gone. Theo said he sees her every night. I thought he was making it up."
+ },
+ {
+  "key": "49c6679c",
+  "who": "pip",
+  "text": "A crate stamped “MOSSBELL HOLLOW MILL. DO NOT OPEN BEFORE STAR NIGHT.”"
+ },
+ {
+  "key": "547b5a92",
+  "who": "pip",
+  "text": "It’s empty. It smells of rain, and honey, and candles. Who’s been sending things from Mossbell?"
+ },
+ {
+  "key": "0ea6fb1d",
+  "who": "pip",
+  "text": "Look out there, under the water. Little lights, in rows. Like streetlamps."
+ },
+ {
+  "key": "2f327035",
+  "who": "pip",
+  "text": "A wave rolls over them and they’re gone. Old Gus wasn’t joking, was he?"
+ },
+ {
+  "key": "1555a395",
+  "who": "gus",
+  "text": "Wait. Look out there. Far out, past the point… something is flashing back."
+ },
+ {
+  "key": "d2826b4a",
+  "who": "gus",
+  "text": "Your whole pattern, colour for colour. And then one more flash, that you never sent. Fifty years I’ve kept this light, and nothing has EVER answered."
+ },
+ {
+  "key": "a8a99b23",
+  "who": "pip",
+  "text": "On the cliff path! The lantern lady again! She’s looking out to sea…"
+ },
+ {
+  "key": "383883d1",
+  "who": "pip",
+  "text": "…and she’s gone. She keeps showing up wherever the Glowire goes. Is she FOLLOWING it?"
+ },
+ {
+  "key": "314c652c",
+  "who": "pip",
+  "text": "Carved into this old stump: “M.W.” and two little clouds, holding hands."
+ },
+ {
+  "key": "12a57974",
+  "who": "pip",
+  "text": "M.W. Marigold Watts! She was HERE. And… two clouds?"
+ },
+ {
+  "key": "bc165aa0",
+  "who": "pip",
+  "text": "You drop a pebble down the well. It never splashes."
+ },
+ {
+  "key": "b420a74d",
+  "who": "pip",
+  "text": "Instead, very faint, from far below: a bell. Bong. Bong. Bong… thirteen times."
+ },
+ {
+  "key": "14f29d2a",
+  "who": "pip",
+  "text": "Look at your reflection in the water. You’re holding a lantern in it."
+ },
+ {
+  "key": "16dcbc96",
+  "who": "pip",
+  "text": "You are NOT holding a lantern. Bzzt. Bzzt. Can we go now? Please?"
+ },
+ {
+  "key": "ba8f1fb9",
+  "who": "pip",
+  "text": "A stone frog. Its mouth is stuffed with old candle stubs, all burned down to exactly the same height."
+ },
+ {
+  "key": "ec46096a",
+  "who": "pip",
+  "text": "As if they were all lit at the same moment… and all went out at the same moment too."
+ },
+ {
+  "key": "3eda1c88",
+  "who": "pip",
+  "text": "“TOM THORN. HE KEPT THE LAMPS.” Hazel’s husband."
+ },
+ {
+  "key": "b84616c6",
+  "who": "pip",
+  "text": "There are fresh flowers on it. And a tiny handprint that glows gold, very softly."
+ },
+ {
+  "key": "0caeefa0",
+  "who": "pip",
+  "text": "The bell tower clock is stopped at 11:52. Just like the Market Clock in Glowtown."
+ },
+ {
+  "key": "3a7707a6",
+  "who": "pip",
+  "text": "Just like Professor Lumen’s. Every clock on the Glowire stopped at the SAME minute."
+ },
+ {
+  "key": "c1228a0a",
+  "who": "pip",
+  "text": "What happened at 11:52?"
+ },
+ {
+  "key": "81ea5770",
+  "who": "pip",
+  "text": "Across the stream! A light, walking! Walking by ITSELF!"
+ },
+ {
+  "key": "a0abf0ee",
+  "who": "pip",
+  "text": "…and gone. Hazel didn’t even look up. “Oh, that’s just her,” she said. JUST HER?!"
+ },
+ {
+  "key": "2820481d",
+  "who": "pip",
+  "text": "In the window of an empty house… she’s looking right at us."
+ },
+ {
+  "key": "117b6da0",
+  "who": "pip",
+  "text": "She doesn’t look scary. She looks like she’s waiting for someone."
+ },
+ {
+  "key": "b12afc28",
+  "who": "pip",
+  "text": "A rope hangs all the way down the well from Mossbell. Tied to the end of it: a little bronze bell."
+ },
+ {
+  "key": "e8806911",
+  "who": "pip",
+  "text": "Every time the big bell rings up top, this one rings down here. Thirteen… the thirteenth ring is THIS one. Somebody down here has been answering."
+ },
+ {
+  "key": "0f963b1e",
+  "who": "pip",
+  "text": "A shelf of old jars, each with a label. “Storm of 1903.” “Storm of 1911.” “The Big Blow, 1919.”"
+ },
+ {
+  "key": "284a41d9",
+  "who": "pip",
+  "text": "The last one says “THE NIGHT IT CRACKED. 11:52.” It’s empty. No, wait. It isn’t empty. Something in it is breathing."
+ },
+ {
+  "key": "6e05d8a6",
+  "who": "pip",
+  "text": "Inside the great clam: a pearl with a tiny light in it, like a candle in a snow globe."
+ },
+ {
+  "key": "16b5f207",
+  "who": "pip",
+  "text": "It’s blinking at the same speed as my eye. Bzzt. Blink. Blink. …It’s blinking AT me."
+ },
+ {
+  "key": "d0adec1f",
+  "who": "pip",
+  "text": "A great bronze bell, half sunk in the sand. Words round the lip: “ONE FOR THE SEA. ONE FOR THE HOLLOW.”"
+ },
+ {
+  "key": "282d3d62",
+  "who": "pip",
+  "text": "There were TWO bells! One went up to Mossbell. When that one rings thirteen times, this one rings back."
+ },
+ {
+  "key": "3b7c3037",
+  "who": "pip",
+  "text": "The Marigold’s logbook, dry in a tin box. The last page: “Going down to see the Heart Jar with Echo. Marlo says it holds every storm since forever.”"
+ },
+ {
+  "key": "3e23c7b9",
+  "who": "pip",
+  "text": "“If I can join it to my town, nobody up top will ever sit in the dark again.” And underneath, in wobbly writing: “What have I done.”"
+ },
+ {
+  "key": "800f9afc",
+  "who": "pip",
+  "text": "Names carved round the hall floor: every family who lived in Brightwater. Hundreds of them."
+ },
+ {
+  "key": "01aec96c",
+  "who": "pip",
+  "text": "And by the jar, scratched very small, the newest name: “HUSH”. Somebody gave it a name a long time ago."
+ },
+ {
+  "key": "63c654be",
+  "who": "pip",
+  "text": "Something DARK just slid past that lamp, and the lamp went dim as it passed. Like it was… drinking it."
+ },
+ {
+  "key": "e2db7313",
+  "who": "pip",
+  "text": "Gone. The lamp’s coming back. Slowly. Bzzt. I am staying RIGHT next to you."
+ },
+ {
+  "key": "53f544d5",
+  "who": "pip",
+  "text": "EYES. Two eyes, in the kelp, looking right at us!"
+ },
+ {
+  "key": "5fed2512",
+  "who": "pip",
+  "text": "…and gone. Tess said not to look at them. I LOOKED AT THEM."
+ },
+ {
+  "key": "06f775bc",
+  "who": "pip",
+  "text": "A diver! In a brass suit, walking along the sea floor… and waving at us."
+ },
+ {
+  "key": "7be71e16",
+  "who": "pip",
+  "text": "Then the kelp closes and they’re gone. Divers don’t live down here. Do they?"
+ },
+ {
+  "key": "d40232c5",
+  "who": "pip",
+  "text": "The shadow is following us. When we stop, it stops. When we look, it isn’t there."
+ },
+ {
+  "key": "b4cab0d8",
+  "who": "pip",
+  "text": "It doesn’t feel angry, though. It feels… cold. Like it wants to sit by our lantern."
+ },
+ {
+  "key": "4fe890a9",
+  "who": "gran",
+  "text": "When I was about your age, Grandma Marigold took me up a valley to a village with a bell."
+ },
+ {
+  "key": "7cc45c9b",
+  "who": "gran",
+  "text": "I made a friend there. A little girl made all of light. We played until the stars came out."
+ },
+ {
+  "key": "348a98d9",
+  "who": "gran",
+  "text": "I told everyone at school. Nobody believed me. So I stopped telling."
+ },
+ {
+  "key": "a0f1b387",
+  "who": "theo",
+  "text": "I’m NOT scared of the dark. But every night a lady with a lantern goes past my window."
+ },
+ {
+  "key": "cfcdb6c7",
+  "who": "theo",
+  "text": "Always at the same time. I checked the clock. Eight minutes to midnight."
+ },
+ {
+  "key": "e808cac4",
+  "who": "finch",
+  "text": "Shhh. There’s a book in my library nobody may borrow. The Glowire Ledger."
+ },
+ {
+  "key": "6a6b2c6e",
+  "who": "finch",
+  "text": "It says Marigold’s notebook had TEN pages. Not eight. Ten. Count yours."
+ },
+ {
+  "key": "9f553061",
+  "who": "coral",
+  "text": "Every night, at 8 minutes to midnight, all my fish turn to face the hills at once."
+ },
+ {
+  "key": "5d398568",
+  "who": "coral",
+  "text": "They stay like that for one minute. Then they go back to being fish."
+ },
+ {
+  "key": "44fdb6ea",
+  "who": "dot",
+  "text": "Off the record? That Market Clock always stops at 11:52 when the power goes. Always."
+ },
+ {
+  "key": "9eeeed21",
+  "who": "dot",
+  "text": "New batteries, new springs, doesn’t matter. 11:52. Like it remembers something."
+ },
+ {
+  "key": "09dce5b8",
+  "who": "gus",
+  "text": "My grandad swore there are lamps under the sea, out past the point. Rows of them, like a street."
+ },
+ {
+  "key": "db0887c5",
+  "who": "gus",
+  "text": "He said the Glowire comes from there. That someone down there laid it first."
+ },
+ {
+  "key": "9c994a42",
+  "who": "bolt",
+  "text": "BEEP. Playing memory file 0001."
+ },
+ {
+  "key": "96d3c4ab",
+  "who": "marigold",
+  "text": "“Keep the lights on, Bolt. For both of them.”"
+ },
+ {
+  "key": "27362ed0",
+  "who": "bolt",
+  "text": "Speaker: unknown. Initials stamped inside my chassis: M.W. BOOP."
+ },
+ {
+  "key": "c81efa13",
+  "who": "rosa",
+  "text": "That night bus? The timetable says the harbour is the last stop."
+ },
+ {
+  "key": "7b5b32cd",
+  "who": "rosa",
+  "text": "But some nights it goes one stop further. Up the valley. Nobody ever gets off there."
+ },
+ {
+  "key": "4f8f97e4",
+  "who": "lumen",
+  "text": "I wasn’t born in the harbour, you know. I grew up in a village up the valley. Mossbell."
+ },
+ {
+  "key": "2f8dc5f8",
+  "who": "lumen",
+  "text": "I left when I was six, the night the lights went out there. I don’t talk about it."
+ },
+ {
+  "key": "626dad4a",
+  "who": "hazel",
+  "text": "Tom never fixed that bell. Something rings it. Thirteen times, when she’s close."
+ },
+ {
+  "key": "31cc7935",
+  "who": "hazel",
+  "text": "He used to leave a lamp in the window for her. So she’d know somebody was still here."
+ },
+ {
+  "key": "5f1cf01a",
+  "who": "bram",
+  "text": "The fog only comes when the lamps get low. It goes from lamp to lamp, swallowing."
+ },
+ {
+  "key": "eaa3b8e9",
+  "who": "bram",
+  "text": "It’s not wicked, I think. It’s hungry. Like something that’s forgotten how to shine."
+ },
+ {
+  "key": "a8d9e34b",
+  "who": "moth",
+  "text": "Everyone says the Lantern Lady is a ghost. She isn’t scary, though."
+ },
+ {
+  "key": "741aa898",
+  "who": "moth",
+  "text": "She looks sad. Like she’s looking for someone she lost."
+ },
+ {
+  "key": "f6830530",
+  "who": "wren",
+  "text": "Mum grew up somewhere at the end of the Glowire, but she never said where."
+ },
+ {
+  "key": "5df5e6ed",
+  "who": "wren",
+  "text": "That’s why I’ve been mapping it. To find the way to wherever she came from."
+ },
+ {
+  "key": "fa97b9ad",
+  "who": "pip",
+  "text": "Bzzt… can I tell you something? Gran built me from an old battery and ONE LED."
+ },
+ {
+  "key": "28da2725",
+  "who": "pip",
+  "text": "The LED came out of a lantern. A very old one. Whose lantern? She won’t say."
+ },
+ {
+  "key": "e11e0ec8",
+  "who": "grumble",
+  "text": "…all those years in the dark, I thought she forgot me."
+ },
+ {
+  "key": "47e5cf79",
+  "who": "grumble",
+  "text": "Don’t tell anyone I said this. I missed her. Every night. Hmph."
+ },
+ {
+  "key": "bf413ee6",
+  "who": "pearl",
+  "text": "Grandpa says I’m named after the light in the big clam."
+ },
+ {
+  "key": "b7079742",
+  "who": "pearl",
+  "text": "When I was a baby, every lamp in the street went out but that one. He says it kept watch over me all night."
+ },
+ {
+  "key": "d6b2ebaf",
+  "who": "marlo",
+  "text": "When Marigold went back up, she left me her lantern. I lit every lamp on this street from it for ninety years."
+ },
+ {
+  "key": "7968625b",
+  "who": "marlo",
+  "text": "Then one winter it went out. That was the winter the Hush moved into the hall."
+ },
+ {
+  "key": "526da46a",
+  "who": "tess",
+  "text": "Every night, at eight minutes to midnight, all my fish turn to face the Heart Hall. All at once."
+ },
+ {
+  "key": "6aadf283",
+  "who": "tess",
+  "text": "There’s a lady in a town up top who keeps fish. I bet hers do the same."
+ },
+ {
+  "key": "f93989e9",
+  "who": "marigold",
+  "text": "“Echo, if I don’t come back down, keep taking pictures. One day someone will need to see what’s in the dark.”"
+ },
+ {
+  "key": "b867833c",
+  "who": "echo",
+  "text": "Echo has taken 31,412 pictures of the dark. In six of them, it is smiling."
+ },
+ {
+  "key": "4c2309c7",
+  "who": "hush",
+  "text": "Sssh… a lady with a lantern used to sit by the crack and sing to me."
+ },
+ {
+  "key": "acccc895",
+  "who": "hush",
+  "text": "Then she stopped coming. I waited. I got so cold. …Is she coming back?"
+ },
+ {
+  "key": "32fab4cc",
+  "who": "gran",
+  "text": "…No, sweetheart. But I’m her granddaughter. And I know all her songs."
+ },
+ {
+  "key": "3e9ae50a",
+  "who": "gran",
+  "text": "Pip! Wake up! Every light in Glowtown just went out. All at once, on the stroke of midnight."
+ },
+ {
+  "key": "21491a01",
+  "who": "pip",
+  "text": "Bzzt! Wha…? Was it Grumble again?"
+ },
+ {
+  "key": "e7c95b65",
+  "who": "grumble",
+  "text": "Wasn’t me! HMPH. I like the dark… but not THIS dark. Something down there is hungry."
+ },
+ {
+  "key": "47bfe8c7",
+  "who": "gran",
+  "text": "The radio says Driftwood Harbour went dark at the same moment. And the valley. Power doesn’t just fail everywhere at once, Pip."
+ },
+ {
+  "key": "93ee0314",
+  "who": "gran",
+  "text": "Put your hand on the Glowire. Feel that? The current isn’t gone. It’s being pulled. Away from the town, down towards the sea."
+ },
+ {
+  "key": "6a7baded",
+  "who": "pip",
+  "text": "Pulled? By WHAT?"
+ },
+ {
+  "key": "1c8bf70d",
+  "who": "gran",
+  "text": "That’s what we find out. But a town in the dark can’t help anybody, so we start here."
+ },
+ {
+  "key": "83b609ad",
+  "who": "gran",
+  "text": "See the road out of my yard? The Glowire runs under it. My grandmother Marigold laid it a hundred years ago, and every lamp in town hangs off it."
+ },
+ {
+  "key": "499d082e",
+  "who": "gran",
+  "text": "Fix the lights along the road, one stretch at a time, and the power flows on to the next part of town."
+ },
+ {
+  "key": "a83f8601",
+  "who": "gran",
+  "text": "Start with Maple Lane, past my gate. Use real electronics, mind. No shortcuts."
+ },
+ {
+  "key": "9336e214",
+  "who": "pip",
+  "text": "And they pay in sparks! Let’s light this town up!"
+ },
+ {
+  "key": "026b67d6",
+  "who": "gran",
+  "text": "Look down at the road. See those gold dots glowing? That’s the Glowire shining up through the stones. It always leads to the next home that needs power."
+ },
+ {
+  "key": "c6a27b77",
+  "who": "pip",
+  "text": "I’ll be your guide! Follow the gold dots, and watch the box in the corner. I’ll tell you what to do. Tap “Need help?” any time."
+ },
+ {
+  "key": "47671604",
+  "who": "gran",
+  "text": "Maple Lane’s just down the road. Follow the gold dots in the road, that’s the Glowire glowing. Mrs. Pell’s porch is first, kiddo!"
+ },
+ {
+  "key": "f03a987e",
+  "who": "pell",
+  "text": "Is that Gran’s new apprentice? Oh, thank goodness. Three of us on Maple Lane have been sitting in the dark all night."
+ },
+ {
+  "key": "a501904c",
+  "who": "pip",
+  "text": "See the “!” over someone’s head? That means they need us. Walk up and talk to them."
+ },
+ {
+  "key": "b2a635f0",
+  "who": "pell",
+  "text": "Look at our lane! Every window glowing!"
+ },
+ {
+  "key": "5d8592c1",
+  "who": "pip",
+  "text": "Feel that hum? The power’s flowing on down the Glowire. The bridge to Willow Brook is lit!"
+ },
+ {
+  "key": "3ebfdc73",
+  "who": "grumble",
+  "text": "Grr. Fine. Enjoy your little lane. You’ll never fix the BROOK."
+ },
+ {
+  "key": "6feacb6c",
+  "who": "wren",
+  "text": "Whoa, you got the bridge lit? Nice! I’m Wren."
+ },
+ {
+  "key": "7fa0f5d2",
+  "who": "wren",
+  "text": "I’m mapping the Glowire, every bend of it, all the way back to where it starts."
+ },
+ {
+  "key": "14c3d669",
+  "who": "pip",
+  "text": "That’s easy. It starts at Gran’s workshop."
+ },
+ {
+  "key": "89c8411d",
+  "who": "wren",
+  "text": "That’s what everyone says. But Marigold left notebook pages all along the road, and they say something else. Read them and see."
+ },
+ {
+  "key": "e7ab9cb2",
+  "who": "arjun",
+  "text": "The whole brook is twinkling! Fresh bread for everyone in the morning."
+ },
+ {
+  "key": "20e489bd",
+  "who": "wren",
+  "text": "Schoolhouse Hill’s steps just lit up. Race you to the top!"
+ },
+ {
+  "key": "ecc20ccd",
+  "who": "ito",
+  "text": "Welcome to Schoolhouse Hill! We teach circuits here. Rule one: electricity needs a full loop to get home."
+ },
+ {
+  "key": "4b0de0c3",
+  "who": "pip",
+  "text": "Rule two: never lick the battery. Trust me. Bzzt."
+ },
+ {
+  "key": "98ab6788",
+  "who": "finch",
+  "text": "Splendid. The whole hill, glowing. Quietly glowing, mind."
+ },
+ {
+  "key": "8d2daf06",
+  "who": "wren",
+  "text": "Past here is Whisper Woods. The Glowire goes right through it… and so did Grumble. I saw him float in there."
+ },
+ {
+  "key": "dc94aa5d",
+  "who": "pip",
+  "text": "It’s so quiet in here. I don’t like quiet. Quiet is when things jump out."
+ },
+ {
+  "key": "aa3bce08",
+  "who": "grumble",
+  "text": "Go home, sparky. The woods like the dark. I like the dark."
+ },
+ {
+  "key": "6aef4c1e",
+  "who": "wren",
+  "text": "His nest is at the old junction box at the end of the path. Gran’s on her way to meet you there. Help the twins on the way!"
+ },
+ {
+  "key": "a44ccee6",
+  "who": "gran",
+  "text": "Ha! Off he floats to sulk. That junction box powers the whole east side of town, and it’s humming again."
+ },
+ {
+  "key": "62b01843",
+  "who": "grumble",
+  "text": "You think you’ve won? The MARKET is mine. Every sign. Every colour."
+ },
+ {
+  "key": "39fc869e",
+  "who": "pip",
+  "text": "Market Square, here we come!"
+ },
+ {
+  "key": "af43ba3c",
+  "who": "benny",
+  "text": "Customers! Well, nearly. Our shop signs are every colour of the rainbow, and none of them work."
+ },
+ {
+  "key": "697a80dc",
+  "who": "coral",
+  "text": "Here’s a funny thing about LEDs: every colour needs a different push to light. Red is easy. Green needs more. Blue needs nearly the whole battery."
+ },
+ {
+  "key": "c812f337",
+  "who": "grumble",
+  "text": "Colours, schmolours. They’ll fight over the current like seagulls over a chip!"
+ },
+ {
+  "key": "c88195c2",
+  "who": "pip",
+  "text": "He’s not wrong, actually. Let’s find out why."
+ },
+ {
+  "key": "174e2402",
+  "who": "luca",
+  "text": "The square is ALIVE again! Pizza for the light fixers!"
+ },
+ {
+  "key": "d5f632cc",
+  "who": "dot",
+  "text": "Nice work, kid. But the crossroads is gridlock. Not one signal working."
+ },
+ {
+  "key": "3a5a9f0c",
+  "who": "dot",
+  "text": "Officer Dot. Traffic is my job, and right now it’s a pile-up. I need those signals back."
+ },
+ {
+  "key": "bd2f6aa9",
+  "who": "mei",
+  "text": "Hot chocolate on the house, for the light fixers!"
+ },
+ {
+  "key": "d334fe6a",
+  "who": "dot",
+  "text": "One job left: the Market Clock. Grumble’s wound himself right round its works."
+ },
+ {
+  "key": "997c9393",
+  "who": "grumble",
+  "text": "YOU. Again. This is MY clock now!"
+ },
+ {
+  "key": "dab00d91",
+  "who": "pip",
+  "text": "That’s it, cloud. Last stop in Glowtown."
+ },
+ {
+  "key": "96b39eb0",
+  "who": "dot",
+  "text": "Traffic’s flowing! Shops are open! Glowtown owes you one."
+ },
+ {
+  "key": "0c9b61f2",
+  "who": "grumble",
+  "text": "Fine! FINE! I’m leaving this too-bright town. The sea storms will listen to me!"
+ },
+ {
+  "key": "2f2a5463",
+  "who": "wren",
+  "text": "He jumped on the night bus to Driftwood Harbour! And look: the Glowire goes on beside the bus road. It doesn’t start in Glowtown at all."
+ },
+ {
+  "key": "09414caf",
+  "who": "pip",
+  "text": "Then we don’t stop here either. Next bus to the harbour!"
+ },
+ {
+  "key": "6ed5525a",
+  "who": "rosa",
+  "text": "Ahoy! You’re the light fixers from Glowtown? The harbour’s pitch black. The boats can’t find their way in."
+ },
+ {
+  "key": "1a3f2f30",
+  "who": "rosa",
+  "text": "A little black cloud came in on the night bus. Every lamp on the docks went out the moment he arrived."
+ },
+ {
+  "key": "4412d2c8",
+  "who": "pip",
+  "text": "Grumble. Of course it was."
+ },
+ {
+  "key": "41919d88",
+  "who": "gran",
+  "text": "Sea air! Good for the knees. Off you go, kiddo. Captain Rosa needs you on the docks."
+ },
+ {
+  "key": "316b230d",
+  "who": "gran",
+  "text": "Out here you’ll stack batteries for more push. Two in a row make 6 volts. Three make 9."
+ },
+ {
+  "key": "cf17a8c1",
+  "who": "gran",
+  "text": "More volts, more danger. A resistor that was safe before can fry an LED now."
+ },
+ {
+  "key": "3d236d80",
+  "who": "grumble",
+  "text": "Nine volts! Let’s see you not frizzle anything, sparky."
+ },
+ {
+  "key": "8847b7a9",
+  "who": "sal",
+  "text": "The docks are lit! Party on my boat tonight, and you’re invited."
+ },
+ {
+  "key": "6652099b",
+  "who": "wren",
+  "text": "The Glowire runs out along the pier, toward the lighthouse. That’s where it goes next."
+ },
+ {
+  "key": "5be2356a",
+  "who": "gus",
+  "text": "Fifty years I’ve kept this light. Never once has it gone dark. Until last night."
+ },
+ {
+  "key": "a79b38b8",
+  "who": "gus",
+  "text": "My grandad told me the Glowire comes in from the sea right here, under the rocks. Older than anyone knows."
+ },
+ {
+  "key": "61013151",
+  "who": "gus",
+  "text": "The lighthouse is shining again. I’ve never seen it brighter."
+ },
+ {
+  "key": "48f6dbe0",
+  "who": "grumble",
+  "text": "NO! Fine! I’ll hide up the clocktower. Nobody can fix THAT."
+ },
+ {
+  "key": "ee4af235",
+  "who": "rosa",
+  "text": "The ferry’s stuck out at the end of the pier, and Sal’s party boat is bobbing about in the dark."
+ },
+ {
+  "key": "eae9df0e",
+  "who": "sal",
+  "text": "No lights, no party! And I’ve already blown up forty balloons."
+ },
+ {
+  "key": "a38d1fd1",
+  "who": "sal",
+  "text": "PARTY BOAT IS GO! Everyone aboard!"
+ },
+ {
+  "key": "7fe05a1e",
+  "who": "wren",
+  "text": "The Glowire turns inland here, past the warehouses. Grumble’s holed up in the power station."
+ },
+ {
+  "key": "6205bdda",
+  "who": "rosa",
+  "text": "Warehouse Row. Every crate in the harbour comes through here, and so does every wire."
+ },
+ {
+  "key": "e87de746",
+  "who": "grumble",
+  "text": "Go away! This power station is MINE. Nine whole volts of it!"
+ },
+ {
+  "key": "77a479e0",
+  "who": "rosa",
+  "text": "Power station humming, every boat in safe. You’re a harbour hero now."
+ },
+ {
+  "key": "00c89268",
+  "who": "grumble",
+  "text": "Fine! I’ll go UP. Up the hill, into the clock. You can’t follow me up there!"
+ },
+ {
+  "key": "fbc75abe",
+  "who": "wren",
+  "text": "Clocktower Hill. That’s where Marigold’s notes said the Glowire goes. We’re nearly at the start of it!"
+ },
+ {
+  "key": "b069e202",
+  "who": "lumen",
+  "text": "The very top. The railway signal, the old gate, and the clock’s heart itself."
+ },
+ {
+  "key": "c9ce85c6",
+  "who": "wren",
+  "text": "This is it. The Glowire starts right here. Under all these stars."
+ },
+ {
+  "key": "2dacce00",
+  "who": "grumble",
+  "text": "Leave me alone up here. It’s the only dark place left."
+ },
+ {
+  "key": "0f889d5e",
+  "who": "lumen",
+  "text": "Ah, the apprentices! Grumble’s lightning spun every gear and wire in my clock."
+ },
+ {
+  "key": "683252c3",
+  "who": "lumen",
+  "text": "All the parts are still here. They’re just… turned. No drawing up here: tap a piece to turn it."
+ },
+ {
+  "key": "7383ac89",
+  "who": "pip",
+  "text": "Just turning? Bzzt. Okay, brain. Time to shine."
+ },
+ {
+  "key": "46f6b1ff",
+  "who": "lumen",
+  "text": "Listen! The clock is ticking again!"
+ },
+ {
+  "key": "659d0c17",
+  "who": "grumble",
+  "text": "…it is quite a nice tick, actually. Hmph."
+ },
+ {
+  "key": "dd8284b7",
+  "who": "grumble",
+  "text": "I only wanted it dark sometimes. When the lights are on, nobody looks up. Nobody sees the stars. That’s where I come from."
+ },
+ {
+  "key": "7531428c",
+  "who": "gran",
+  "text": "Well, why didn’t you just SAY so? One night a year, we’ll switch the whole town off. Star Night."
+ },
+ {
+  "key": "68c5d745",
+  "who": "pip",
+  "text": "Was that… a smile? Gran! Grumble is SMILING!"
+ },
+ {
+  "key": "4780b319",
+  "who": "wren",
+  "text": "Wait. Everybody’s switched off for Star Night… so why is there still ONE light on? Way up the valley?"
+ },
+ {
+  "key": "ec9e7fe0",
+  "who": "lumen",
+  "text": "…Mossbell Hollow. That light hasn’t gone out in fifty years."
+ },
+ {
+  "key": "78a03991",
+  "who": "grumble",
+  "text": "…"
+ },
+ {
+  "key": "8f5e6783",
+  "who": "pip",
+  "text": "Grumble? Your sparks have gone all wobbly."
+ },
+ {
+  "key": "7b435a2b",
+  "who": "grumble",
+  "text": "Nothing. It’s NOTHING. Don’t go up there."
+ },
+ {
+  "key": "2d3381be",
+  "who": "gran",
+  "text": "There’s a bus by the hilltop gate that goes one stop further. I think it’s time I took it again."
+ },
+ {
+  "key": "adc33f74",
+  "who": "wren",
+  "text": "Mossbell Hollow. It’s on Marigold’s map. It isn’t on anybody else’s."
+ },
+ {
+  "key": "3c28541c",
+  "who": "gran",
+  "text": "I’ve been here before. A long, long time ago."
+ },
+ {
+  "key": "20214135",
+  "who": "pip",
+  "text": "Gran? Why are you whispering?"
+ },
+ {
+  "key": "3e39520a",
+  "who": "gran",
+  "text": "Stay on the path, kiddo. And if you see a light moving where no light should be… don’t chase it. Let it come to you."
+ },
+ {
+  "key": "09dbfd19",
+  "who": "pip",
+  "text": "Bzzt. That is the spookiest thing you have ever said."
+ },
+ {
+  "key": "bcafa385",
+  "who": "hazel",
+  "text": "Visitors? Nobody visits Mossbell. Not since the Long Dark."
+ },
+ {
+  "key": "dc925898",
+  "who": "pip",
+  "text": "The… Long Dark?"
+ },
+ {
+  "key": "4a6cac93",
+  "who": "hazel",
+  "text": "Fifty years ago every lamp in the Hollow went out at once, and the bell rang thirteen times. By morning, half the village had packed up and gone."
+ },
+ {
+  "key": "221595d6",
+  "who": "hazel",
+  "text": "I stayed. My Tom stayed. Somebody had to keep the lamps lit for… well. You’ll see."
+ },
+ {
+  "key": "923fd323",
+  "who": "hazel",
+  "text": "Light on the mill again. Tom would have cried like a baby."
+ },
+ {
+  "key": "3f1ce821",
+  "who": "wren",
+  "text": "Hazel… Thorn? My mum’s name was Thorn. Ivy Thorn. She grew up somewhere she never told me about."
+ },
+ {
+  "key": "a09463e3",
+  "who": "hazel",
+  "text": "…Ivy? My little Ivy? Then you’re… oh. Oh, come here."
+ },
+ {
+  "key": "1a85732b",
+  "who": "pip",
+  "text": "Bzzt! She’s Wren’s GRANDMA! I’m crying. Robots can’t cry. I’m leaking."
+ },
+ {
+  "key": "e0ef7b77",
+  "who": "hazel",
+  "text": "The Mere’s next. Mind the fog. It doesn’t like light, and it’s been getting braver."
+ },
+ {
+  "key": "0c78f869",
+  "who": "bram",
+  "text": "Stop there. Don’t step off the path. The fog’s in tonight."
+ },
+ {
+  "key": "48f0ed10",
+  "who": "bram",
+  "text": "It rolls off the water when the lamps get low. Swallows the light whole, then moves on to the next lamp."
+ },
+ {
+  "key": "35732f46",
+  "who": "grumble",
+  "text": "That’s NOT me, before anyone asks. I don’t DO fog."
+ },
+ {
+  "key": "585bb0a7",
+  "who": "pip",
+  "text": "Grumble?! You came after all!"
+ },
+ {
+  "key": "174cdb5b",
+  "who": "grumble",
+  "text": "I got bored on the bus. Shush."
+ },
+ {
+  "key": "dee88def",
+  "who": "bram",
+  "text": "Look at it pull back. Fog can’t stand a good bright lamp."
+ },
+ {
+  "key": "3458a1c2",
+  "who": "moth",
+  "text": "Psst! Up here! You fixed the Mere? Then you HAVE to come to Bellfield. She was there last night."
+ },
+ {
+  "key": "6989d474",
+  "who": "moth",
+  "text": "The Lantern Lady."
+ },
+ {
+  "key": "8498accf",
+  "who": "pip",
+  "text": "BONG… bong… bong… bong… bong… …thirteen? Bells don’t DO thirteen!"
+ },
+ {
+  "key": "f4e0ca7a",
+  "who": "moth",
+  "text": "It does that when she’s close. I count every time."
+ },
+ {
+  "key": "edc4a559",
+  "who": "moth",
+  "text": "Nobody’s lived in Bellfield since the Long Dark. I just visit. Grandpa used to look after the lamps here."
+ },
+ {
+  "key": "e181739f",
+  "who": "wren",
+  "text": "Look at the moss. Footprints. Glowing ones. Going toward the tower."
+ },
+ {
+  "key": "2ad2f115",
+  "who": "moth",
+  "text": "Every house in Bellfield lit! Grandpa would be SO happy."
+ },
+ {
+  "key": "ebcc053e",
+  "who": "lumen",
+  "text": "Hello, Mossbell. It’s been seventy years."
+ },
+ {
+  "key": "a0019239",
+  "who": "pip",
+  "text": "Professor Lumen?! What are YOU doing here?"
+ },
+ {
+  "key": "e9c7d26e",
+  "who": "lumen",
+  "text": "Coming home, Pip. I was born in that little house. And I think it’s time I told you what I saw the night of the Long Dark."
+ },
+ {
+  "key": "8ed2fd0e",
+  "who": "lumen",
+  "text": "I was six. I looked up, and she was at the top of the tower with a lantern, trying to keep every lamp in the Hollow lit all by herself."
+ },
+ {
+  "key": "8051bc3d",
+  "who": "lumen",
+  "text": "She couldn’t. The lamps went out, the bell rang, and everyone ran. Everyone but me. She waved at me."
+ },
+ {
+  "key": "a64e54fd",
+  "who": "grumble",
+  "text": "…I know that bell."
+ },
+ {
+  "key": "7a541e02",
+  "who": "pip",
+  "text": "Grumble? Your sparks are going all wobbly again."
+ },
+ {
+  "key": "045fea5b",
+  "who": "glimmer",
+  "text": "A hundred years I’ve kept Marigold’s lantern burning up here. I was getting so tired."
+ },
+ {
+  "key": "20aca5e9",
+  "who": "grumble",
+  "text": "You could have come HOME. You could have come and found ME."
+ },
+ {
+  "key": "23882a42",
+  "who": "glimmer",
+  "text": "I tried! But every time I came near the town, the lamps were so bright I couldn’t find you. And you were always hiding in the dark."
+ },
+ {
+  "key": "9800cc82",
+  "who": "gran",
+  "text": "Two clouds from one storm. One who loves the dark, one who loves the light. Grandma Marigold told me. I was the only one who believed her."
+ },
+ {
+  "key": "93d7b944",
+  "who": "grumble",
+  "text": "…I missed you."
+ },
+ {
+  "key": "528f51f3",
+  "who": "glimmer",
+  "text": "I missed you too, little brother."
+ },
+ {
+  "key": "d261df3f",
+  "who": "grumble",
+  "text": "I’m OLDER!"
+ },
+ {
+  "key": "bbb7c0d4",
+  "who": "glimmer",
+  "text": "By one lightning bolt."
+ },
+ {
+  "key": "4efd3c0e",
+  "who": "pip",
+  "text": "Bzzt… my eye’s glowing all by itself. Gran… is my LED from her lantern?"
+ },
+ {
+  "key": "4e3e104b",
+  "who": "gran",
+  "text": "It is. Marigold gave it to me. “Keep a bit of the light with you,” she said. “It’ll always find its way home.”"
+ },
+ {
+  "key": "e7fb3be7",
+  "who": "wren",
+  "text": "Then that’s the end of the Glowire. My map’s finished!"
+ },
+ {
+  "key": "816a9167",
+  "who": "lumen",
+  "text": "Is it? Read what’s written round the bell."
+ },
+ {
+  "key": "9c861689",
+  "who": "pip",
+  "text": "“Cast from the light under the sea.” …Under the SEA?!"
+ },
+ {
+  "key": "976239c1",
+  "who": "glimmer",
+  "text": "That’s where the light comes from. I can feel it, deep down. The old well behind the tower goes all the way there."
+ },
+ {
+  "key": "22ced0da",
+  "who": "glimmer",
+  "text": "Hold on to my bubble and I’ll take you. But it’s very dark down there. And something lives in the dark."
+ },
+ {
+  "key": "09874c38",
+  "who": "glimmer",
+  "text": "Hold on to my bubble! Down, down, down…"
+ },
+ {
+  "key": "5dbca322",
+  "who": "pip",
+  "text": "Bzzt… we’re UNDER THE SEA. I’m a robot. Robots and seawater are NOT friends."
+ },
+ {
+  "key": "16ed37a1",
+  "who": "glimmer",
+  "text": "My bubble keeps the water out. But it’s darker down here than any night up top, and your lantern will run down."
+ },
+ {
+  "key": "b94b0b9f",
+  "who": "gran",
+  "text": "Keep to the light, kiddo. Stand by a lit lamp and your lantern fills right back up. Let it run out and… well. Don’t let it run out."
+ },
+ {
+  "key": "d1d53622",
+  "who": "wren",
+  "text": "Look, a street! Lamps in rows. Old Gus’s grandad was right: there’s a whole town down here."
+ },
+ {
+  "key": "74104aab",
+  "who": "hush",
+  "text": "Sssssshhhhhhh…"
+ },
+ {
+  "key": "215ac963",
+  "who": "pip",
+  "text": "…who said that?"
+ },
+ {
+  "key": "1810512e",
+  "who": "glimmer",
+  "text": "Nobody. Stay in the light."
+ },
+ {
+  "key": "7207c133",
+  "who": "gran",
+  "text": "My grandmother came down here once. She never told me how. Only that she left something behind, and she was sorry."
+ },
+ {
+  "key": "28da1ab7",
+  "who": "wren",
+  "text": "My map’s never had a “down” before. I’m drawing it sideways. It looks like a jellyfish."
+ },
+ {
+  "key": "c0ec0869",
+  "who": "glimmer",
+  "text": "I remember this place. Not with my eyes. With my sparks. It feels like where I was born."
+ },
+ {
+  "key": "6cd5bd49",
+  "who": "pearl",
+  "text": "Visitors! From UP? Nobody ever comes from up! I’m Pearl. Welcome to Brightwater!"
+ },
+ {
+  "key": "8264d744",
+  "who": "pearl",
+  "text": "We keep lightning in jars down here. Every lamp has one. Fill it while the battery’s on, and it keeps glowing after the battery stops."
+ },
+ {
+  "key": "b717fe89",
+  "who": "marlo",
+  "text": "Pearl. Inside. It’s getting dark."
+ },
+ {
+  "key": "0d501d2e",
+  "who": "pearl",
+  "text": "That’s Grandpa Marlo. He’s grumpy because the lamps keep fading. Every year they’re dimmer, and the dark gets closer."
+ },
+ {
+  "key": "7028e15a",
+  "who": "marlo",
+  "text": "Hm. You’ve lit the whole street. I haven’t seen it like this since I was a boy."
+ },
+ {
+  "key": "9515d91b",
+  "who": "marlo",
+  "text": "…A girl came down here once, when I was a boy. From up top, with a lantern and a notebook. Her name was Marigold."
+ },
+ {
+  "key": "231a090b",
+  "who": "gran",
+  "text": "That was my grandmother!"
+ },
+ {
+  "key": "8208a8e0",
+  "who": "marlo",
+  "text": "Then you’d better come and see what she did. Through the nursery. And mind the dark."
+ },
+ {
+  "key": "77801785",
+  "who": "tess",
+  "text": "Shh! Slowly, slowly. The little ones scare easily since the dark started moving."
+ },
+ {
+  "key": "632754f9",
+  "who": "pip",
+  "text": "Since the dark started… MOVING?"
+ },
+ {
+  "key": "c88762c7",
+  "who": "tess",
+  "text": "A lamp goes out, then another, and something drifts past where it was. Something cold. We call it the Hush."
+ },
+ {
+  "key": "e42385bd",
+  "who": "tess",
+  "text": "The nursery’s never been so bright. Look, the baby fish are following YOU."
+ },
+ {
+  "key": "acb5c689",
+  "who": "echo",
+  "text": "PING. PING. Light detected. Unusual amount. Approaching."
+ },
+ {
+  "key": "e368e27f",
+  "who": "pip",
+  "text": "A ROBOT! A brass one! Hello! Are you related to Bolt?"
+ },
+ {
+  "key": "92e44069",
+  "who": "echo",
+  "text": "Bolt? …Bolt. My brother. Marigold built us both. He went up. Echo stayed down. To keep watch."
+ },
+ {
+  "key": "b536acac",
+  "who": "echo",
+  "text": "This is the Marigold. Her boat. She sailed it out past the lighthouse, one hundred years ago, to find where the Glowire began."
+ },
+ {
+  "key": "eaeea571",
+  "who": "wren",
+  "text": "Marigold’s boat was called the Marigold?"
+ },
+ {
+  "key": "40243338",
+  "who": "echo",
+  "text": "She said that was a coincidence. Nobody believed her."
+ },
+ {
+  "key": "7d14dc84",
+  "who": "grumble",
+  "text": "…I don’t like it here. It smells like the night I was made."
+ },
+ {
+  "key": "63896f1d",
+  "who": "echo",
+  "text": "Playing memory file 0002."
+ },
+ {
+  "key": "5fd26c2f",
+  "who": "marigold",
+  "text": "“A storm’s coming, Echo. If lightning hits the line tonight, the Heart Jar will take all of it. Keep the lights on. For all THREE of them.”"
+ },
+ {
+  "key": "60d313cf",
+  "who": "pip",
+  "text": "All three? THREE?"
+ },
+ {
+  "key": "a85d3428",
+  "who": "echo",
+  "text": "Memory ends. Echo has wondered about the third for ninety-nine years."
+ },
+ {
+  "key": "996b559d",
+  "who": "glimmer",
+  "text": "…Grumble. Do you hear that? In the hall. Something’s crying."
+ },
+ {
+  "key": "29bdfa38",
+  "who": "grumble",
+  "text": "It’s not crying. It’s going “shhhh”."
+ },
+ {
+  "key": "6e2c85ee",
+  "who": "marlo",
+  "text": "The Heart Jar. It sent our light up the Glowire to the whole land, long before Marigold ever joined her town to it."
+ },
+ {
+  "key": "34f6f46c",
+  "who": "marlo",
+  "text": "The night she switched her town on, lightning hit the wire up on the hill. The whole storm ran down the line, into this jar. And it cracked. At eight minutes to midnight."
+ },
+ {
+  "key": "b42ed9d5",
+  "who": "marlo",
+  "text": "Light poured out of the crack: two little bright clouds, up the wire. And the dark poured in. It’s been feeding ever since."
+ },
+ {
+  "key": "d0fa6740",
+  "who": "hush",
+  "text": "Sssshhhhh. Mine. The light is MINE."
+ },
+ {
+  "key": "1f2b8a53",
+  "who": "pip",
+  "text": "That’s the Hush?! It’s… a cloud! A dark little cloud!"
+ },
+ {
+  "key": "158bbd99",
+  "who": "marlo",
+  "text": "Fill the jar. Whatever it eats, fill it again."
+ },
+ {
+  "key": "59db7f51",
+  "who": "marlo",
+  "text": "Full. And the crack… look. It’s closing. The jar is mending itself."
+ },
+ {
+  "key": "47eb516c",
+  "who": "hush",
+  "text": "…warm. It’s… warm."
+ },
+ {
+  "key": "d8724372",
+  "who": "glimmer",
+  "text": "Grumble, look at her. She’s just like us. She came out of the crack the same night we did."
+ },
+ {
+  "key": "8adee3ac",
+  "who": "grumble",
+  "text": "A THIRD one? We have a little SISTER?"
+ },
+ {
+  "key": "12520be4",
+  "who": "hush",
+  "text": "…sssh. …hello."
+ },
+ {
+  "key": "4bb73ad7",
+  "who": "glimmer",
+  "text": "She was born in the dark, where nobody could see her. So she ate the light to keep warm. All alone, for a hundred years."
+ },
+ {
+  "key": "1f5afe5d",
+  "who": "grumble",
+  "text": "Well, she’s not alone NOW. Hmph. She can sit with me. I like the dark too."
+ },
+ {
+  "key": "0379720f",
+  "who": "gran",
+  "text": "Two clouds from one storm, my grandmother told me. She never mentioned a third. Or maybe she tried to."
+ },
+ {
+  "key": "c15863a8",
+  "who": "pip",
+  "text": "THREE clouds! Grumble, Glimmer and Hush! That’s a whole weather!"
+ },
+ {
+  "key": "3e511787",
+  "who": "marlo",
+  "text": "The jar is full for now. But it was made to be filled by storms, and storms don’t reach this far down any more."
+ },
+ {
+  "key": "803c2cb1",
+  "who": "marlo",
+  "text": "They’re born up north, on Stormpeak, where the Glowire’s other end climbs right into the clouds."
+ },
+ {
+  "key": "89f468d6",
+  "who": "wren",
+  "text": "The Glowire has ANOTHER end? My map isn’t finished at ALL!"
+ },
+ {
+  "key": "41dddfc6",
+  "who": "hush",
+  "text": "Sssshhhhh. Go away. Go AWAY. It’s mine. All of it."
+ },
+ {
+  "key": "9f5ea21f",
+  "who": "hush",
+  "text": "Sssh… thank you… light-fixer. The jar hums. Like a heartbeat."
+ },
+ {
+  "key": "582f1351",
+  "who": "grumble",
+  "text": "She snores. Clouds don’t snore. She SNORES. …I’m keeping her."
+ },
+ {
+  "key": "90f75e60",
+  "who": "glimmer",
+  "text": "Marigold always set out three cups on Star Night. Gran thought she was being silly. Now I know why."
+ },
+ {
+  "key": "64092b5f",
+  "who": "marigold",
+  "text": "Today I laid the first stretch of the Glowire, from my workshop to the end of the lane."
+ },
+ {
+  "key": "92aed99e",
+  "who": "marigold",
+  "text": "Power leaves the battery at its + end, runs all the way round the wire, and comes home at the − end. Always a round trip."
+ },
+ {
+  "key": "09a3ebcf",
+  "who": "marigold",
+  "text": "A circuit is a circle. Leave one gap, even the width of a hair, and nothing flows. Not one flicker."
+ },
+ {
+  "key": "1d44f6f2",
+  "who": "marigold",
+  "text": "The neighbours think I’ve gone mad, crawling along the lane with a lamp, looking for gaps."
+ },
+ {
+  "key": "e454e05c",
+  "who": "marigold",
+  "text": "The night I switched the whole Glowire on, a storm rolled in. Lightning struck the wire up on the hill."
+ },
+ {
+  "key": "e11f5e16",
+  "who": "marigold",
+  "text": "When the smoke cleared, a little cloud was sitting on my roof, crackling and sniffling. I think the lightning left him behind."
+ },
+ {
+  "key": "183186f7",
+  "who": "marigold",
+  "text": "The little cloud hides from the lamps. When the town is bright, he grumbles. When it’s dark, he hums."
+ },
+ {
+  "key": "e9d34000",
+  "who": "marigold",
+  "text": "I’ve started calling him Grumble. He doesn’t seem to mind."
+ },
+ {
+  "key": "0f88edcf",
+  "who": "marigold",
+  "text": "I have a secret. The Glowire isn’t really mine. I only joined it up."
+ },
+ {
+  "key": "c762d30e",
+  "who": "marigold",
+  "text": "The real line comes in from the sea, past the lighthouse, and up to the old clock on the hill. Someone laid it long, long before me."
+ },
+ {
+  "key": "e4d19e67",
+  "who": "marigold",
+  "text": "Red light is lazy: a little push will do. Blue light is fussy: it wants nearly all the push you’ve got."
+ },
+ {
+  "key": "a72702e3",
+  "who": "marigold",
+  "text": "Put them side by side on one battery and red will grab the current every time. Give each its own resistor."
+ },
+ {
+  "key": "c0aaef02",
+  "who": "marigold",
+  "text": "At the harbour they stack batteries end to end, + to −. Each one adds its push: 3 volts, 6, 9."
+ },
+ {
+  "key": "fa46be44",
+  "who": "marigold",
+  "text": "Strong enough for the lighthouse. Strong enough to fry a careless LED, too."
+ },
+ {
+  "key": "315b785c",
+  "who": "marigold",
+  "text": "I followed the line to the top of Clocktower Hill. It ends in the clock’s heart, under a sky full of stars."
+ },
+ {
+  "key": "642d28a9",
+  "who": "marigold",
+  "text": "Whoever built it wanted us to have light at night. But I wonder if they meant us to switch it off, now and then, and look up."
+ },
+ {
+  "key": "1891061c",
+  "who": "marigold",
+  "text": "The little cloud is not alone. On the night of the storm I saw another light going AWAY, following the wire up the valley."
+ },
+ {
+  "key": "667e6ec3",
+  "who": "marigold",
+  "text": "Up to the Hollow, where the mill-folk keep their lamps burning late. I hope they’re kind to it."
+ },
+ {
+  "key": "4761309a",
+  "who": "marigold",
+  "text": "I never told anyone, because who would believe it? The lightning didn’t leave one little cloud. It left TWO."
+ },
+ {
+  "key": "54908f0d",
+  "who": "marigold",
+  "text": "One sulked in the dark. One sang in the light. I named the dark one Grumble. The bright one named herself: Glimmer. She lit my kitchen for a week."
+ },
+ {
+  "key": "9f50e2b2",
+  "who": "marigold",
+  "text": "They keep lightning in JARS down here! A jar fills up while current flows into it, and pours it back out, slowly, once the current stops."
+ },
+ {
+  "key": "57e17c59",
+  "who": "marigold",
+  "text": "The bigger the jar, the longer it pours. Marlo calls it “capacity”. I call it magic with good manners."
+ },
+ {
+  "key": "1fb5405a",
+  "who": "marigold",
+  "text": "When the Heart Jar cracked, three things came out of it, not two. Two flew up the wire, glowing. The third hid in the crack and wouldn’t come to me."
+ },
+ {
+  "key": "b52e69db",
+  "who": "marigold",
+  "text": "I named it Hush, because that’s all it would say. I left a lantern burning by the jar for it. I hope that one day somebody finds it, and is kind to it."
+ },
+ {
+  "key": "ff001ba6",
+  "who": "pell",
+  "text": "Oh, thank goodness! My porch light’s been dark since the storm, and I keep tripping over my tomatoes."
+ },
+ {
+  "key": "fced5752",
+  "who": "pell",
+  "text": "It glows! And not a single tomato squashed. Thank you, dear."
+ },
+ {
+  "key": "aa5d24f0",
+  "who": "okoro",
+  "text": "The shed lamp’s out. My stone wall is in the way, and I’ve only got 13 pieces of wire. Don’t you dare knock down my wall."
+ },
+ {
+  "key": "c9b428e3",
+  "who": "okoro",
+  "text": "Light AND wall, both still standing. You’re all right, kid."
+ },
+ {
+  "key": "41d27272",
+  "who": "rafi",
+  "text": "My nephew “fixed” the kitchen lamp. Now it fizzes and smells like burnt toast. I think he made two mistakes."
+ },
+ {
+  "key": "21d7717a",
+  "who": "rafi",
+  "text": "No fizz, no toast smell, just light. Stay for soup!"
+ },
+ {
+  "key": "9c217b91",
+  "who": "theo",
+  "text": "I’m NOT scared of the dark. I just want a little light. A soft one. Not a big bright one. Okay?"
+ },
+ {
+  "key": "b6db28eb",
+  "who": "theo",
+  "text": "That’s perfect. Not scary at all. …Can Pip stay until I fall asleep?"
+ },
+ {
+  "key": "7e4a69bb",
+  "who": "twins",
+  "text": "We BOTH need reading lights, and I want mine to be the brightest. Pick me the rig that shines most!"
+ },
+ {
+  "key": "9be7b39b",
+  "who": "twins",
+  "text": "Fair and square. Mine is the brightest. Hers is… also fine."
+ },
+ {
+  "key": "2d8725a1",
+  "who": "arjun",
+  "text": "I need a BRIGHT light over the oven. Three ways to wire it, and I can’t tell which is best. Which one’s brightest? Quick, the bread’s browning!"
+ },
+ {
+  "key": "fff52377",
+  "who": "arjun",
+  "text": "Perfect! I can see every crust now. Thank you!"
+ },
+ {
+  "key": "399442e9",
+  "who": "nadia",
+  "text": "The hallway lamp needs power, and the nursery wire runs right beside it. Turn the pipes so the current reaches every lamp on the board. Careful, the baby is sleeping!"
+ },
+ {
+  "key": "46bee9f0",
+  "who": "nadia",
+  "text": "The hallway is bright and the nursery is quiet. You’re a lifesaver."
+ },
+ {
+  "key": "8790a6bf",
+  "who": "ito",
+  "text": "My class needs a light they can switch off for movie time. Thirty children will be testing it, so it had better work!"
+ },
+ {
+  "key": "9eb1f6bf",
+  "who": "ito",
+  "text": "Lights off, movie on… lights on! Class, what do we say? “THANK YOUUU!”"
+ },
+ {
+  "key": "d8dfd05b",
+  "who": "finch",
+  "text": "The library has two doors with a clever switch panel. Press one and the lights beside it flip too! Get every lamp glowing again, whichever door you came in by."
+ },
+ {
+  "key": "0171ba41",
+  "who": "finch",
+  "text": "Every lamp is glowing. Whichever door you use, it works. Marvellous."
+ },
+ {
+  "key": "49946b31",
+  "who": "twins",
+  "text": "Our club lamp must ONLY come on when BOTH of us flip our switch. And medium brightness. Club rules."
+ },
+ {
+  "key": "0f95fc07",
+  "who": "twins",
+  "text": "Secret club lamp: activated! You can be an honorary member. Maybe."
+ },
+ {
+  "key": "bf855849",
+  "who": "gran",
+  "text": "Grumble is sitting on my workshop roof, cackling. He’ll try to wreck whatever you build. Show him what an apprentice can do!"
+ },
+ {
+  "key": "792b8040",
+  "who": "gran",
+  "text": "Ha! Did you see his face? Off he floats to sulk. Proud of you, kiddo."
+ },
+ {
+  "key": "7936a111",
+  "who": "benny",
+  "text": "My sign should glow green, for fresh! Not too bright, not too dim. Medium, like a ripe avocado."
+ },
+ {
+  "key": "6aba7fc3",
+  "who": "benny",
+  "text": "Fresh and green! Have an apple. Have two."
+ },
+ {
+  "key": "601be906",
+  "who": "coral",
+  "text": "The fish love blue light. Bright blue! Gran says blue LEDs are… different?"
+ },
+ {
+  "key": "70f9872c",
+  "who": "coral",
+  "text": "Look how happy they are! That one’s doing a little dance."
+ },
+ {
+  "key": "add65e58",
+  "who": "luca",
+  "text": "My sign is red AND blue, but part of it is dark! One lamp in the chain has died. Use your voltmeter to find it. If a stretch reads the full battery voltage, the gap is inside it!"
+ },
+ {
+  "key": "d5055d66",
+  "who": "luca",
+  "text": "There it is! Swap that lamp and the whole sign sings. Go team!"
+ },
+ {
+  "key": "064ce0c7",
+  "who": "sunny",
+  "text": "Three flavours, three lights, and the wires are all twisted! Turn the pipes so the power reaches every lamp. Those little arrow parts only pass power one way, mind."
+ },
+ {
+  "key": "d64c2b82",
+  "who": "sunny",
+  "text": "Three glowing flavours! Strawberry, mint and blueberry. Free ice cream for you!"
+ },
+ {
+  "key": "ca2fe287",
+  "who": "iris",
+  "text": "Somebody hung all three colours of my sign on one resistor. Now only the red works. Can you sort it out?"
+ },
+ {
+  "key": "6799755e",
+  "who": "iris",
+  "text": "Roses red, leaves green, cornflowers blue. Perfect!"
+ },
+ {
+  "key": "b1223777",
+  "who": "dot",
+  "text": "Switch ON: red. Switch OFF: green. But my new panel flips its neighbours too! Get every light showing at once, before the cars give up."
+ },
+ {
+  "key": "f2901144",
+  "who": "dot",
+  "text": "The cars are moving! Nobody honked once. Beautiful!"
+ },
+ {
+  "key": "55521f16",
+  "who": "mei",
+  "text": "My sign has a red heart that’s always bright, and a blue moon: soft for cosy evenings, bright for busy mornings. One switch?"
+ },
+ {
+  "key": "75c13d11",
+  "who": "mei",
+  "text": "Mornings bright, evenings cosy. Your coffee’s on the house."
+ },
+ {
+  "key": "656e14ad",
+  "who": "dot",
+  "text": "Red beats green, green beats blue, but which lamp WINS in the power race? Three rigs: tell me which one pushes the most current through the lamp."
+ },
+ {
+  "key": "e7071343",
+  "who": "dot",
+  "text": "The strongest one wins, just like that. Right of way, sorted!"
+ },
+ {
+  "key": "d6291c6e",
+  "who": "dot",
+  "text": "Grumble’s taken over the market clock sign! He keeps changing the rules on me. You’ll have to think on your feet."
+ },
+ {
+  "key": "e4b55caa",
+  "who": "dot",
+  "text": "The clock sign’s ours again! Grumble flew off muttering about “unfair colours”."
+ },
+ {
+  "key": "68398bb6",
+  "who": "rosa",
+  "text": "Two lights over the office door, one after the other. One battery won’t push through both of them."
+ },
+ {
+  "key": "c874c2bd",
+  "who": "rosa",
+  "text": "Shipshape! Two lights and a proper welcome."
+ },
+ {
+  "key": "29e39063",
+  "who": "sal",
+  "text": "String lights for the boat! Only now the WHOLE string is dark. One lamp is dead, and in a series chain that kills the lot. Find the bad one with your voltmeter!"
+ },
+ {
+  "key": "e8ca6e8a",
+  "who": "sal",
+  "text": "Ooh, sparkly. The fish will be so jealous."
+ },
+ {
+  "key": "878f34dd",
+  "who": "gus",
+  "text": "She runs on a big 9-volt battery. Careful, it packs a punch. I have three rigs and I can’t tell which one pushes the most current. Pick the brightest!"
+ },
+ {
+  "key": "884c86b9",
+  "who": "gus",
+  "text": "Bright, but not too bright. Gus approves."
+ },
+ {
+  "key": "acfc06ab",
+  "who": "rosa",
+  "text": "Grumble zapped the ferry. The lights are dead, and something in there smells backwards. Three things, I reckon."
+ },
+ {
+  "key": "3f42f2c7",
+  "who": "rosa",
+  "text": "All aboard! The ferry’s running on time again."
+ },
+ {
+  "key": "a0944bb6",
+  "who": "gus",
+  "text": "Three lamps light my stairs, and a wire got turned around in the storm. Turn the pipes so the power reaches all three. Watch the diode: it only lets power one way!"
+ },
+ {
+  "key": "2257e45e",
+  "who": "gus",
+  "text": "The stairs are bright again. No more stubbed toes!"
+ },
+ {
+  "key": "d0392764",
+  "who": "sal",
+  "text": "My bilge lamp’s out. Gran sent this funny little part, a diode. She says it only lets current go ONE way. Sounds like my old ferry."
+ },
+ {
+  "key": "9613dc11",
+  "who": "sal",
+  "text": "Steady as the lighthouse! One-way traffic, eh? Clever little thing."
+ },
+ {
+  "key": "41b553de",
+  "who": "sal",
+  "text": "PARTY BOAT! I’ve got three ways to hook up the lamp, and I want the BRIGHTEST. Quick, the guests are arriving!"
+ },
+ {
+  "key": "c06353cd",
+  "who": "sal",
+  "text": "Dazzling! The whole harbour can see us."
+ },
+ {
+  "key": "6bc98246",
+  "who": "rosa",
+  "text": "Two red warning lights and a blue night light, all fed from one pack. I need the best voltage and resistor combination. Which of these three rigs makes the lamp shine brightest?"
+ },
+ {
+  "key": "78087ce7",
+  "who": "rosa",
+  "text": "Spot on. The pack is perfectly balanced."
+ },
+ {
+  "key": "16894c40",
+  "who": "bolt",
+  "text": "BEEP. Warehouse rules: every switch on the panel changes the lights beside it. Get every lamp lit at the same time. BEEP."
+ },
+ {
+  "key": "84533423",
+  "who": "bolt",
+  "text": "BEEP BEEP. Perfect. The doors are bright."
+ },
+ {
+  "key": "50f49ab8",
+  "who": "gus",
+  "text": "My control panel has two warning lamps, a switch for each, and a TEST switch that should light both at once. Trouble is, wire the test switch in and every switch lights everything. Fifty years I’ve put up with it."
+ },
+ {
+  "key": "a414a0b8",
+  "who": "gus",
+  "text": "Test: both lamps. Lamp one: just lamp one. Now THAT’S a proper panel. My grandad would have wept."
+ },
+ {
+  "key": "1b866854",
+  "who": "sal",
+  "text": "Party lights that go with the music! Switch one: one light. Switch two: two lights. Switch three: ALL THREE! Like the bars on a stereo. Right now every switch just lights its own bulb. Boring!"
+ },
+ {
+  "key": "1dc6f7b1",
+  "who": "sal",
+  "text": "One… two… THREE! It’s like the boat is dancing! You’re officially the party engineer."
+ },
+ {
+  "key": "e8ab2437",
+  "who": "rosa",
+  "text": "Grumble’s inside the harbour power station, cranking up the voltage. Whatever you build, he’ll try to fry it."
+ },
+ {
+  "key": "1eee8022",
+  "who": "rosa",
+  "text": "The harbour’s safe! And Grumble’s run out of puff. I’ll give you a ride on the ferry, any time."
+ },
+ {
+  "key": "285b5eb0",
+  "who": "lumen",
+  "text": "My clock face lamp is all twisted around. Turn the pieces back until the circle is closed."
+ },
+ {
+  "key": "c519498f",
+  "who": "lumen",
+  "text": "There’s my clock face! Hello, old friend."
+ },
+ {
+  "key": "a20d28cc",
+  "who": "lumen",
+  "text": "Two lamps light the bells, but the pieces are twisted. Turn the pipes until power reaches every lamp. LEDs only work one way round, so watch the arrows!"
+ },
+ {
+  "key": "d6c81bf9",
+  "who": "lumen",
+  "text": "The bells are lit, and so is the whole tower. Well turned!"
+ },
+ {
+  "key": "367c2d58",
+  "who": "lumen",
+  "text": "The pendulum lamp. Careful: one wrong turn and the current skips the lamp altogether."
+ },
+ {
+  "key": "2cb6e711",
+  "who": "lumen",
+  "text": "Tick, tock, glow. Marvellous."
+ },
+ {
+  "key": "71f32665",
+  "who": "lumen",
+  "text": "The stair lamp needs its switch back. And watch out for the sneaky path around it!"
+ },
+ {
+  "key": "4fc4dbe3",
+  "who": "lumen",
+  "text": "Now I can find my way to bed. Thank you, apprentice."
+ },
+ {
+  "key": "499eb440",
+  "who": "lumen",
+  "text": "The old railway signal on the hill: switch ON for red, switch OFF for green."
+ },
+ {
+  "key": "3114bf96",
+  "who": "lumen",
+  "text": "The little train is running again! Toot toot!"
+ },
+ {
+  "key": "47cda25b",
+  "who": "lumen",
+  "text": "The gate lamp has two switches, one on each side of the gate. Either one should work. Not every piece belongs."
+ },
+ {
+  "key": "596ae47a",
+  "who": "lumen",
+  "text": "Both sides of the gate, glowing. Glowtown is whole again!"
+ },
+ {
+  "key": "04d39b75",
+  "who": "lumen",
+  "text": "Grumble is hiding in the very heart of my clock, spinning the gears. This is it: the last of him!"
+ },
+ {
+  "key": "3326750b",
+  "who": "lumen",
+  "text": "He’s gone quiet. I think… he’s actually enjoying the tick. Glowtown is safe!"
+ },
+ {
+  "key": "a5ed4d3f",
+  "who": "hazel",
+  "text": "One lever for the yard lamp and the porch lamp. Up for the yard, down for the porch. My late husband wired it before he… well. It hasn’t worked since."
+ },
+ {
+  "key": "50214aff",
+  "who": "hazel",
+  "text": "There. Up, yard. Down, porch. Just as Tom had it. Thank you, dear."
+ },
+ {
+  "key": "0f569b3f",
+  "who": "hazel",
+  "text": "One lamp on the mill stairs, a switch at the top and one at the bottom. Flip either and the lamp changes! Try the whole panel and get every lamp on."
+ },
+ {
+  "key": "9b48690f",
+  "who": "hazel",
+  "text": "It works from both ends of the stairs. Hazel would be proud."
+ },
+ {
+  "key": "c6876a36",
+  "who": "bram",
+  "text": "My ferry lantern wants two settings. Low, for quiet nights, so I don’t wake the mere. High, for fog. And there’s fog most nights now."
+ },
+ {
+  "key": "c68aaa38",
+  "who": "bram",
+  "text": "Low… and high. Good. The fog doesn’t like it bright. It keeps its distance."
+ },
+ {
+  "key": "bb2b47da",
+  "who": "bram",
+  "text": "The landing beacon has a small battery and a big back-up one. I need the rig that lights it brightest. Which of these is best?"
+ },
+ {
+  "key": "f36e9641",
+  "who": "bram",
+  "text": "Bright as a star. The boats can find us now."
+ },
+ {
+  "key": "3b2cd2af",
+  "who": "moth",
+  "text": "The lamp in the old schoolroom has a meter on it. Grandpa said it has to read 5 or 6, “or she’ll notice”. I don’t know who “she” is. I just do what the note says."
+ },
+ {
+  "key": "d36b8174",
+  "who": "moth",
+  "text": "Five and a half! The needle’s right in the middle. Now nobody will notice. Probably."
+ },
+ {
+  "key": "0280ea04",
+  "who": "moth",
+  "text": "Two lamps by the bell rope, and the meter says nothing at all! Somewhere along the string a lamp has died. Use the voltmeter to find the gap."
+ },
+ {
+  "key": "0f67a92c",
+  "who": "moth",
+  "text": "The meter’s reading again. Grandpa would be proud."
+ },
+ {
+  "key": "34ff3762",
+  "who": "hazel",
+  "text": "Tom’s old gauge on the mill wall. It always read one and a half. Half the battery, he said, “so the other half’s left for her”. I never asked who. I wish I had."
+ },
+ {
+  "key": "60e54b72",
+  "who": "hazel",
+  "text": "One and a half. Half for us, half for… whoever she is. Tom would be pleased."
+ },
+ {
+  "key": "86585b51",
+  "who": "lumen",
+  "text": "The tower stair lamps are all dark. One of them has died and broken the chain. Probe along the string and find which one!"
+ },
+ {
+  "key": "f24403b0",
+  "who": "lumen",
+  "text": "Found it! The stairs are bright and I can see the steps."
+ },
+ {
+  "key": "80b9884f",
+  "who": "glimmer",
+  "text": "Marigold’s lantern. I’ve carried it a hundred years and it’s nearly out. Red for the valley, green for the road home. Please… and mind my brother. He gets jealous."
+ },
+ {
+  "key": "a67e1604",
+  "who": "glimmer",
+  "text": "It’s warm again. I can feel the whole Glowire, all the way to the sea. Thank you, little light-fixer."
+ },
+ {
+  "key": "30b7ed1b",
+  "who": "pearl",
+  "text": "Down here the lamps run on JARS. You fill a jar with the battery, and when the battery stops, the jar keeps the lamp going! Mine goes out the second I switch off. Can you fix it?"
+ },
+ {
+  "key": "e39f4cba",
+  "who": "pearl",
+  "text": "It’s glowing all by itself! Jar-light! Oh, Grandpa Marlo is going to be SO jealous."
+ },
+ {
+  "key": "be68edf4",
+  "who": "marlo",
+  "text": "Hmph. My door lamp is dark because the wires got turned in the current. Turn the pipes so the power reaches every lamp. Longer route, mind. Diodes only pass one way."
+ },
+ {
+  "key": "afe3411b",
+  "who": "marlo",
+  "text": "Hmph. Acceptable. Quite good, actually."
+ },
+ {
+  "key": "203d32f3",
+  "who": "tess",
+  "text": "Shh, the baby fish are sleeping. If their lamp snaps on all at once they panic and hide in the coral for a week. It needs to come on slowly. Like a sunrise."
+ },
+ {
+  "key": "1ee7165a",
+  "who": "tess",
+  "text": "Look at them, stretching their little fins. A sunrise, under the sea. Thank you."
+ },
+ {
+  "key": "26ec02a1",
+  "who": "tess",
+  "text": "Two lamps by the coral gate, and the switches on the panel affect their neighbours! Get all the lamps lit. Think before you press, little fish!"
+ },
+ {
+  "key": "d2581ffc",
+  "who": "tess",
+  "text": "Both lamps shining. The coral thanks you."
+ },
+ {
+  "key": "88bbfff8",
+  "who": "echo",
+  "text": "PING. Stern lamp: scrambled by the current. All parts present. Orientation: wrong. Please turn. Note: both jars must be in the loop. One jar is not enough jar."
+ },
+ {
+  "key": "32ca37fe",
+  "who": "echo",
+  "text": "PING PING. Lamp holds light. Echo is… pleased. Echo has not been pleased in ninety-nine years."
+ },
+ {
+  "key": "67e6292b",
+  "who": "echo",
+  "text": "PING. Echo takes photographs of the dark. For evidence. Lever UP: fill the jar from the battery, lamp dark. Lever DOWN: the jar empties into the lamp. FLASH. Duration required: about two seconds."
+ },
+ {
+  "key": "9e6562e1",
+  "who": "echo",
+  "text": "FLASH. Photograph taken. It shows… something big, with eyes. Echo will not look at it again."
+ },
+ {
+  "key": "d08d098d",
+  "who": "marlo",
+  "text": "The Heart Jar feeds the whole Glowire, from here to Mossbell. It’s been cracked a hundred years, and now it’s nearly empty. And the Hush is in the hall with it. Fill it. Quickly. Before the dark gets in."
+ },
+ {
+  "key": "b287217e",
+  "who": "marlo",
+  "text": "Full. The Heart Jar is FULL. Listen… every lamp from here to the hills just got a little brighter."
+ },
+ {
+  "key": "c0b5ce81",
+  "who": "juniper",
+  "text": "My hut lamp runs off the weathervane up on the roof. Feather-light little switch, and it gives about as much current as a sneeze. The lamp just glimmers. I need it BRIGHT when the wind’s up."
+ },
+ {
+  "key": "27cee17d",
+  "who": "juniper",
+  "text": "Ha! Bright as a summit sunrise, off a sneeze of current. What’s that little black thing called? A transistor? I’m naming my goat after it."
+ },
+ {
+  "key": "4572e4fa",
+  "who": "nimbus",
+  "text": "My storm lamp must be ON whenever the weather switch is OFF, and OFF whenever it’s ON. Backwards! Everyone tells me that’s impossible. Everyone is wrong. Everyone is usually wrong."
+ },
+ {
+  "key": "d23667ff",
+  "who": "nimbus",
+  "text": "On when off, off when on. Marvellous. A transistor across the lamp steals its current the moment the base says so."
+ },
+ {
+  "key": "946e5052",
+  "who": "juniper",
+  "text": "Safety rule on the cable car: the GO lamp only lights when BOTH brake levers are off. One lever isn’t enough. Ever. I’ve seen what happens when it’s only one."
+ },
+ {
+  "key": "7e3f9a30",
+  "who": "juniper",
+  "text": "Both levers, one lamp. Nobody’s going down that mountain backwards again. Not on my watch."
+ },
+ {
+  "key": "2313ca20",
+  "who": "nimbus",
+  "text": "The gale spun everything on my weathervane panel. Every piece is there, only turned. Mind the transistor: it has three legs, and only one way round works."
+ },
+ {
+  "key": "26c58c92",
+  "who": "nimbus",
+  "text": "Spinning in the wind, and shining. Just as a weathervane should."
+ },
+ {
+  "key": "001ee765",
+  "who": "juniper",
+  "text": "The path lamp by the hut. Bright when I flick it on, and still bright for a good while after I flick it off, so I can get down the path. The little jar alone only gives it half a blink."
+ },
+ {
+  "key": "f17f3d18",
+  "who": "juniper",
+  "text": "Bright, and it stays bright all the way down the path. A small jar and a transistor. The jar whispers, the transistor shouts."
+ },
+ {
+  "key": "574317d9",
+  "who": "nimbus",
+  "text": "The Storm Engine catches lightning for the whole Glowire. But Old Tempest is sitting right on top of the peak, furious, and she throws lightning at anything that lights up. Get the engine’s signal lamp working. Whatever she throws at it."
+ },
+ {
+  "key": "33717bb7",
+  "who": "nimbus",
+  "text": "The engine’s humming! And listen… the thunder’s gone soft. Like someone humming back."
+ },
+ {
+  "key": "6887ce2b",
+  "who": "pip",
+  "text": "Bzzt! A circuit puzzle. Here’s everything you need to know."
+ },
+ {
+  "key": "2ac4220d",
+  "who": "pip",
+  "text": "The battery pushes electricity out of its + end, and it wants it back in its − end."
+ },
+ {
+  "key": "c2ebbb0d",
+  "who": "pip",
+  "text": "The LED is a little light. It only glows when electricity flows through it: in at its + side, out the other."
+ },
+ {
+  "key": "2b27b498",
+  "who": "pip",
+  "text": "So you need a full loop: battery +, wire, LED, wire, back to battery −. Any gap and nothing flows."
+ },
+ {
+  "key": "e9482233",
+  "who": "pip",
+  "text": "Draw a wire by dragging. Start ON the battery, a part, or a wire you already drew. Wires can only grow out of the pieces that are built in place, never from an empty square."
+ },
+ {
+  "key": "93daa60c",
+  "who": "pip",
+  "text": "Now the numbers. A small battery pushes 3 volts, but a red LED only wants about 2 volts. That extra volt shoves too much current through, and the LED burns out. Pop."
+ },
+ {
+  "key": "d4a5f7d8",
+  "who": "pip",
+  "text": "A resistor takes the extra volts for itself. Current = leftover volts ÷ ohms, so 1 volt ÷ 220 ohms is about 5 milliamps: safe and glowing. Drag one from the tray onto a wire."
+ },
+ {
+  "key": "11f0da51",
+  "who": "pip",
+  "text": "Tap a wire to rub it out. Stuck? Tap my face for a tip, or “Need help?” for this talk again."
+ }
+]

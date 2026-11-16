@@ -29,6 +29,16 @@ describe('walker', () => {
     expect(w.facing).toBe('right');
   });
 
+  it('can walk out of a cell someone stepped into, but not into new blocked cells', () => {
+    // A townsperson walked onto the cell under the hero's feet (3, 3).
+    const taken = (x: number, y: number) => !(x === 3 && y === 3) && x !== 5;
+    const w = newWalker(3, 3, 'down');
+    w.input = { x: 1, y: 0 };
+    for (let i = 0; i < 20; i++) stepWalker(w, 0.05, taken);
+    expect(w.x).toBeGreaterThan(3.3);
+    expect(w.x).toBeLessThan(4.21); // still stops at the wall in column 5
+  });
+
   it('slides along a wall instead of stopping dead', () => {
     const w = newWalker(4, 3, 'right');
     w.input = { x: 1, y: 1 };

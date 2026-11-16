@@ -11,7 +11,7 @@ export const BRAIN_POOL: GameId[] = ['probe', 'pipes', 'panel', 'colours', 'need
 export const BRAIN_STARS: Record<string, [number, number, number]> = {
   probe: [25, 45, 65],
   pipes: [20, 40, 58],
-  panel: [20, 40, 58],
+  panel: [12, 24, 35],
   colours: [8, 13, 18],
   needle: [6, 10, 15],
   lantern: [2, 4, 7],
@@ -21,7 +21,7 @@ export const BRAIN_STARS: Record<string, [number, number, number]> = {
 export const BRAIN_MAX: Record<string, number> = {
   probe: 6 * 22,
   pipes: 5 * 15,
-  panel: 5 * 15,
+  panel: 3 * 15,
   colours: 12 * 2,
   needle: 10 * 2,
   lantern: 30,

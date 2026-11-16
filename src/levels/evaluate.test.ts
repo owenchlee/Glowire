@@ -248,7 +248,7 @@ describe('describeGoal edge cases', () => {
   const names = { A: 'A', B: 'B', C: 'C' };
 
   it('words brightness bands, and says nothing for "any"', () => {
-    expect(describeGoal({ kind: 'lit', led: 'A', brightness: 'dim' }, names, 0)).toBe('Light A dimly');
+    expect(describeGoal({ kind: 'lit', led: 'A', brightness: 'dim' }, names, 0)).toBe('Light A dimly (0.6–3 mA)');
     expect(describeGoal({ kind: 'lit', led: 'A', brightness: 'any' }, names, 0)).toBe('Light A');
   });
 
