@@ -22,6 +22,14 @@ describe('hints', () => {
     expect(hintFor(['┌ R220 ┐', 'B^ . Lv', 'Bv . Lv', '└ ─ ┘'])).toBe(HINTS.cancel);
   });
 
+  it('blames the battery when the backwards LED is locked', () => {
+    const board = parseBoard(['┌ R220 ┐', 'B^ . L^', '└ ─ ┘']);
+    const cells = board.cells.map((t) => (t?.kind === 'led' ? { ...t, locked: true } : t));
+    const b = { ...board, cells };
+    expect(simulate(b).tiles.some((t) => t?.status === 'REVERSED')).toBe(true);
+    expect(pickHint('intro', b, simulate(b), unsolved, false, new Set()).text).toBe(HINTS.batteryBackwards);
+  });
+
   it('does not blame batteries for an open circuit', () => {
     expect(hintFor(['┌ R220 .', 'B^ . Lv', 'Bv . Lv', '└ ─ ┘'])).toBe('intro');
   });

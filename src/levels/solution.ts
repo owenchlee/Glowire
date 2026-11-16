@@ -144,6 +144,18 @@ export function dig(level: LevelDef, state: BoardState): DigResult | null {
     const junk = state.cells.findIndex((p, i) => p && !p.tile.locked && !want[i]);
     if (junk >= 0) return { board: setCell(state, junk, null), cell: junk };
   }
+  // Goals are judged in the current switch positions, so set them to the solution's.
+  const flip = want.findIndex((t, i) => {
+    const p = state.cells[i]?.tile;
+    if (t?.kind === 'switch') return p?.kind === 'switch' && p.closed !== t.closed;
+    return t?.kind === 'changeover' && p?.kind === 'changeover' && p.up !== t.up;
+  });
+  if (flip >= 0) {
+    const p = state.cells[flip]!.tile;
+    const t = want[flip]!;
+    const tile = p.kind === 'switch' && t.kind === 'switch' ? { ...p, closed: t.closed } : { ...p, up: (t as { up: boolean }).up };
+    return { board: setCell(state, flip, tile as Tile), cell: flip };
+  }
   return null;
 }
 
