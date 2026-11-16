@@ -2,7 +2,18 @@
 
 import { useFrame } from './r3f';
 import { useEffect, useMemo, useRef } from 'react';
-import { Color, type Group, type Material, MeshBasicMaterial, MeshStandardMaterial, type Sprite } from 'three';
+import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
+import {
+  BoxGeometry,
+  type BufferGeometry,
+  Color,
+  CylinderGeometry,
+  type Group,
+  type Material,
+  MeshBasicMaterial,
+  MeshStandardMaterial,
+  type Sprite,
+} from 'three';
 
 import {
   type Direction,
@@ -39,16 +50,12 @@ export function TileModel({ tile, result, ghost = false }: Props) {
       {tile.locked && !tile.spin && !ghost && tile.kind !== 'switch' && tile.kind !== 'changeover' && <Rivets />}
       {tile.kind === 'wire' && (
         <>
-          {getPorts({ ...tile, rotation: 0 }).map((d) => (
-            <Arm key={d} dir={d} material={wireMat} />
-          ))}
-          <mesh geometry={g.joint} material={wireMat} position-y={TOP + 0.04} />
+          <Arms dirs={getPorts({ ...tile, rotation: 0 })} joint material={wireMat} />
         </>
       )}
       {tile.kind === 'resistor' && (
         <>
-          <Arm dir={W} length={0.26} material={wireMat} />
-          <Arm dir={E} length={0.26} material={wireMat} />
+          <Arms dirs={[W,E]} lengths={[0.26,0.26]} material={wireMat} />
           <mesh geometry={g.resistorBody} material={pick(m.resistorBody)} position-y={TOP + 0.12} />
           {resistorBandDigits(tile.ohms).map((digit, i) => (
             <mesh
@@ -63,18 +70,15 @@ export function TileModel({ tile, result, ghost = false }: Props) {
       {tile.kind === 'diode' && (
         <>
           {/* Black body, silver stripe at the cathode (−, east) end. */}
-          <Arm dir={W} length={0.26} material={wireMat} />
-          <Arm dir={E} length={0.26} material={wireMat} />
+          <Arms dirs={[W,E]} lengths={[0.26,0.26]} material={wireMat} />
           <mesh geometry={g.resistorBody} material={pick(m.diodeBody)} position-y={TOP + 0.12} scale={[0.85, 0.9, 0.9]} />
           <mesh geometry={g.resistorBand} material={pick(m.diodeBand)} position={[0.1, TOP + 0.12, 0]} scale={[1.6, 0.9, 0.9]} />
-          <Plus position={[-0.3, TOP + 0.03, 0.27]} material={pick(m.marking)} />
-          <Minus position={[0.3, TOP + 0.03, 0.27]} material={pick(m.marking)} />
+          <PlusMinus plusX={-0.3} minusX={0.3} y={TOP + 0.03} z={0.27} material={pick(m.marking)} />
         </>
       )}
       {tile.kind === 'battery' && (
         <>
-          <Arm dir={W} length={0.18} material={wireMat} />
-          <Arm dir={E} length={0.18} material={wireMat} />
+          <Arms dirs={[W,E]} lengths={[0.18,0.18]} material={wireMat} />
           <mesh geometry={g.batteryBody} material={pick(m.batteryBody)} position-y={TOP + 0.21} />
           <mesh
             geometry={g.batteryCap}
@@ -86,8 +90,7 @@ export function TileModel({ tile, result, ghost = false }: Props) {
             material={pick(m.batteryCap)}
             position={[-0.31, TOP + 0.21, 0]}
           />
-          <Plus position={[-0.08, TOP + 0.415, 0]} material={pick(m.markingLight)} />
-          <Minus position={[0.15, TOP + 0.415, 0]} material={pick(m.markingLight)} />
+          <PlusMinus plusX={-0.08} minusX={0.15} y={TOP + 0.415} z={0} material={pick(m.markingLight)} />
         </>
       )}
       {tile.kind === 'led' && (
@@ -190,6 +193,8 @@ function CapacitorModel({
 }
 
 /** Where the lever of a changeover switch pivots, and where its two contacts stand. */
+type Vec3 = [number, number, number];
+
 const PIVOT: Vec3 = [-0.22, 0, 0];
 const CONTACT_Z = 0.27;
 const LEVER_REACH = Math.hypot(0.22, CONTACT_Z);
@@ -211,9 +216,7 @@ function ChangeoverModel({ up, ghost, wireMat }: { up: boolean; ghost: boolean; 
   const pick = (mat: Material) => (ghost ? m.ghost : mat);
   return (
     <>
-      <Arm dir={W} length={0.28} material={wireMat} />
-      <Arm dir={N} length={0.23} material={wireMat} />
-      <Arm dir={S} length={0.23} material={wireMat} />
+      <Arms dirs={[W,N,S]} lengths={[0.28,0.23,0.23]} material={wireMat} />
       <mesh geometry={g.switchPost} material={pick(m.marking)} position={[PIVOT[0], TOP + 0.06, 0]} />
       <mesh geometry={g.switchPost} material={pick(up ? m.switchOn : m.marking)} position={[0, TOP + 0.06, -CONTACT_Z]} />
       <mesh geometry={g.switchPost} material={pick(up ? m.marking : m.switchOn)} position={[0, TOP + 0.06, CONTACT_Z]} />
@@ -253,8 +256,7 @@ function MeterModel({
   const pick = (mat: Material) => (ghost ? m.ghost : mat);
   return (
     <>
-      <Arm dir={W} length={0.2} material={wireMat} />
-      <Arm dir={E} length={0.2} material={wireMat} />
+      <Arms dirs={[W,E]} lengths={[0.2,0.2]} material={wireMat} />
       <mesh geometry={g.meterCase} material={pick(m.meterCase)} position-y={TOP + 0.08} />
       <mesh geometry={g.meterFace} material={pick(m.meterFace)} position={[0, TOP + 0.17, 0.08]} />
       <group ref={needle} position={[0, TOP + 0.185, 0.08]} rotation-y={Math.PI}>
@@ -266,8 +268,7 @@ function MeterModel({
         position={[0, TOP + 0.17, 0.17]}
         scale={[0.6, 0.3, 0.6]}
       />
-      <Plus position={[-0.2, TOP + 0.17, 0.19]} material={pick(m.markingLight)} />
-      <Minus position={[0.2, TOP + 0.17, 0.19]} material={pick(m.markingLight)} />
+      <PlusMinus plusX={-0.2} minusX={0.2} y={TOP + 0.17} z={0.19} material={pick(m.markingLight)} />
     </>
   );
 }
@@ -307,8 +308,7 @@ function SwitchModel({
   const pick = (mat: Material) => (ghost ? m.ghost : mat);
   return (
     <>
-      <Arm dir={W} length={0.24} material={wireMat} />
-      <Arm dir={E} length={0.24} material={wireMat} />
+      <Arms dirs={[W,E]} lengths={[0.24,0.24]} material={wireMat} />
       <mesh geometry={g.switchPost} material={pick(m.marking)} position={[-0.25, TOP + 0.06, 0]} />
       <mesh geometry={g.switchPost} material={pick(m.marking)} position={[0.25, TOP + 0.06, 0]} />
       <group
@@ -358,8 +358,6 @@ export function Arm({
   );
 }
 
-type Vec3 = [number, number, number];
-
 function Plus({ position, material }: { position: Vec3; material: Material }) {
   const { geometry: g } = getAssets();
   return (
@@ -375,25 +373,71 @@ function Minus({ position, material }: { position: Vec3; material: Material }) {
   return <mesh geometry={g.plusBar} material={material} position={position} />;
 }
 
+const armsCache = new Map<string, BufferGeometry>();
+
+/** All of a tile's wire segments (and the wire joint) as one cached mesh: one draw call. */
+function Arms({
+  dirs,
+  lengths,
+  joint = false,
+  material,
+}: {
+  dirs: readonly Direction[];
+  lengths?: readonly number[];
+  joint?: boolean;
+  material: Material;
+}) {
+  const key = `${dirs.join()}|${lengths?.join() ?? ''}|${joint}`;
+  let geometry = armsCache.get(key);
+  if (!geometry) {
+    const parts: BufferGeometry[] = dirs.map((dir, i) => {
+      const length = lengths?.[i] ?? 0.5;
+      const [vx, vz] = DIR_VECTORS[dir];
+      const c = 0.5 - length / 2;
+      return new BoxGeometry(0.15, 0.08, 0.5)
+        .scale(1, 1, length / 0.5)
+        .rotateY(vx !== 0 ? Math.PI / 2 : 0)
+        .translate(vx * c, TOP + 0.04, vz * c);
+    });
+    if (joint) parts.push(new CylinderGeometry(0.075, 0.075, 0.08, 16).translate(0, TOP + 0.04, 0));
+    geometry = mergeGeometries(parts);
+    armsCache.set(key, geometry);
+  }
+  return <mesh geometry={geometry} material={material} />;
+}
+
+const plusMinusCache = new Map<string, BufferGeometry>();
+
+/** A plus mark and a minus mark as one cached mesh: one draw call. */
+function PlusMinus({
+  plusX,
+  minusX,
+  y,
+  z,
+  material,
+}: {
+  plusX: number;
+  minusX: number;
+  y: number;
+  z: number;
+  material: Material;
+}) {
+  const key = `${plusX}|${minusX}`;
+  let geometry = plusMinusCache.get(key);
+  if (!geometry) {
+    const { geometry: g } = getAssets();
+    geometry = mergeGeometries([
+      g.plus.clone().translate(plusX, 0, 0),
+      g.plusBar.clone().translate(minusX, 0, 0),
+    ]);
+    plusMinusCache.set(key, geometry);
+  }
+  return <mesh geometry={geometry} material={material} position={[0, y, z]} />;
+}
+
 function Rivets() {
   const { geometry: g, material: m } = getAssets();
-  return (
-    <>
-      {[
-        [-1, -1],
-        [1, -1],
-        [-1, 1],
-        [1, 1],
-      ].map(([sx, sz]) => (
-        <mesh
-          key={`${sx}${sz}`}
-          geometry={g.rivet}
-          material={m.rivet}
-          position={[sx! * 0.36, TOP + 0.005, sz! * 0.36]}
-        />
-      ))}
-    </>
-  );
+  return <mesh geometry={g.rivets} material={m.rivet} position-y={TOP} />;
 }
 
 const PUFF_SECONDS = 0.9;
@@ -463,8 +507,7 @@ function LedModel({
   const dome = ghost ? m.ghost : burned ? m.ledBurned : mats.dome;
   return (
     <>
-      <Arm dir={W} length={0.3} material={wireMat} />
-      <Arm dir={E} length={0.3} material={wireMat} />
+      <Arms dirs={[W,E]} lengths={[0.3,0.3]} material={wireMat} />
       <mesh geometry={g.ledRim} material={dome} position-y={TOP + 0.035} />
       <mesh geometry={g.ledDome} material={dome} position-y={TOP + 0.07} />
       {burned && !ghost && (
@@ -486,8 +529,7 @@ function LedModel({
           />
         </group>
       )}
-      <Plus position={[-0.3, TOP + 0.013, 0.27]} material={ghost ? m.ghost : m.marking} />
-      <Minus position={[0.3, TOP + 0.013, 0.27]} material={ghost ? m.ghost : m.marking} />
+      <PlusMinus plusX={-0.3} minusX={0.3} y={TOP + 0.013} z={0.27} material={ghost ? m.ghost : m.marking} />
       {!ghost && (
         <>
           <sprite ref={halo} material={mats.halo} position-y={TOP + 0.2} />

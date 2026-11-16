@@ -3,7 +3,9 @@
 import { Canvas, useFrame, useThree } from './r3f';
 import { type RefObject, useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 import { StyleSheet } from 'react-native';
+import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import {
+  BufferGeometry,
   type Group,
   type Mesh,
   MeshBasicMaterial,
@@ -21,6 +23,7 @@ import type { SimulationResult } from '../engine';
 import { currentSkin, getAssets } from './assets';
 import { AnimatedTile } from './AnimatedTile';
 import { FlowParticles } from './FlowParticles';
+import { currentLevel } from './flow';
 import { cellToWorld, TOP, worldToCell } from './layout';
 import { COLORS } from './theme';
 import { TileModel } from './TileModel';
@@ -56,6 +59,7 @@ export function BoardCanvas(props: Props) {
     <Canvas
       style={StyleSheet.absoluteFill}
       orthographic
+      frameloop="demand"
       camera={{ position: [10, 10, 10], zoom: 60, near: 0.1, far: 100 }}
     >
       <color attach="background" args={[props.backdrop ? '#0d0f1e' : currentSkin().board.backdrop]} />
@@ -80,6 +84,14 @@ function Scene({
   const night = !!backdrop;
   return (
     <>
+      <FrameDriver
+        busy={
+          !!ghost ||
+          result.tiles.some((t) => t && Object.values(t.portCurrents).some((i) => currentLevel(i) > 0))
+        }
+        ambient={!!backdrop}
+        changes={[board, result, ghost, draggingId, shake, celebrateKey, view, backdrop]}
+      />
       <CameraRig board={board} pickerRef={pickerRef} onReady={onReady} view={view} />
       {backdrop && <Backdrop spec={backdrop} boardWidth={board.width} />}
       {night ? (
@@ -124,6 +136,31 @@ function Scene({
       )}
     </>
   );
+}
+
+/**
+ * The canvas only draws on demand. Keep it drawing while something loops forever (current,
+ * LED halos, ghost, backdrop), and for 2 s after any prop change so springs, shakes and
+ * the celebration can finish. A still board then costs no GPU at all.
+ */
+function FrameDriver({ busy, ambient, changes }: { busy: boolean; ambient: boolean; changes: unknown[] }) {
+  const invalidate = useThree((s) => s.invalidate);
+  const until = useRef(-1); // -1: a change is waiting for the next frame to stamp the end time
+  const last = useRef<unknown[]>([]);
+  // Compare by hand: a spread dependency array would defeat the hooks lint.
+  const changed = changes.length !== last.current.length || changes.some((c, i) => c !== last.current[i]);
+  useLayoutEffect(() => {
+    if (!changed) return;
+    last.current = changes;
+    until.current = -1;
+    invalidate();
+  });
+  useFrame(({ clock }) => {
+    if (until.current < 0) until.current = clock.elapsedTime + 2;
+    // A backdrop (lamps, water, fireflies) animates all the time, so it keeps full frame rate.
+    if (busy || ambient || clock.elapsedTime < until.current) invalidate();
+  });
+  return null;
 }
 
 /** Orthographic camera that fits the board to the screen, plus picking. */
@@ -236,6 +273,35 @@ function BoardBase({ board, highlight }: { board: BoardState; highlight: number 
     [slab],
   );
 
+  // Checkerboard floor merged into two meshes (one per colour), leaving out the highlighted cell.
+  const floor = useMemo(() => {
+    const a: BufferGeometry[] = [];
+    const b: BufferGeometry[] = [];
+    for (let cell = 0; cell < board.width * board.height; cell++) {
+      if (cell === highlight) continue;
+      const [x, z] = cellToWorld(cell, board.width, board.height);
+      const checker = (Math.floor(cell / board.width) + (cell % board.width)) % 2 === 0;
+      (checker ? a : b).push(g.cell.clone().translate(x, 0.001, z));
+    }
+    const merge = (list: BufferGeometry[]) => {
+      const merged = mergeGeometries(list) ?? new BufferGeometry();
+      list.forEach((geo) => geo.dispose());
+      return merged;
+    };
+    return { a: merge(a), b: merge(b) };
+  }, [board.width, board.height, highlight, g.cell]);
+  useEffect(
+    () => () => {
+      floor.a.dispose();
+      floor.b.dispose();
+    },
+    [floor],
+  );
+  const highlightPos = useMemo<[number, number, number]>(() => {
+    const [x, z] = cellToWorld(highlight ?? 0, board.width, board.height);
+    return [x, 0.001, z];
+  }, [highlight, board.width, board.height]);
+
   const float = useRef<Group>(null);
   return (
     <group ref={float}>
@@ -247,18 +313,11 @@ function BoardBase({ board, highlight }: { board: BoardState; highlight: number 
         scale={[board.width * 1.7, 1, board.height * 1.7]}
       />
       <mesh geometry={slab.geometry} material={slab.top} position-y={-0.225} />
-      {board.cells.map((_, cell) => {
-        const [x, z] = cellToWorld(cell, board.width, board.height);
-        const checker = (Math.floor(cell / board.width) + (cell % board.width)) % 2 === 0;
-        return (
-          <mesh
-            key={cell}
-            geometry={g.cell}
-            material={cell === highlight ? m.cellHighlight : checker ? m.cellA : m.cellB}
-            position={[x, 0.001, z]}
-          />
-        );
-      })}
+      <mesh geometry={floor.a} material={m.cellA} />
+      <mesh geometry={floor.b} material={m.cellB} />
+      {highlight !== null && (
+        <mesh geometry={g.cell} material={m.cellHighlight} position={highlightPos} />
+      )}
     </group>
   );
 }

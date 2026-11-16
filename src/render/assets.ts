@@ -17,6 +17,7 @@ import {
   SpriteMaterial,
 } from 'three';
 import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
+import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 
 import type { LedColor } from '../engine';
 import { BAND_COLORS, COLORS, LED_PALETTE } from './theme';
@@ -56,7 +57,18 @@ function create() {
     contactShadow: new PlaneGeometry(1.25, 1.25).rotateX(-Math.PI / 2),
     cell: new PlaneGeometry(0.96, 0.96).rotateX(-Math.PI / 2),
     plusBar: new BoxGeometry(0.13, 0.025, 0.035),
-    rivet: new CylinderGeometry(0.03, 0.03, 0.02, 8),
+    // The four corner rivets and the plus mark as one mesh each (fewer draw calls).
+    rivets: mergeGeometries(
+      [-1, 1].flatMap((sx) =>
+        [-1, 1].map((sz) =>
+          new CylinderGeometry(0.03, 0.03, 0.02, 8).translate(sx * 0.36, 0.005, sz * 0.36),
+        ),
+      ),
+    ),
+    plus: mergeGeometries([
+      new BoxGeometry(0.13, 0.025, 0.035),
+      new BoxGeometry(0.13, 0.025, 0.035).rotateY(Math.PI / 2),
+    ]),
     ledRim: new CylinderGeometry(0.21, 0.21, 0.07, 24),
     ledDome: new SphereGeometry(0.19, 24, 12, 0, Math.PI * 2, 0, Math.PI / 2),
     crack: new BoxGeometry(0.015, 0.01, 0.2),
