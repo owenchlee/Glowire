@@ -295,7 +295,7 @@ function Celebration({ position: [x, z] }: { position: [number, number] }) {
     () =>
       Array.from({ length: 18 }, (_, i) => ({
         material: new MeshBasicMaterial({
-          color: CONFETTI[i % CONFETTI.length],
+          color: CONFETTI[i % CONFETTI.length]!,
           transparent: true,
         }),
         angle: (i / 18) * Math.PI * 2 + jitter(i, 1) * 0.3,

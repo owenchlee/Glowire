@@ -115,10 +115,22 @@ function wire(mask) {
   const S = mask & 4;
   const W = mask & 8;
   // Copper core, two pixels wide, light on top/left.
-  if (N) for (let y = 0; y <= 8; y++) (s.set(7, y, C.copperLight, true), s.set(8, y, C.copper, true));
-  if (S) for (let y = 7; y <= 15; y++) (s.set(7, y, C.copperLight, true), s.set(8, y, C.copper, true));
-  if (E) for (let x = 7; x <= 15; x++) (s.set(x, 7, C.copperLight, true), s.set(x, 8, C.copper, true));
-  if (W) for (let x = 0; x <= 8; x++) (s.set(x, 7, C.copperLight, true), s.set(x, 8, C.copper, true));
+  if (N) for (let y = 0; y <= 8; y++) {
+    s.set(7, y, C.copperLight, true);
+    s.set(8, y, C.copper, true);
+  }
+  if (S) for (let y = 7; y <= 15; y++) {
+    s.set(7, y, C.copperLight, true);
+    s.set(8, y, C.copper, true);
+  }
+  if (E) for (let x = 7; x <= 15; x++) {
+    s.set(x, 7, C.copperLight, true);
+    s.set(x, 8, C.copper, true);
+  }
+  if (W) for (let x = 0; x <= 8; x++) {
+    s.set(x, 7, C.copperLight, true);
+    s.set(x, 8, C.copper, true);
+  }
   const arms = [N, E, S, W].filter(Boolean).length;
   if (arms === 0 || arms >= 3) {
     // A solder blob where wires join (or a lone dot).
@@ -239,9 +251,18 @@ function toggle(closed) {
  */
 function changeover(up) {
   const s = new Sprite();
-  for (let x = 0; x <= 5; x++) (s.set(x, 7, C.copperLight, true), s.set(x, 8, C.copper, true));
-  for (let y = 0; y <= 3; y++) (s.set(7, y, C.copperLight, true), s.set(8, y, C.copper, true));
-  for (let y = 12; y <= 15; y++) (s.set(7, y, C.copperLight, true), s.set(8, y, C.copper, true));
+  for (let x = 0; x <= 5; x++) {
+    s.set(x, 7, C.copperLight, true);
+    s.set(x, 8, C.copper, true);
+  }
+  for (let y = 0; y <= 3; y++) {
+    s.set(7, y, C.copperLight, true);
+    s.set(8, y, C.copper, true);
+  }
+  for (let y = 12; y <= 15; y++) {
+    s.set(7, y, C.copperLight, true);
+    s.set(8, y, C.copper, true);
+  }
   // Contacts: brass pads at the end of each throw.
   s.rect(6, 3, 5, 2, C.grey);
   s.rect(6, 3, 5, 1, C.greyLight);

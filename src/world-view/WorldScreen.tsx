@@ -117,7 +117,7 @@ function pendingScene(map: WorldMap, save: SaveData, here: number): Scene | null
 
 interface Talk {
   lines: DialogLine[];
-  choices?: Choice[];
+  choices?: Choice[] | undefined;
   /** Marked seen when it closes (a story scene or a notebook page). */
   seenId?: string;
 }

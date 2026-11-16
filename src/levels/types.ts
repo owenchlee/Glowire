@@ -170,7 +170,7 @@ export interface LevelDef {
    * Twist levels: `board` is the SOLVED picture. Every wire, LED and resistor is shuffled
    * by a turn picked from `seed`, and the player can only turn pieces back (no drawing).
    */
-  twist?: { seed: number };
+  twist?: { seed: number } | undefined;
   /** Max wire tiles on the board, or null for unlimited. */
   wireBudget: number | null;
   goals: Goal[];

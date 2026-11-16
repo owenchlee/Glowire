@@ -184,7 +184,7 @@ function directionBetween(state: BoardState, a: number, b: number): Direction | 
 function withArm(tile: Tile | undefined, dir: Direction): Tile {
   const arms =
     tile?.kind === 'wire' ? getPorts(tile).reduce<number>((m, d) => m | armBit(d), 0) : 0;
-  return { ...wireArms(arms | armBit(dir)), locked: tile?.locked };
+  return { ...wireArms(arms | armBit(dir)), ...(tile?.locked !== undefined && { locked: tile.locked }) };
 }
 
 export interface DrawResult {

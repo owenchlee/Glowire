@@ -94,7 +94,7 @@ export function WinCard({
   payday: Payday;
   onKeepPlaying: () => void;
   onDone: () => void;
-  day?: string;
+  day?: string | undefined;
 }) {
   const [shownStars, setShownStars] = useState(0);
   const [sparks, setSparks] = useState(0);

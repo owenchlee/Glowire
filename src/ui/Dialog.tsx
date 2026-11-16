@@ -36,7 +36,7 @@ export function Dialog({
 }: {
   lines: DialogLine[];
   /** Shown under the last line. Without choices, tapping past the last line closes it. */
-  choices?: Choice[];
+  choices?: Choice[] | undefined;
   onClose: () => void;
 }) {
   const [index, setIndex] = useState(0);

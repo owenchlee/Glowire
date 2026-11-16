@@ -751,7 +751,7 @@ export class MapBuilder {
   }
 
   object(x: number, y: number, w: number, h: number, tiles: number[], group?: string, flat = false) {
-    this.objects.push({ x, y, w, h, tiles, group, flat: flat || undefined });
+    this.objects.push({ x, y, w, h, tiles, ...(group !== undefined && { group }), ...(flat && { flat: true as const }) });
   }
 
   /** A village house. Returns the cell just outside its door. */
@@ -833,11 +833,11 @@ export class MapBuilder {
         y: bottom - roof - 1,
         w,
         roof,
-        roofStyle: roofs[k % 2],
+        roofStyle: roofs[k % 2]!,
         wall: walls[Math.floor(hash(x, 7) * 2)]!,
         window: windows[Math.floor(hash(x, 11) * 4)]!,
         door: 'wood',
-        group,
+        ...(group !== undefined && { group }),
       });
       x += w;
     }

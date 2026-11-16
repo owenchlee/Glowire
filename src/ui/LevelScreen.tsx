@@ -561,7 +561,7 @@ export function LevelScreen({ level, day }: { level: LevelDef; day?: string }) {
                 size={11}
                 color={earned ? GOLD : missed ? '#6b6585' : MUTED}
                 shadow
-                style={missed ? styles.lost : undefined}
+                style={missed ? styles.lost : {}}
               >
                 {earned ? '★' : '☆'} {describeStar(g, ledNames, switchCount, goalWords)}
                 {g.kind === 'turns' ? ` (${record.turns})` : ''}
@@ -863,7 +863,7 @@ function Labels({
 }) {
   if (!picker.current || version === 0) return null;
   const nameAt = new Map(Object.entries(labels).map(([name, cell]) => [cell, name]));
-  const tags: { key: number; x: number; y: number; text: string; tone?: string }[] = [];
+  const tags: { key: number; x: number; y: number; text: string; tone?: string | undefined }[] = [];
   board.cells.forEach((placed, cell) => {
     if (!placed || placed.id === hiddenId) return;
     const tag = tileTag(placed.tile, result.tiles[cell], nameAt.get(cell), ledCount, switchCount);
