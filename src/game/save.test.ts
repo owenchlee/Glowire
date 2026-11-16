@@ -18,11 +18,11 @@ describe('save loading', () => {
   });
 
   it('fills a partial v2 save from defaults and keeps what is there', () => {
-    const save = migrate({ version: 2, sparks: 40.9, stars: { '1': 3 }, equipped: { hat: 'crown' }, daily: { streak: 4 } });
+    const save = migrate({ version: 2, sparks: 40.9, stars: { '1': 3 }, owned: ['crown'], equipped: { hat: 'crown' }, daily: { streak: 4 } });
     expect(save.sparks).toBe(40);
     expect(save.stars).toEqual({ '1': 3 });
     expect(save.equipped).toEqual({ ...NEW_SAVE.equipped, hat: 'crown' });
-    expect(save.daily).toEqual({ ...NEW_SAVE.daily, streak: 4 });
+    expect(save.daily).toEqual({ ...NEW_SAVE.daily, streak: 4, best: 4 });
     expect(save.luck).toEqual(NEW_SAVE.luck);
     expect(save.brainDaily).toEqual(NEW_SAVE.brainDaily);
     expect(save.games).toEqual({});

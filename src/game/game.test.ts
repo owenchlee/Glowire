@@ -38,6 +38,78 @@ describe('save file', () => {
     expect(save.stars).toEqual({ '2': 3 });
   });
 
+  it('drops non-finite sparks and negative v1 job ids', () => {
+    for (const sparks of [NaN, Infinity, -Infinity]) expect(migrate({ version: 2, sparks }).sparks).toBe(0);
+    expect(migrate({ version: 1, completed: [2, -1, 2.5] }).stars).toEqual({ '2': 1 });
+  });
+
+  it('only keeps equipped items that are owned and of the right kind', () => {
+    const save = migrate({
+      version: 2,
+      owned: ['gold', 'scout', 'crown'],
+      equipped: { pet: 'hoot', wire: 'gold', board: 'gold', hat: 'nope', outfit: 7 },
+    });
+    expect(save.equipped).toEqual({
+      pet: null,
+      wire: 'gold',
+      board: 'wood',
+      hat: 'nohat',
+      outfit: 'uniform',
+    });
+    expect(migrate({ version: 2, owned: ['scout'], equipped: { pet: 'scout' } }).equipped.pet).toBe(
+      'scout',
+    );
+  });
+
+  it('repairs the daily streak to whole numbers with best >= streak', () => {
+    const d = (daily: unknown) => migrate({ version: 2, daily }).daily;
+    expect(d({ streak: 4.7, best: 2 })).toMatchObject({ streak: 4, best: 4 });
+    expect(d({ streak: -3, best: 'x' })).toMatchObject({ streak: 0, best: 0 });
+    expect(d({ streak: null, best: Infinity })).toMatchObject({ streak: 0, best: 0 });
+    expect(d({ streak: 2, best: 9 })).toMatchObject({ streak: 2, best: 9 });
+  });
+
+  it('keeps daily.last only when it is a real day', () => {
+    const last = (v: unknown) => migrate({ version: 2, daily: { last: v } }).daily.last;
+    expect(last('2026-11-06')).toBe('2026-11-06');
+    expect(last('2026-02-30')).toBeNull();
+    expect(last('yesterday')).toBeNull();
+    expect(last(20261106)).toBeNull();
+  });
+
+  it('keeps only real days with 1-3 stars in the daily record', () => {
+    const stars = migrate({
+      version: 2,
+      daily: {
+        stars: {
+          '2026-10-08': 2,
+          '2026-02-30': 1,
+          x: 3,
+          '2026-10-09': 4,
+          '2026-10-10': 1.5,
+          '2024-02-29': 3,
+        },
+      },
+    }).daily.stars;
+    expect(stars).toEqual({ '2026-10-08': 2, '2024-02-29': 3 });
+  });
+
+  it('keeps only integer job ids with 1-3 stars', () => {
+    const stars = migrate({
+      version: 2,
+      stars: { 1: 2, 2: 0, 3: 4, 4: 2.5, abc: 3, '-5': 1, '1.5': 2, 6: 3 },
+    }).stars;
+    expect(stars).toEqual({ 1: 2, 6: 3 });
+  });
+
+  it('keeps only finite, non-negative game scores', () => {
+    const games = migrate({
+      version: 2,
+      games: { colours: 17, a: NaN, b: Infinity, c: -5, d: '7', e: 0, f: 1.5 },
+    }).games;
+    expect(games).toEqual({ colours: 17, e: 0, f: 1.5 });
+  });
+
   it('round-trips through JSON', () => {
     let save = recordJob(fresh(), 1, 3).save;
     save = recordDaily(save, '2026-10-08', 2).save;
@@ -90,7 +162,13 @@ describe('shop', () => {
     save = equip(save, 'midnight');
     save = equip(save, 'crown');
     save = equip(save, 'hoot');
-    expect(save.equipped).toEqual({ pet: 'hoot', wire: 'neon', board: 'midnight', hat: 'crown', outfit: 'uniform' });
+    expect(save.equipped).toEqual({
+      pet: 'hoot',
+      wire: 'neon',
+      board: 'midnight',
+      hat: 'crown',
+      outfit: 'uniform',
+    });
     expect(equip(save, 'hoot').equipped.pet).toBeNull();
     expect(equip(save, 'gold')).toBe(save); // not owned
   });
@@ -149,11 +227,14 @@ describe('story', () => {
 
   it('every speaker in every scene and note exists', () => {
     const lines = [...Object.values(SCENES), ...Object.values(NOTES)].flatMap((s) => s.lines);
-    for (const line of lines) expect(line.who === 'pip' || line.who === 'grumble' || !!CAST[line.who], line.who).toBe(true);
+    for (const line of lines)
+      expect(line.who === 'pip' || line.who === 'grumble' || !!CAST[line.who], line.who).toBe(true);
   });
 
   it('numbers the notebook pages 1, 2, 3… with no gaps', () => {
-    const pages = Object.values(NOTES).map((n) => n.page).sort((a, b) => a - b);
+    const pages = Object.values(NOTES)
+      .map((n) => n.page)
+      .sort((a, b) => a - b);
     expect(pages).toEqual(pages.map((_, i) => i + 1));
   });
 });
@@ -162,6 +243,7 @@ describe('outfits', () => {
   it('every outfit in the shop has a hero sprite and a portrait', async () => {
     const { OUTFITS, outfitSprite } = await import('./shop');
     const { PEOPLE } = await import('../world/people.generated');
-    for (const o of OUTFITS) expect(PEOPLE as readonly string[], o.id).toContain(outfitSprite(o.id));
+    for (const o of OUTFITS)
+      expect(PEOPLE as readonly string[], o.id).toContain(outfitSprite(o.id));
   });
 });

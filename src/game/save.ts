@@ -2,7 +2,7 @@
 // Pure TypeScript: the UI only calls these and writes the result to disk.
 
 import { type Random, rollSurge } from './luck';
-import { item } from './shop';
+import { item, itemOf, type ItemKind } from './shop';
 
 export interface LuckStats {
   spins: number;
@@ -76,7 +76,7 @@ export function migrate(raw: unknown): SaveData {
     // v1 only knew which levels were solved: each one counts as one star.
     const ids = Array.isArray(raw.completed) ? raw.completed : [];
     const stars: Record<string, number> = {};
-    for (const id of ids) if (Number.isInteger(id)) stars[String(id)] = 1;
+    for (const id of ids) if (Number.isInteger(id) && id >= 0) stars[String(id)] = 1;
     return { ...structuredClone(NEW_SAVE), stars };
   }
   // Any other version (missing, or written by a newer app) is read field by field, so progress survives.
@@ -84,24 +84,35 @@ export function migrate(raw: unknown): SaveData {
   const daily = isRecord(raw.daily) ? raw.daily : {};
   const brain = isRecord(raw.brainDaily) ? raw.brainDaily : {};
   const equipped = isRecord(raw.equipped) ? raw.equipped : {};
-  const owned = Array.isArray(raw.owned) ? raw.owned.filter((x) => typeof x === 'string') : [];
+  const owned = [
+    ...new Set([
+      ...base.owned,
+      ...(Array.isArray(raw.owned) ? raw.owned.filter((x) => typeof x === 'string') : []),
+    ]),
+  ];
+  // An equipped item must be owned and of that slot's kind, else the slot falls back.
+  const worn = (kind: ItemKind, fallback: string) => {
+    const id = equipped[kind];
+    return typeof id === 'string' && owned.includes(id) && itemOf(kind, id) ? id : fallback;
+  };
+  const streak = count(daily.streak);
   return {
     version: 2,
-    stars: isRecord(raw.stars) ? numbers(raw.stars) : {},
-    sparks: typeof raw.sparks === 'number' ? Math.max(0, Math.floor(raw.sparks)) : 0,
-    owned: [...new Set([...base.owned, ...owned])],
+    stars: isRecord(raw.stars) ? starsBy(raw.stars, (k) => /^\d+$/.test(k)) : {},
+    sparks: count(raw.sparks),
+    owned,
     equipped: {
-      pet: typeof equipped.pet === 'string' ? equipped.pet : null,
-      wire: typeof equipped.wire === 'string' ? equipped.wire : base.equipped.wire,
-      board: typeof equipped.board === 'string' ? equipped.board : base.equipped.board,
-      hat: typeof equipped.hat === 'string' ? equipped.hat : base.equipped.hat,
-      outfit: typeof equipped.outfit === 'string' ? equipped.outfit : base.equipped.outfit,
+      pet: worn('pet', '') || null,
+      wire: worn('wire', base.equipped.wire),
+      board: worn('board', base.equipped.board),
+      hat: worn('hat', base.equipped.hat),
+      outfit: worn('outfit', base.equipped.outfit),
     },
     daily: {
-      last: typeof daily.last === 'string' ? daily.last : null,
-      streak: typeof daily.streak === 'number' ? daily.streak : 0,
-      best: typeof daily.best === 'number' ? daily.best : 0,
-      stars: isRecord(daily.stars) ? numbers(daily.stars) : {},
+      last: typeof daily.last === 'string' && isDay(daily.last) ? daily.last : null,
+      streak,
+      best: Math.max(count(daily.best), streak),
+      stars: isRecord(daily.stars) ? starsBy(daily.stars, isDay) : {},
     },
     brainDaily: {
       last: typeof brain.last === 'string' ? brain.last : null,
@@ -118,9 +129,34 @@ export function migrate(raw: unknown): SaveData {
   };
 }
 
+/** A non-negative whole number, or 0 for anything else (NaN, Infinity, strings). */
+function count(v: unknown): number {
+  return typeof v === 'number' && Number.isFinite(v) ? Math.max(0, Math.floor(v)) : 0;
+}
+
+/** A real calendar day written as YYYY-MM-DD (no 2026-02-30). */
+function isDay(k: string): boolean {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(k)) return false;
+  const [y, m, d] = k.split('-').map(Number) as [number, number, number];
+  const date = new Date(Date.UTC(y, m - 1, d));
+  return date.getUTCFullYear() === y && date.getUTCMonth() === m - 1 && date.getUTCDate() === d;
+}
+
+/** Star ratings (whole numbers 1-3) under keys that pass `validKey`; anything else is dropped. */
+function starsBy(r: Record<string, unknown>, validKey: (k: string) => boolean) {
+  const out: Record<string, number> = {};
+  for (const [k, v] of Object.entries(r)) {
+    if (validKey(k) && typeof v === 'number' && Number.isInteger(v) && v >= 1 && v <= 3) out[k] = v;
+  }
+  return out;
+}
+
+/** Mini-game best scores; NaN, Infinity and negative scores are dropped. */
 function numbers(r: Record<string, unknown>): Record<string, number> {
   const out: Record<string, number> = {};
-  for (const [k, v] of Object.entries(r)) if (typeof v === 'number' && Number.isFinite(v)) out[k] = v;
+  for (const [k, v] of Object.entries(r)) {
+    if (typeof v === 'number' && Number.isFinite(v) && v >= 0) out[k] = v;
+  }
   return out;
 }
 
