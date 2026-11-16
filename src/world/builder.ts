@@ -1105,9 +1105,12 @@ export class MapBuilder {
 
   /** Turn painted terrain into tiles, picking edge pieces from the neighbours. */
   private resolveGround() {
-    const { width, height } = this;
-    const kind = (x: number, y: number) =>
-      this.inside(x, y) ? GROUNDS[this.terrain[y * width + x]!]! : GROUNDS[this.terrain[Math.min(height - 1, Math.max(0, y)) * width + Math.min(width - 1, Math.max(0, x))]!]!;
+    const { width, height, terrain } = this;
+    // GROUNDS has no repeats, so equal terrain bytes mean equal ground. Off-map cells copy the
+    // nearest edge cell.
+    const terrainAt = (x: number, y: number) =>
+      terrain[Math.min(height - 1, Math.max(0, y)) * width + Math.min(width - 1, Math.max(0, x))]!;
+    const kind = (x: number, y: number) => GROUNDS[terrainAt(x, y)]!;
     const isWater = (x: number, y: number) => {
       const k = kind(x, y);
       return k === 'sea' || k === 'pond';
@@ -1127,32 +1130,33 @@ export class MapBuilder {
       if (as === 'water' && !sandNear && kind(x, y) !== 'pond') return -1;
       return SHORE_TILES[as][mask]!;
     };
+    const pick = (list: readonly number[], x: number, y: number) =>
+      list[Math.floor(hash(x + 0.5, y + 0.25) * list.length)]!;
     for (let y = 0; y < height; y++)
       for (let x = 0; x < width; x++) {
         const i = y * width + x;
-        const g = kind(x, y);
-        const pick = (list: readonly number[]) => list[Math.floor(hash(x + 0.5, y + 0.25) * list.length)]!;
+        const t = terrain[i]!;
+        const g = GROUNDS[t]!;
         if (g === 'paved') continue;
-        if (g === 'grass') this.ground[i] = pick(GRASS);
-        else if (g === 'meadow') this.ground[i] = pick(MEADOW);
+        if (g === 'grass') this.ground[i] = pick(GRASS, x, y);
+        else if (g === 'meadow') this.ground[i] = pick(MEADOW, x, y);
         else if (g === 'sand') {
-          const t = shoreTile(x, y, 'sand');
-          this.ground[i] = t >= 0 ? t : pick(SAND);
+          const shore = shoreTile(x, y, 'sand');
+          this.ground[i] = shore >= 0 ? shore : pick(SAND, x, y);
         } else if ((g === 'sea' || g === 'pond') && shoreTile(x, y, 'water') >= 0) {
           this.ground[i] = shoreTile(x, y, 'water');
         } else {
-          const same = (dx: number, dy: number) => kind(x + dx, y + dy) === g;
           let mask = 0;
-          if (same(0, -1)) mask |= N;
-          if (same(1, 0)) mask |= E;
-          if (same(0, 1)) mask |= S;
-          if (same(-1, 0)) mask |= W;
-          if (same(1, -1)) mask |= NE;
-          if (same(1, 1)) mask |= SE;
-          if (same(-1, 1)) mask |= SW;
-          if (same(-1, -1)) mask |= NW;
+          if (terrainAt(x, y - 1) === t) mask |= N;
+          if (terrainAt(x + 1, y) === t) mask |= E;
+          if (terrainAt(x, y + 1) === t) mask |= S;
+          if (terrainAt(x - 1, y) === t) mask |= W;
+          if (terrainAt(x + 1, y - 1) === t) mask |= NE;
+          if (terrainAt(x + 1, y + 1) === t) mask |= SE;
+          if (terrainAt(x - 1, y + 1) === t) mask |= SW;
+          if (terrainAt(x - 1, y - 1) === t) mask |= NW;
           const options = TERRAIN_TILES[g][mask]!;
-          this.ground[i] = pick(options.length ? options : TERRAIN_TILES[g][255]!);
+          this.ground[i] = pick(options.length ? options : TERRAIN_TILES[g][255]!, x, y);
         }
         if ((g === 'pond' || g === 'sea') && !this.walkable[i]) {
           this.solid[i] = 1;

@@ -16,6 +16,9 @@ const FEET = { left: 0.2, right: 0.8, top: 0.3, bottom: 0.92 };
 /** How far the hero will be nudged sideways around a corner they're brushing past. */
 const NUDGE = 0.45;
 const EPS = 1e-6;
+/** The middle of the feet box, as an offset from the hero's position. */
+const MID_X = (FEET.left + FEET.right) / 2;
+const MID_Y = (FEET.top + FEET.bottom) / 2;
 
 export interface Walker {
   x: number;
@@ -91,6 +94,21 @@ export function fits(x: number, y: number, free: Free): boolean {
   return true;
 }
 
+/** fits(x, y + dy), given fits(x, y) is already true: only rows outside the old box need a look. */
+function fitsAfterY(x: number, y: number, dy: number, free: Free): boolean {
+  const x0 = Math.floor(x + FEET.left);
+  const x1 = Math.floor(x + FEET.right - EPS);
+  const oy0 = Math.floor(y + FEET.top);
+  const oy1 = Math.floor(y + FEET.bottom - EPS);
+  const y0 = Math.floor(y + dy + FEET.top);
+  const y1 = Math.floor(y + dy + FEET.bottom - EPS);
+  for (let cy = y0; cy <= y1; cy++) {
+    if (cy >= oy0 && cy <= oy1) continue;
+    for (let cx = x0; cx <= x1; cx++) if (!free(cx, cy)) return false;
+  }
+  return true;
+}
+
 /**
  * Move by (dx, dy), one axis at a time so a blocked axis doesn't stop the other one (that's
  * what makes the hero slide along walls). Brushing a corner nudges them round it.
@@ -108,7 +126,10 @@ function moveBy(w: Walker, dx: number, dy: number, free: Free): boolean {
       else if (sy === 0) any = nudge(w, 'y', Math.sign(sx), 'x', Math.abs(sx), free);
     }
     if (sy !== 0) {
-      if (slide(w, 'y', sy, free)) any = true;
+      // After a successful x slide the hero fits where they stand, so the full y step only needs
+      // the newly covered rows checked (same result as slide).
+      if (any && fitsAfterY(w.x, w.y, sy, free) && !climbsLedge(w.x, w.y, w.y + sy, free)) w.y += sy;
+      else if (slide(w, 'y', sy, free)) any = true;
       else if (sx === 0) any = nudge(w, 'x', Math.sign(sy), 'y', Math.abs(sy), free);
     }
     if (!any) break;
@@ -119,12 +140,15 @@ function moveBy(w: Walker, dx: number, dy: number, free: Free): boolean {
 
 /** Move along one axis as far as possible (up to `d`), stopping flush against a wall. */
 function slide(w: Walker, axis: 'x' | 'y', d: number, free: Free): boolean {
-  const at = (t: number) =>
-    axis === 'x' ? fits(w.x + d * t, w.y, free) : fits(w.x, w.y + d * t, free) && !climbsLedge(w.x, w.y, w.y + d * t, free);
-  if (at(1)) {
-    w[axis] += d;
+  // The full step almost always fits: check it before building the bisection closure.
+  if (axis === 'x' ? fits(w.x + d, w.y, free) : fits(w.x, w.y + d, free) && !climbsLedge(w.x, w.y, w.y + d, free)) {
+    // Named stores: a computed w[axis] store is much slower in this hot path.
+    if (axis === 'x') w.x += d;
+    else w.y += d;
     return true;
   }
+  const at = (t: number) =>
+    axis === 'x' ? fits(w.x + d * t, w.y, free) : fits(w.x, w.y + d * t, free) && !climbsLedge(w.x, w.y, w.y + d * t, free);
   let lo = 0;
   let hi = 1;
   for (let i = 0; i < 10; i++) {
@@ -133,7 +157,8 @@ function slide(w: Walker, axis: 'x' | 'y', d: number, free: Free): boolean {
     else hi = mid;
   }
   if (Math.abs(d * lo) < 1e-3) return false;
-  w[axis] += d * lo;
+  if (axis === 'x') w.x += d * lo;
+  else w.y += d * lo;
   return true;
 }
 
@@ -193,7 +218,8 @@ export function stepWalker(w: Walker, dt: number, free: Free): StepResult {
   // Someone on a routine stepped onto the hero's feet: let them walk off it instead of freezing.
   if (!fits(w.x, w.y, free)) free = alsoUnderFeet(w, free);
   let { x: ix, y: iy } = w.input;
-  const len = Math.hypot(ix, iy);
+  // Math.hypot is slow and tapped walks have no input, so skip it when there's none (same result).
+  const len = ix === 0 && iy === 0 ? 0 : Math.hypot(ix, iy);
 
   if (len > 0.15) {
     // Steering by hand cancels a tapped path.
@@ -276,11 +302,55 @@ export function smoothPath(from: Point, cells: Point[], free: Free): Point[] {
 export function clearLine(a: Point, b: Point, free: Free): boolean {
   const d = Math.hypot(b.x - a.x, b.y - a.y);
   const n = Math.max(1, Math.ceil(d / 0.2));
+  // Quick reject: the cell under the middle of the feet is always inside the feet box, so
+  // checking just that cell first throws out most blocked lines cheaply (same result).
+  // A coarse pass about one cell apart finds most walls in a fifth of the samples.
+  for (let k = 5; k <= n; k += 5) {
+    const t = k / n;
+    if (!free(Math.floor(a.x + (b.x - a.x) * t + MID_X), Math.floor(a.y + (b.y - a.y) * t + MID_Y))) return false;
+  }
+  let pcx = NaN;
+  let pcy = NaN;
   for (let k = 1; k <= n; k++) {
     const t = k / n;
-    if (!fits(a.x + (b.x - a.x) * t, a.y + (b.y - a.y) * t, free)) return false;
-    const p = (t - 1 / n);
-    if (climbsLedge(a.x + (b.x - a.x) * t, a.y + (b.y - a.y) * p, a.y + (b.y - a.y) * t, free)) return false;
+    const cx = Math.floor(a.x + (b.x - a.x) * t + MID_X);
+    const cy = Math.floor(a.y + (b.y - a.y) * t + MID_Y);
+    if (cx === pcx && cy === pcy) continue;
+    if (!free(cx, cy)) return false;
+    pcx = cx;
+    pcy = cy;
+  }
+  // Neighbouring samples usually cover the same cells: only check a box once (same result as fits).
+  let px0 = NaN;
+  let px1 = NaN;
+  let py0 = NaN;
+  let py1 = NaN;
+  for (let k = 1; k <= n; k++) {
+    const t = k / n;
+    const x = a.x + (b.x - a.x) * t;
+    const y = a.y + (b.y - a.y) * t;
+    const x0 = Math.floor(x + FEET.left);
+    const x1 = Math.floor(x + FEET.right - EPS);
+    const y0 = Math.floor(y + FEET.top);
+    const y1 = Math.floor(y + FEET.bottom - EPS);
+    if (x0 === px0 && x1 === px1 && y0 === py0 && y1 === py1) continue;
+    // Cells inside the last box already passed, so only the newly covered ones need a look.
+    for (let cy = y0; cy <= y1; cy++) {
+      const seenRow = cy >= py0 && cy <= py1;
+      for (let cx = x0; cx <= x1; cx++) if (!(seenRow && cx >= px0 && cx <= px1) && !free(cx, cy)) return false;
+    }
+    px0 = x0;
+    px1 = x1;
+    py0 = y0;
+    py1 = y1;
+  }
+  // One-way ledges: no sample may climb into one from the sample before it.
+  if (free.ledge) {
+    for (let k = 1; k <= n; k++) {
+      const t = k / n;
+      const p = t - 1 / n;
+      if (climbsLedge(a.x + (b.x - a.x) * t, a.y + (b.y - a.y) * p, a.y + (b.y - a.y) * t, free)) return false;
+    }
   }
   return true;
 }
