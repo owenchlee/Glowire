@@ -51,9 +51,9 @@ const STEPS: Record<Surface, number[]> = {
     require('../../assets/audio/step-sand-3.wav'),
   ],
   water: [
-    require('../../assets/audio/step-water-1.wav'),
-    require('../../assets/audio/step-water-2.wav'),
-    require('../../assets/audio/step-water-3.wav'),
+    require('../../assets/audio/step-water-1.mp3'),
+    require('../../assets/audio/step-water-2.mp3'),
+    require('../../assets/audio/step-water-3.mp3'),
   ],
 };
 /** Shortest time between footsteps: calling playStep every frame gives about 3.5 steps a second. */
