@@ -20,9 +20,9 @@ const SFX: Record<SfxName, number> = {
   'chest-open': require('../../assets/audio/chest-open.mp3'),
   click: require('../../assets/audio/click.wav'),
   success: require('../../assets/audio/success.mp3'),
-  fail: require('../../assets/audio/fail.wav'),
+  fail: require('../../assets/audio/fail.mp3'),
   'talk-blip': require('../../assets/audio/talk-blip.wav'),
-  'rock-push': require('../../assets/audio/rock-push.wav'),
+  'rock-push': require('../../assets/audio/rock-push.mp3'),
 };
 const STEPS: Record<Surface, number[]> = {
   grass: [
