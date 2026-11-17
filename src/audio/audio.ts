@@ -12,7 +12,7 @@ export type SfxName = 'chest-open' | 'click' | 'success' | 'fail' | 'talk-blip' 
 
 const MUSIC = {
   town: require('../../assets/audio/music-town.mp3'),
-  boss: require('../../assets/audio/music-boss.wav'),
+  boss: require('../../assets/audio/music-boss.mp3'),
 };
 export type Track = keyof typeof MUSIC;
 let track: Track = 'town';
