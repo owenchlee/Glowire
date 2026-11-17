@@ -11,7 +11,7 @@ export type { Surface } from './surface';
 export type SfxName = 'chest-open' | 'click' | 'success' | 'fail' | 'talk-blip' | 'rock-push';
 
 const MUSIC = {
-  town: require('../../assets/audio/music-town.wav'),
+  town: require('../../assets/audio/music-town.mp3'),
   boss: require('../../assets/audio/music-boss.wav'),
 };
 export type Track = keyof typeof MUSIC;

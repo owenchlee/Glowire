@@ -2,10 +2,14 @@
 // UI/world one-shots, all synthesised here and written as mono 16-bit 22050 Hz WAVs into
 // assets/audio/. Deterministic (seeded noise), so re-running gives the same files.
 //
+// music-town is then re-encoded to 56 kbps mp3 with ffmpeg (on PATH) and its WAV removed,
+// to keep the app download small; no padding is added, so the loop stays seamless.
+//
 //   node scripts/audio-art.mjs
 
 import { Buffer } from 'node:buffer';
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { execFileSync } from 'node:child_process';
+import { mkdirSync, unlinkSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -101,6 +105,11 @@ function writeWav(name, x) {
   h.write('data', 36);
   h.writeUInt32LE(data.length, 40);
   writeFileSync(join(OUT, `${name}.wav`), Buffer.concat([h, data]));
+  if (name === 'music-town') {
+    const wav = join(OUT, `${name}.wav`);
+    execFileSync('ffmpeg', ['-y', '-loglevel', 'error', '-i', wav, '-c:a', 'libmp3lame', '-b:a', '56k', join(OUT, `${name}.mp3`)]);
+    unlinkSync(wav);
+  }
   console.log(
     `${name}.wav  ${(x.length / RATE).toFixed(2)}s  ${((44 + data.length) / 1024).toFixed(0)} KB`,
   );
