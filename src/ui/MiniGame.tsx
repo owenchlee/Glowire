@@ -37,6 +37,7 @@ import { speakerName } from './Dialog';
 import { SignalLamp } from './SignalLamp';
 import { type BrainProps, ClockPanel, DeadLampHunt, DockyardWiring, type HintRef, LanternBudget, useHint } from './BrainGames';
 import { useGame } from './game';
+import { useLater } from './useLater';
 import { buzz } from './haptics';
 import { PipHelp } from './PipHelp';
 import { CREAM, Counter, GOLD, GREEN, INK, NIGHT, NIGHT_DEEP, NameTab, Panel, PixelButton, PixelText, Portrait, RED } from './pixel';
@@ -203,6 +204,7 @@ export function MiniGame({ id, day }: { id: GameId; day?: string }) {
 // ── Colour Code ──────────────────────────────────────────────────────────────
 
 function ColourCode({ seed, onSay, onEnd, hint }: BrainProps) {
+  const later = useLater();
   const random = useMemo(() => rng(seed), [seed]);
   const [round, setRound] = useState(0);
   const [q, setQ] = useState<ColourQuestion>(() => colourQuestion(0, random));
@@ -219,7 +221,7 @@ function ColourCode({ seed, onSay, onEnd, hint }: BrainProps) {
     (gained: number) => {
       const total = score + gained;
       setScore(total);
-      setTimeout(() => {
+      later(() => {
         if (round + 1 >= COLOUR_ROUNDS) return onEnd(total);
         setRound(round + 1);
         setQ(colourQuestion(round + 1, random));
@@ -227,7 +229,7 @@ function ColourCode({ seed, onSay, onEnd, hint }: BrainProps) {
         setPicked(null);
       }, 1100);
     },
-    [score, round, random, onEnd],
+    [score, round, random, onEnd, later],
   );
 
   // The clock ticks down while you're thinking; at zero, the question is gone.
@@ -319,6 +321,7 @@ const LAMP_NAME: Record<LampColour, string> = { red: 'red', green: 'green', blue
 const DIAL_MA = 30;
 
 function NeedleDrop({ seed, onSay, onEnd, hint }: BrainProps) {
+  const later = useLater();
   const random = useMemo(() => rng(seed), [seed]);
   const [round, setRound] = useState(0);
   const [q, setQ] = useState<NeedleQuestion>(() => needleQuestion(0, random));
@@ -337,7 +340,7 @@ function NeedleDrop({ seed, onSay, onEnd, hint }: BrainProps) {
     (gained: number) => {
       const total = score + gained;
       setScore(total);
-      setTimeout(() => {
+      later(() => {
         if (round + 1 >= NEEDLE_ROUNDS) return onEnd(total);
         setRound(round + 1);
         setQ(needleQuestion(round + 1, random));
@@ -345,7 +348,7 @@ function NeedleDrop({ seed, onSay, onEnd, hint }: BrainProps) {
         setPicked(null);
       }, 1500);
     },
-    [score, round, random, onEnd],
+    [score, round, random, onEnd, later],
   );
 
   useEffect(() => {
@@ -449,6 +452,7 @@ interface JarState {
 const JAR_W = 0.13;
 
 function JarCatch({ seed, onSay, onEnd }: BrainProps) {
+  const later = useLater();
   const random = useMemo(() => rng(seed), [seed]);
   const game = useRef<JarState>({ t: 0, x: 0.5, steer: 0, charge: 0, score: 0, drops: [], nextAt: 0.5, nextId: 1, pouring: 0, splash: 0 });
   // What's drawn: a copy of the game taken every frame.
@@ -504,7 +508,7 @@ function JarCatch({ seed, onSay, onEnd }: BrainProps) {
       if (g.t >= JAR_SECONDS && !over.current) {
         over.current = true;
         onSay(`Time! You poured ${g.score} sparks into the lamp.`);
-        setTimeout(() => onEnd(g.score), 900);
+        later(() => onEnd(g.score), 900);
         return;
       }
       setSnap({ ...g, drops: [...g.drops] });
@@ -512,7 +516,7 @@ function JarCatch({ seed, onSay, onEnd }: BrainProps) {
     };
     frame = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(frame);
-  }, [random, onEnd, onSay]);
+  }, [random, onEnd, onSay, later]);
 
   // Keyboard on the web: arrows / A D to move, space or Enter to pour.
   useEffect(() => {
