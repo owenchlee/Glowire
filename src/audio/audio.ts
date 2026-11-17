@@ -36,9 +36,9 @@ const STEPS: Record<Surface, number[]> = {
     require('../../assets/audio/step-dirt-3.mp3'),
   ],
   stone: [
-    require('../../assets/audio/step-stone-1.wav'),
-    require('../../assets/audio/step-stone-2.wav'),
-    require('../../assets/audio/step-stone-3.wav'),
+    require('../../assets/audio/step-stone-1.mp3'),
+    require('../../assets/audio/step-stone-2.mp3'),
+    require('../../assets/audio/step-stone-3.mp3'),
   ],
   wood: [
     require('../../assets/audio/step-wood-1.mp3'),
