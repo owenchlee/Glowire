@@ -26,9 +26,9 @@ const SFX: Record<SfxName, number> = {
 };
 const STEPS: Record<Surface, number[]> = {
   grass: [
-    require('../../assets/audio/step-grass-1.wav'),
-    require('../../assets/audio/step-grass-2.wav'),
-    require('../../assets/audio/step-grass-3.wav'),
+    require('../../assets/audio/step-grass-1.mp3'),
+    require('../../assets/audio/step-grass-2.mp3'),
+    require('../../assets/audio/step-grass-3.mp3'),
   ],
   dirt: [
     require('../../assets/audio/step-dirt-1.mp3'),
