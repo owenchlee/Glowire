@@ -2,7 +2,7 @@
 // UI/world one-shots, all synthesised here and written as mono 16-bit 22050 Hz WAVs into
 // assets/audio/. Deterministic (seeded noise), so re-running gives the same files.
 //
-// music-town, music-boss, success, chest-open, fail, rock-push, step-water-1..3, step-sand-1..3, step-dirt-1..3 and step-wood-1..3 are then re-encoded to mp3 (56 kbps music, 64 kbps sfx, 128 kbps water steps (noisy, need it for 24 dB SNR)) with ffmpeg (on PATH) and its WAV removed,
+// music-town, music-boss, success, chest-open, fail, rock-push, step-water-1..3, step-sand-1..3, step-dirt-1..3 and step-wood-1..3 are then re-encoded to mp3 (48 kbps music-town, 56 kbps music-boss, 64 kbps sfx, 128 kbps water steps (noisy, need it for 24 dB SNR)) with ffmpeg (on PATH) and its WAV removed,
 // to keep the app download small; no padding is added, so the loop stays seamless.
 //
 //   node scripts/audio-art.mjs
@@ -107,7 +107,7 @@ function writeWav(name, x) {
   writeFileSync(join(OUT, `${name}.wav`), Buffer.concat([h, data]));
   if (['music-town', 'music-boss', 'success', 'chest-open', 'fail', 'rock-push'].includes(name) || name.startsWith('step-water-') || name.startsWith('step-sand-') || name.startsWith('step-dirt-') || name.startsWith('step-wood-')) {
     const wav = join(OUT, `${name}.wav`);
-    execFileSync('ffmpeg', ['-y', '-loglevel', 'error', '-i', wav, '-c:a', 'libmp3lame', '-b:a', name.startsWith('music') ? '56k' : name.startsWith('step-') ? (/dirt|wood/.test(name) ? '160k' : '128k') : '64k', join(OUT, `${name}.mp3`)]);
+    execFileSync('ffmpeg', ['-y', '-loglevel', 'error', '-i', wav, '-c:a', 'libmp3lame', '-b:a', name === 'music-town' ? '48k' : name.startsWith('music') ? '56k' : name.startsWith('step-') ? (/dirt|wood/.test(name) ? '160k' : '128k') : '64k', join(OUT, `${name}.mp3`)]);
     unlinkSync(wav);
   }
   console.log(
