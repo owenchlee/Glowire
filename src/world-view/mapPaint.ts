@@ -44,7 +44,15 @@ function sheetOf(tile: number): string {
   return best;
 }
 
+// A tile's terrain never changes, so work it out once per tile id (sheetOf scans the sheets).
+const groundCache = new Map<number, Terrain>();
 function groundTerrain(tile: number): Terrain {
+  let t = groundCache.get(tile);
+  if (t === undefined) groundCache.set(tile, (t = groundTerrainUncached(tile)));
+  return t;
+}
+
+function groundTerrainUncached(tile: number): Terrain {
   if (tile < 0) return 'none';
   if (WATER.has(tile)) return 'water';
   if (ROAD.has(tile)) return 'road';
