@@ -3,7 +3,7 @@
 // the screen, and a puff of dust at the hero's heels. Drawn as chunky square points, two
 // art pixels across, so they match the pixel art.
 
-import { type RefObject, useMemo, useRef } from 'react';
+import { type RefObject, memo, useMemo, useRef } from 'react';
 import { AdditiveBlending, BufferAttribute, BufferGeometry, type OrthographicCamera, type Points, ShaderMaterial, Sphere, Vector3 } from 'three';
 
 import { type Walker, walkerPosition } from '../world/walker';
@@ -70,7 +70,7 @@ export const AMBIENT: Record<string, AmbientKind> = {
 };
 
 /** Fireflies blinking in place and leaves falling past, spread over whatever the camera sees. */
-export function Ambient({ kind, underwater = false }: { kind: AmbientKind; underwater?: boolean }) {
+function AmbientBase({ kind, underwater = false }: { kind: AmbientKind; underwater?: boolean }) {
   const FIREFLIES = 26;
   const LEAVES = kind.leaves ? 16 : 0;
   const BIRDS = 4; // two points each (wings)
@@ -144,7 +144,7 @@ export function Ambient({ kind, underwater = false }: { kind: AmbientKind; under
 }
 
 /** A puff of dust kicked up behind the hero's feet as they walk. */
-export function Dust({ walker }: { walker: RefObject<Walker> }) {
+function DustBase({ walker }: { walker: RefObject<Walker> }) {
   const N = 14;
   const geometry = useMemo(() => cloud(N), []);
   const material = useMemo(() => pointMaterial(false), []);
@@ -192,3 +192,7 @@ function touch(...attrs: BufferAttribute[]) {
 function setSize(m: ShaderMaterial, size: number) {
   m.uniforms.uSize!.value = size;
 }
+
+export const Ambient = memo(AmbientBase);
+
+export const Dust = memo(DustBase);

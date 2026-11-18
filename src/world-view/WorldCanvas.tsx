@@ -255,7 +255,7 @@ function Scene({
 }
 
 /** Bubbles drifting up from the seabed all round the camera, wobbling as they go. */
-function SeaBubbles({ sheet, material }: { sheet: Sheet; material: ShaderMaterial }) {
+function SeaBubblesBase({ sheet, material }: { sheet: Sheet; material: ShaderMaterial }) {
   const g = useQuad(sheet, EXTRAS.indexOf('bubble') * T, 112, T, T, 0.5, 0.5);
   const group = useRef<Group>(null);
   const seeds = useMemo(() => Array.from({ length: 28 }, (_, i) => ({ x: (i * 7.31) % 1, y: (i * 3.77) % 1, speed: 0.6 + ((i * 0.37) % 1) * 0.9, size: 0.5 + ((i * 0.53) % 1) * 0.7 })), []);
@@ -290,7 +290,7 @@ function SeaBubbles({ sheet, material }: { sheet: Sheet; material: ShaderMateria
  * When the hero's lantern runs low, eyes open in the dark around them, blinking, a little
  * closer the lower it gets. They're gone the moment the light comes back.
  */
-function DarkEyes({
+function DarkEyesBase({
   walker,
   lantern,
   sheet,
@@ -546,7 +546,7 @@ export interface Puff {
   y: number;
 }
 
-function Hero({
+function HeroBase({
   who,
   walker,
   ledges,
@@ -606,7 +606,7 @@ function Hero({
  * A pet follows the hero's footsteps about one cell behind, hopping between its two frames
  * while it moves and facing the way it's going.
  */
-function Pet({ id, walker, sheet, material }: { id: string; walker: RefObject<Walker>; sheet: Sheet; material: ShaderMaterial }) {
+function PetBase({ id, walker, sheet, material }: { id: string; walker: RefObject<Walker>; sheet: Sheet; material: ShaderMaterial }) {
   const column = Math.max(0, PEOPLE.indexOf(id as (typeof PEOPLE)[number]));
   const g = useQuad(sheet, column * 64, 0, T, T);
   const ref = useRef<Mesh>(null);
@@ -651,7 +651,7 @@ function Pet({ id, walker, sheet, material }: { id: string; walker: RefObject<Wa
 }
 
 /** Someone who isn't quite there: they bob, and flicker in and out like a candle. */
-function Ghost({ who, x, y, sheet, material }: { who: string; x: number; y: number; sheet: Sheet; material: ShaderMaterial }) {
+function GhostBase({ who, x, y, sheet, material }: { who: string; x: number; y: number; sheet: Sheet; material: ShaderMaterial }) {
   const column = Math.max(0, PEOPLE.indexOf(who as (typeof PEOPLE)[number]));
   const g = useQuad(sheet, column * 64, 0, T, T);
   const ref = useRef<Mesh>(null);
@@ -677,7 +677,7 @@ const HALO_GOLD = new MeshBasicMaterial({ color: '#ffb52e', transparent: true, o
  * pulse of current running along them toward it. Drawn above the ground and below
  * everything standing on it, unlit, so it glows in the dark.
  */
-function GlowTrail({ path }: { path: { x: number; y: number }[] }) {
+function GlowTrailBase({ path }: { path: { x: number; y: number }[] }) {
   const dots = path.slice(0, TRAIL_MAX);
   const group = useRef<Group>(null);
   useFrame(({ clock }) => {
@@ -723,7 +723,7 @@ const PUFF_LIFE = 0.6;
 const PUFF_POOL = 8;
 
 /** Little dust clouds: each puff throws a few soft round specks outward that grow and fade. */
-function Puffs({ queue, sheet, material }: { queue: RefObject<Puff[]>; sheet: Sheet; material: ShaderMaterial }) {
+function PuffsBase({ queue, sheet, material }: { queue: RefObject<Puff[]>; sheet: Sheet; material: ShaderMaterial }) {
   const g = useQuad(sheet, EXTRAS.indexOf('bubble') * T, 112, T, T, 0.5, 0.5);
   const group = useRef<Group>(null);
   const live = useRef<{ x: number; y: number; age: number }[]>([]);
@@ -783,3 +783,17 @@ const Bubble = memo(function Bubble({
   });
   return <mesh ref={ref} geometry={g} material={material} />;
 });
+
+const SeaBubbles = memo(SeaBubblesBase);
+
+const DarkEyes = memo(DarkEyesBase);
+
+const Hero = memo(HeroBase);
+
+const Pet = memo(PetBase);
+
+const Ghost = memo(GhostBase);
+
+const GlowTrail = memo(GlowTrailBase);
+
+const Puffs = memo(PuffsBase);
