@@ -2,7 +2,7 @@
 // cream panels with an orange frame, a brown name tab, teal portrait frames, and the
 // pack's pixel font. Every screen in every world uses these, so it all feels like one game.
 
-import type { ReactNode } from 'react';
+import { memo, type ReactNode } from 'react';
 import {
   Image,
   Pressable,
@@ -35,7 +35,7 @@ export const GREEN = '#7fb042';
 export const TEXT = '#2b2433';
 export const TEXT_SOFT = '#6e5f72';
 
-export function PixelText({
+export const PixelText = memo(function PixelText({
   children,
   size = 14,
   color = TEXT,
@@ -68,7 +68,7 @@ export function PixelText({
       {Array.isArray(children) ? children.map(spaced) : spaced(children)}
     </Text>
   );
-}
+});
 
 /**
  * The pixel font's space has no width, so words run together. An en space is missing from
@@ -119,7 +119,7 @@ const BUTTON: Record<ButtonTone, { face: string; lip: string; text: string }> = 
 };
 
 /** A chunky button that presses down. */
-export function PixelButton({
+export const PixelButton = memo(function PixelButton({
   label,
   onPress,
   tone = 'orange',
@@ -166,7 +166,7 @@ export function PixelButton({
       )}
     </Pressable>
   );
-}
+});
 
 /** A townsperson's portrait in its teal frame. */
 export function Portrait({ who, size = 76 }: { who: string; size?: number }) {
@@ -181,7 +181,15 @@ export function Portrait({ who, size = 76 }: { who: string; size?: number }) {
 }
 
 /** A small dark pill for the HUD: an icon and a number. */
-export function Counter({ icon, value, color = GOLD }: { icon: string; value: number | string; color?: string }) {
+export const Counter = memo(function Counter({
+  icon,
+  value,
+  color = GOLD,
+}: {
+  icon: string;
+  value: number | string;
+  color?: string;
+}) {
   return (
     <View style={styles.counter}>
       <PixelText size={14} color={color} shadow>
@@ -192,7 +200,7 @@ export function Counter({ icon, value, color = GOLD }: { icon: string; value: nu
       </PixelText>
     </View>
   );
-}
+});
 
 const styles = StyleSheet.create({
   // Child-finger minimum (Apple HIG 44pt); the drawn button stays centred inside.

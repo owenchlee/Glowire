@@ -654,6 +654,8 @@ export function WorldScreen({ map, worldId }: { map: WorldMap; worldId: string }
     return null;
   }, [residents, map, solved]);
 
+  const goJournal = useCallback(() => go('/journal'), [go]);
+  const goStory = useCallback(() => go('/story'), [go]);
   const act = useCallback(() => {
     if (talking.current) return;
     const t = facingTarget();
@@ -924,8 +926,8 @@ export function WorldScreen({ map, worldId }: { map: WorldMap; worldId: string }
           </View>
           <View style={styles.line} pointerEvents="box-none">
             <PixelButton label="Map (M)" tone="gold" size={12} onPress={openMap} />
-            <PixelButton label="Journal" tone="cream" size={12} onPress={() => go('/journal')} />
-            <PixelButton label="Worlds" tone="teal" size={12} onPress={() => go('/story')} />
+            <PixelButton label="Journal" tone="cream" size={12} onPress={goJournal} />
+            <PixelButton label="Worlds" tone="teal" size={12} onPress={goStory} />
           </View>
         </View>
       </View>
