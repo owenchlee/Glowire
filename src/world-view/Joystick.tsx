@@ -1,7 +1,7 @@
 // A thumb stick for touch screens, bottom left: push it any way (diagonals too) to walk.
 // It hands its direction straight to the walker, so walking is as smooth as the keyboard.
 
-import { useRef, useState } from 'react';
+import { memo, useRef, useState } from 'react';
 import { type GestureResponderEvent, Platform, StyleSheet, View } from 'react-native';
 
 const RADIUS = 46;
@@ -12,7 +12,8 @@ const hasTouch = () =>
   Platform.OS !== 'web' || (typeof window !== 'undefined' && ('ontouchstart' in window || navigator.maxTouchPoints > 0));
 
 /** `onInput`: the direction pushed, -1…1 on each axis (0, 0 when let go). */
-export function Joystick({ onInput }: { onInput: (x: number, y: number) => void }) {
+export const Joystick = memo(JoystickView);
+function JoystickView({ onInput }: { onInput: (x: number, y: number) => void }) {
   const [knob, setKnob] = useState({ x: 0, y: 0 });
   const origin = useRef({ x: 0, y: 0 });
   if (!hasTouch()) return null;

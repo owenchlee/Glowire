@@ -121,6 +121,29 @@ interface HudProps {
   onWorlds: () => void;
 }
 
+interface GuideProps {
+  tip: string;
+  raised: boolean;
+  onHelp: () => void;
+}
+
+/** Pip's tip panel. Memoized so it skips the per-step commits. */
+const Guide = memo(function Guide({ tip, raised, onHelp }: GuideProps) {
+  return (
+    <View style={[styles.guide, raised ? styles.guideRaised : null]} pointerEvents="box-none">
+      <Panel style={styles.guidePanel}>
+        <View style={styles.guideRow}>
+          <Portrait who="pip" size={34} />
+          <PixelText size={12} style={styles.flex}>
+            {tip}
+          </PixelText>
+        </View>
+        <PixelButton label="Need help?" tone="teal" size={11} onPress={onHelp} />
+      </Panel>
+    </View>
+  );
+});
+
 /** The top bar. Memoized: it only changes when a number or label in it does, not on every step. */
 const Hud = memo(function Hud(h: HudProps) {
   return (
@@ -713,6 +736,10 @@ export function WorldScreen({ map, worldId }: { map: WorldMap; worldId: string }
     return null;
   }, [residents, map, solved]);
 
+  const needHelp = useCallback(
+    () => setChat({ lines: guideHelp(map, solved, goalNow.current, Platform.OS === 'web') }),
+    [map, solved],
+  );
   const openTravel = useCallback(() => setTravelling(true), []);
   const goJournal = useCallback(() => go('/journal'), [go]);
   const goStory = useCallback(() => go('/story'), [go]);
@@ -982,22 +1009,7 @@ export function WorldScreen({ map, worldId }: { map: WorldMap; worldId: string }
       )}
 
       {!talk && !travelling && !mapOpen && !chestGame && !fishing && (
-        <View style={[styles.guide, facingLabel ? styles.guideRaised : null]} pointerEvents="box-none">
-          <Panel style={styles.guidePanel}>
-            <View style={styles.guideRow}>
-              <Portrait who="pip" size={34} />
-              <PixelText size={12} style={styles.flex}>
-                {guideTip(map, solved, goal)}
-              </PixelText>
-            </View>
-            <PixelButton
-              label="Need help?"
-              tone="teal"
-              size={11}
-              onPress={() => setChat({ lines: guideHelp(map, solved, goal, Platform.OS === 'web') })}
-            />
-          </Panel>
-        </View>
+        <Guide tip={guideTip(map, solved, goal)} raised={!!facingLabel} onHelp={needHelp} />
       )}
 
       {travelling && !talk && (
