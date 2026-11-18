@@ -115,21 +115,26 @@ export function paintMap(map: WorldMap, explored: Explored, solved: Solved, scal
   const at = (x: number, y: number): Terrain | null =>
     x < 0 || y < 0 || x >= map.width || y >= map.height ? null : terrain[y * map.width + x]!;
   const seen = (x: number, y: number) => isExplored(explored, map, x, y);
-  const put = (px: number, py: number, c: readonly number[]) => {
-    const o = (py * W + px) * 4;
-    data[o] = c[0]!;
-    data[o + 1] = c[1]!;
-    data[o + 2] = c[2]!;
-    data[o + 3] = 255;
-  };
+  // One 32-bit store per pixel (typed arrays are little-endian on every phone): 0xAABBGGRR.
+  const px32 = new Uint32Array(data.buffer);
+  const pack = (c: readonly number[]) => (0xff000000 | (c[2]! << 16) | (c[1]! << 8) | c[0]!) >>> 0;
   const shade = (c: readonly number[], k: number) => c.map((v) => Math.max(0, Math.min(255, Math.round(v * k))));
+  const FOG32 = pack(FOG);
+  const STAR32 = pack(STAR);
+  const INK32 = pack(INK);
+  const WINDOW32 = pack([255, 214, 120]);
 
   for (let cy = 0; cy < map.height; cy++)
     for (let cx = 0; cx < map.width; cx++) {
       const t = at(cx, cy)!;
+      const x0 = cx * scale;
+      const y0 = cy * scale;
       if (!seen(cx, cy)) {
-        for (let py = 0; py < scale; py++) for (let px = 0; px < scale; px++) put(cx * scale + px, cy * scale + py, FOG);
-        if (hash(cx, cy) < 0.04) put(cx * scale + Math.floor(hash(cy, cx) * scale), cy * scale + Math.floor(hash(cx + 7, cy) * scale), STAR);
+        for (let py = 0; py < scale; py++) {
+          const o = (y0 + py) * W + x0;
+          px32.fill(FOG32, o, o + scale);
+        }
+        if (hash(cx, cy) < 0.04) px32[(y0 + Math.floor(hash(cx + 7, cy) * scale)) * W + x0 + Math.floor(hash(cy, cx) * scale)] = STAR32;
         continue;
       }
       // Cells at the edge of what you've seen fade into the fog.
@@ -139,23 +144,31 @@ export function paintMap(map: WorldMap, explored: Explored, solved: Solved, scal
       if (t === 'grass' && hash(cx, cy) < 0.2) base = shade(base, 0.92);
       if (t === 'water' && ![-1, 1].some((d) => at(cx + d, cy) !== 'water' || at(cx, cy + d) !== 'water')) base = shade(base, 0.85);
       if (edge) base = shade(base, 0.6);
-      for (let py = 0; py < scale; py++)
-        for (let px = 0; px < scale; px++) {
-          let c = base;
-          // Outlines: an edge line where a road, water, building or cliff meets something else.
-          const nx = px === 0 ? -1 : px === scale - 1 ? 1 : 0;
-          const ny = py === 0 ? -1 : py === scale - 1 ? 1 : 0;
-          const differs = (dx: number, dy: number) => (dx || dy) && at(cx + dx, cy + dy) !== null && at(cx + dx, cy + dy) !== t;
-          const border = differs(nx, 0) || differs(0, ny);
-          if (border) {
-            if (t === 'road') c = shade(base, 0.62);
-            else if (t === 'water') c = shade(base, 1.55);
-            else if (t === 'building' || t === 'lit' || t === 'cliff' || t === 'gate') c = INK;
-            else if (t === 'tree') c = shade(base, 0.7);
-          } else if (t === 'lit' && (px + py) % 3 === 0) c = [255, 214, 120];
-          else if (t === 'tree' && px === 1 && py === 1) c = shade(base, 1.5);
-          put(cx * scale + px, cy * scale + py, c);
+      const base32 = pack(base);
+      // Outlines: an edge line where a road, water, building or cliff meets something else.
+      const differs = (dx: number, dy: number) => {
+        const n = at(cx + dx, cy + dy);
+        return n !== null && n !== t;
+      };
+      const dL = differs(-1, 0);
+      const dR = differs(1, 0);
+      const dU = differs(0, -1);
+      const dD = differs(0, 1);
+      let line32 = base32;
+      if (t === 'road') line32 = pack(shade(base, 0.62));
+      else if (t === 'water') line32 = pack(shade(base, 1.55));
+      else if (t === 'building' || t === 'lit' || t === 'cliff' || t === 'gate') line32 = INK32;
+      else if (t === 'tree') line32 = pack(shade(base, 0.7));
+      const glint32 = t === 'tree' ? pack(shade(base, 1.5)) : base32;
+      const lit = t === 'lit';
+      for (let py = 0; py < scale; py++) {
+        const ny = py === 0 ? dU : py === scale - 1 && dD;
+        let o = (y0 + py) * W + x0;
+        for (let px = 0; px < scale; px++, o++) {
+          const border = ny || (px === 0 ? dL : px === scale - 1 && dR);
+          px32[o] = border ? line32 : lit && (px + py) % 3 === 0 ? WINDOW32 : t === 'tree' && px === 1 && py === 1 ? glint32 : base32;
         }
+      }
     }
   return { width: W, height: H, data };
 }
@@ -176,13 +189,15 @@ export function bmpBase64(img: MapImage, toBase64: (b: Uint8Array) => string): s
   dv.setUint16(26, 1, true);
   dv.setUint16(28, 24, true);
   dv.setUint32(34, row * img.height, true);
-  for (let y = 0; y < img.height; y++)
-    for (let x = 0; x < img.width; x++) {
-      const s = (y * img.width + x) * 4;
-      const o = 54 + (img.height - 1 - y) * row + x * 3;
-      buf[o] = img.data[s + 2]!;
-      buf[o + 1] = img.data[s + 1]!;
-      buf[o + 2] = img.data[s]!;
+  const src = img.data;
+  for (let y = 0; y < img.height; y++) {
+    let s = y * img.width * 4;
+    let o = 54 + (img.height - 1 - y) * row;
+    for (let x = 0; x < img.width; x++, s += 4) {
+      buf[o++] = src[s + 2]!;
+      buf[o++] = src[s + 1]!;
+      buf[o++] = src[s]!;
     }
+  }
   return toBase64(buf);
 }
