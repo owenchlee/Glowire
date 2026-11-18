@@ -144,6 +144,18 @@ const Guide = memo(function Guide({ tip, raised, onHelp }: GuideProps) {
   );
 });
 
+/** The full-screen "walk here" tap area. Memoized so it skips the per-step commits. */
+const TapLayer = memo(function TapLayer({ onTap }: { onTap: (x: number, y: number) => void }) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel="Walk here"
+      style={StyleSheet.absoluteFill}
+      onPress={(e) => onTap(e.nativeEvent.locationX, e.nativeEvent.locationY)}
+    />
+  );
+});
+
 /** The top bar. Memoized: it only changes when a number or label in it does, not on every step. */
 const Hud = memo(function Hud(h: HudProps) {
   return (
@@ -927,6 +939,12 @@ export function WorldScreen({ map, worldId }: { map: WorldMap; worldId: string }
     }
   };
 
+  const onTapRef = useRef(onTap);
+  useEffect(() => {
+    onTapRef.current = onTap;
+  });
+  const tapNow = useCallback((px: number, py: number) => onTapRef.current(px, py), []);
+
   const bubbles = useMemo(() => {
     const out: { who: string; x: number; y: number; kind: 'job' | 'chat' | 'heart' }[] = [];
     for (const r of residents) {
@@ -969,12 +987,7 @@ export function WorldScreen({ map, worldId }: { map: WorldMap; worldId: string }
         onTick={onTick}
         onView={onView}
       />
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel="Walk here"
-        style={StyleSheet.absoluteFill}
-        onPress={(e) => onTap(e.nativeEvent.locationX, e.nativeEvent.locationY)}
-      />
+      <TapLayer onTap={tapNow} />
       {!talk && !travelling && <Joystick onInput={steer} />}
       {!talk && !travelling && (
         <AreaBanner key={`${map.id}:${here}`} name={area.name} world={map.name} />
