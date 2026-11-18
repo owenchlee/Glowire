@@ -1,6 +1,7 @@
 // Time, for boards with capacitors. A capacitor's charge carries over from one moment to
 // the next, so these step the circuit forward a little at a time. Pure TypeScript.
 
+import { type Circuit, buildCircuit } from './circuit';
 import { simulate } from './simulate';
 import type { Board, SimulationResult } from './types';
 
@@ -24,8 +25,13 @@ export function settledCharges(board: Board): Charges {
 }
 
 /** The board `dt` seconds on from these charges: what it looks like, and the new charges. */
-export function stepCircuit(board: Board, charges: Charges, dt: number): { result: SimulationResult; charges: Charges } {
-  const result = simulate(board, { dt, charges });
+export function stepCircuit(
+  board: Board,
+  charges: Charges,
+  dt: number,
+  circuit?: Circuit, // prebuilt from this board: it doesn't depend on the charges
+): { result: SimulationResult; charges: Charges } {
+  const result = simulate(board, { dt, charges }, circuit);
   return { result, charges: chargesOf(board, result) };
 }
 
@@ -43,9 +49,10 @@ export function timeUntil(
   limit: number,
   dt = TIME_STEP,
 ): number | null {
+  const circuit = buildCircuit(board);
   let now = charges;
   for (let t = dt; t <= limit + 1e-9; t += dt) {
-    const step = stepCircuit(board, now, dt);
+    const step = stepCircuit(board, now, dt, circuit);
     if (done(step.result)) return t;
     now = step.charges;
   }

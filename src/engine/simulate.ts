@@ -1,6 +1,6 @@
 // Board in, per-tile physics results out.
 
-import { buildCircuit } from './circuit';
+import { type Circuit, buildCircuit } from './circuit';
 import {
   CAPACITOR_CHARGED,
   CURRENT_EPSILON,
@@ -25,8 +25,7 @@ const TRANSISTOR_ON = 1e-4;
  * The board's circuit, settled. With a time step, capacitors start from the given charges
  * and the result is the circuit `dt` seconds later (see transient.ts).
  */
-export function simulate(board: Board, step?: TimeStep): SimulationResult {
-  const circuit = buildCircuit(board);
+export function simulate(board: Board, step?: TimeStep, circuit: Circuit = buildCircuit(board)): SimulationResult {
   const sol = solveNetlist(circuit, step);
 
   // Port inflows and port nodes per tile. Arrays, not Maps: this runs on every board edit.
