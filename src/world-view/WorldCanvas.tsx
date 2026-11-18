@@ -73,7 +73,7 @@ interface Props {
   cellsTall?: number;
 }
 
-export function WorldCanvas(props: Props) {
+export const WorldCanvas = memo(function WorldCanvas(props: Props) {
   const [sheets, setSheets] = useState<{ city: Texture; people: Texture } | null>(null);
   useEffect(() => {
     let alive = true;
@@ -96,7 +96,7 @@ export function WorldCanvas(props: Props) {
       {sheets && <Scene {...props} sheets={sheets} />}
     </Canvas>
   );
-}
+});
 
 function sheetOf(t: Texture): Sheet {
   const img = t.image as { width: number; height: number };

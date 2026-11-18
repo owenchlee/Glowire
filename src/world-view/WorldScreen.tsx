@@ -6,7 +6,7 @@
 // ahead stays dark (and gated) until every job in the area you're in is done.
 
 import { router, useFocusEffect } from 'expo-router';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
 import { type SaveData, dayKey, totalStars } from '../game/save';
@@ -104,6 +104,65 @@ const startingPlace = (worldId: string, map: WorldMap) => lastPlace.get(worldId)
  * The story scene to play now, if any: an area's ending once its last job is done, else
  * the scene for the area you've just walked into.
  */
+interface HudProps {
+  areaName: string;
+  status: string;
+  lantern: number | null;
+  onTravel: () => void;
+  lit: string;
+  sparks: number;
+  stars: number;
+  notes: string | null;
+  fish: string | null;
+  chests: string | null;
+  secrets: string | null;
+  onMap: () => void;
+  onJournal: () => void;
+  onWorlds: () => void;
+}
+
+/** The top bar. Memoized: it only changes when a number or label in it does, not on every step. */
+const Hud = memo(function Hud(h: HudProps) {
+  return (
+    <View style={styles.hud} pointerEvents="box-none">
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={`${h.areaName}. Open the travel map`}
+        style={styles.title}
+        onPress={h.onTravel}
+      >
+        <PixelText size={18} color={GOLD} shadow>
+          {h.areaName} ▾
+        </PixelText>
+        <PixelText size={12} color="#c9c3e6" shadow>
+          {h.status}
+        </PixelText>
+        {h.lantern !== null && <LanternGauge value={h.lantern} />}
+      </Pressable>
+      <View style={styles.right} pointerEvents="box-none">
+        <View style={styles.line} pointerEvents="box-none">
+          <Counter icon="✦" value={h.lit} color="#ffe58a" />
+          <Counter icon="⚡" value={h.sparks} />
+          <Counter icon="★" value={h.stars} />
+          <SoundToggle />
+        </View>
+        {/* Collections only appear once you've found the first of each, labelled in words. */}
+        <View style={styles.line} pointerEvents="box-none">
+          {h.notes && <Counter icon="✎" value={h.notes} color="#c9e7ff" />}
+          {h.fish && <Counter icon="≈" value={h.fish} color="#8fd0e8" />}
+          {h.chests && <Counter icon="◆" value={h.chests} color="#f2b36b" />}
+          {h.secrets && <Counter icon="◉" value={h.secrets} color="#ffd27a" />}
+        </View>
+        <View style={styles.line} pointerEvents="box-none">
+          <PixelButton label="Map (M)" tone="gold" size={12} onPress={h.onMap} />
+          <PixelButton label="Journal" tone="cream" size={12} onPress={h.onJournal} />
+          <PixelButton label="Worlds" tone="teal" size={12} onPress={h.onWorlds} />
+        </View>
+      </View>
+    </View>
+  );
+});
+
 function pendingScene(map: WorldMap, save: SaveData, here: number): Scene | null {
   const solved = solvedIn(save);
   const seen = (id?: string) => !id || save.seen.includes(id);
@@ -654,6 +713,7 @@ export function WorldScreen({ map, worldId }: { map: WorldMap; worldId: string }
     return null;
   }, [residents, map, solved]);
 
+  const openTravel = useCallback(() => setTravelling(true), []);
   const goJournal = useCallback(() => go('/journal'), [go]);
   const goStory = useCallback(() => go('/story'), [go]);
   const act = useCallback(() => {
@@ -893,44 +953,22 @@ export function WorldScreen({ map, worldId }: { map: WorldMap; worldId: string }
         <AreaBanner key={`${map.id}:${here}`} name={area.name} world={map.name} />
       )}
 
-      <View style={styles.hud} pointerEvents="box-none">
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={`${area.name}. Open the travel map`}
-          style={styles.title}
-          onPress={() => setTravelling(true)}
-        >
-          <PixelText size={18} color={GOLD} shadow>
-            {area.name} ▾
-          </PixelText>
-          <PixelText size={12} color="#c9c3e6" shadow>
-            {status}
-          </PixelText>
-          {map.underwater && <LanternGauge value={lanternShown} />}
-        </Pressable>
-        <View style={styles.right} pointerEvents="box-none">
-          <View style={styles.line} pointerEvents="box-none">
-            <Counter icon="✦" value={`${litCount}/${worldJobs.length} lit`} color="#ffe58a" />
-            <Counter icon="⚡" value={save.sparks} />
-            <Counter icon="★" value={totalStars(save)} />
-            <SoundToggle />
-          </View>
-          {/* Collections only appear once you've found the first of each, labelled in words. */}
-          <View style={styles.line} pointerEvents="box-none">
-            {notesFound > 0 && <Counter icon="✎" value={`Notes ${notesFound}/${notes.length}`} color="#c9e7ff" />}
-            {fishCaught > 0 && <Counter icon="≈" value={`Fish ${fishCaught}`} color="#8fd0e8" />}
-            {chestsFound > 0 && <Counter icon="◆" value={`Chests ${chestsFound}/${chests.length}`} color="#f2b36b" />}
-            {secretsFound > 0 && (
-              <Counter icon="◉" value={`Secrets ${secretsFound}/${worldSecrets.length}`} color="#ffd27a" />
-            )}
-          </View>
-          <View style={styles.line} pointerEvents="box-none">
-            <PixelButton label="Map (M)" tone="gold" size={12} onPress={openMap} />
-            <PixelButton label="Journal" tone="cream" size={12} onPress={goJournal} />
-            <PixelButton label="Worlds" tone="teal" size={12} onPress={goStory} />
-          </View>
-        </View>
-      </View>
+      <Hud
+        areaName={area.name}
+        status={status}
+        lantern={map.underwater ? lanternShown : null}
+        onTravel={openTravel}
+        lit={`${litCount}/${worldJobs.length} lit`}
+        sparks={save.sparks}
+        stars={totalStars(save)}
+        notes={notesFound > 0 ? `Notes ${notesFound}/${notes.length}` : null}
+        fish={fishCaught > 0 ? `Fish ${fishCaught}` : null}
+        chests={chestsFound > 0 ? `Chests ${chestsFound}/${chests.length}` : null}
+        secrets={secretsFound > 0 ? `Secrets ${secretsFound}/${worldSecrets.length}` : null}
+        onMap={openMap}
+        onJournal={goJournal}
+        onWorlds={goStory}
+      />
 
       {facingLabel && !talk && !travelling && (
         <View style={styles.action}>
