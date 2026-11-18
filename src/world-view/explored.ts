@@ -45,7 +45,19 @@ for (let i = 0; i < 4096; i++) PAIRS.push(B64[i >> 6]! + B64[i & 63]!);
 export function toBase64(bytes: Uint8Array): string {
   const parts: string[] = [];
   const full = bytes.length - (bytes.length % 3);
-  for (let i = 0; i < full; i += 3) {
+  // Twelve bytes per push (4 groups) so the engine builds a quarter as many strings.
+  let i = 0;
+  for (; i + 12 <= full; i += 12) {
+    const a = (bytes[i]! << 16) | (bytes[i + 1]! << 8) | bytes[i + 2]!;
+    const b = (bytes[i + 3]! << 16) | (bytes[i + 4]! << 8) | bytes[i + 5]!;
+    const c = (bytes[i + 6]! << 16) | (bytes[i + 7]! << 8) | bytes[i + 8]!;
+    const d = (bytes[i + 9]! << 16) | (bytes[i + 10]! << 8) | bytes[i + 11]!;
+    parts.push(
+      PAIRS[a >> 12]! + PAIRS[a & 4095]! + PAIRS[b >> 12]! + PAIRS[b & 4095]! +
+        PAIRS[c >> 12]! + PAIRS[c & 4095]! + PAIRS[d >> 12]! + PAIRS[d & 4095]!,
+    );
+  }
+  for (; i < full; i += 3) {
     const n = (bytes[i]! << 16) | (bytes[i + 1]! << 8) | bytes[i + 2]!;
     parts.push(PAIRS[n >> 12]! + PAIRS[n & 4095]!);
   }
