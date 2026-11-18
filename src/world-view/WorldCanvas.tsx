@@ -1,7 +1,7 @@
 // Draws a world: the tile map, everyone standing in it, and the hero, lit for night.
 // Game state lives in refs owned by the screen; this only reads it every frame.
 
-import { type RefObject, memo, useEffect, useMemo, useRef, useState } from 'react';
+import { type ReactNode, type RefObject, memo, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { StyleSheet } from 'react-native';
 import type { RootState } from '@react-three/fiber';
 import { type BufferGeometry, CircleGeometry, Color, type Group, MeshBasicMaterial, type Mesh, type OrthographicCamera, type ShaderMaterial, type Texture } from 'three';
@@ -73,6 +73,35 @@ interface Props {
   cellsTall?: number;
 }
 
+const CAMERA = { position: [0, 0, 100] as [number, number, number], zoom: 48, near: 0.1, far: 1000 };
+
+/** The Canvas shell, memoized so a new prop from the screen doesn't re-render r3f's context bridge (about 40 providers). */
+const CanvasShell = memo(function CanvasShell({ paused, children }: { paused: boolean; children: ReactNode }) {
+  return (
+    <Canvas style={StyleSheet.absoluteFill} frameloop={paused ? 'never' : 'always'} orthographic camera={CAMERA}>
+      <color attach="background" args={['#0d0f1e']} />
+      {children}
+    </Canvas>
+  );
+});
+
+interface PropStore {
+  props: Props;
+  subs: Set<() => void>;
+}
+
+/** Reads the latest props from the store, so only the scene re-renders when they change. */
+function SceneHost({ store, sheets }: { store: RefObject<PropStore>; sheets: { city: Texture; people: Texture } }) {
+  const props = useSyncExternalStore(
+    (cb) => {
+      store.current.subs.add(cb);
+      return () => void store.current.subs.delete(cb);
+    },
+    () => store.current.props,
+  );
+  return <Scene {...props} sheets={sheets} />;
+}
+
 export const WorldCanvas = memo(function WorldCanvas(props: Props) {
   const [sheets, setSheets] = useState<{ city: Texture; people: Texture } | null>(null);
   useEffect(() => {
@@ -85,17 +114,15 @@ export const WorldCanvas = memo(function WorldCanvas(props: Props) {
     };
   }, []);
 
-  return (
-    <Canvas
-      style={StyleSheet.absoluteFill}
-      frameloop={props.paused ? 'never' : 'always'}
-      orthographic
-      camera={{ position: [0, 0, 100], zoom: 48, near: 0.1, far: 1000 }}
-    >
-      <color attach="background" args={['#0d0f1e']} />
-      {sheets && <Scene {...props} sheets={sheets} />}
-    </Canvas>
-  );
+  const store = useRef<PropStore>({ props, subs: new Set() });
+  useEffect(() => {
+    if (store.current.props === props) return;
+    store.current.props = props;
+    store.current.subs.forEach((cb) => cb());
+  });
+  const scene = useMemo(() => sheets && <SceneHost store={store} sheets={sheets} />, [sheets]);
+
+  return <CanvasShell paused={!!props.paused}>{scene}</CanvasShell>;
 });
 
 function sheetOf(t: Texture): Sheet {
