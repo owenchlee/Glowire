@@ -34,6 +34,7 @@ export function simulate(board: Board, step?: TimeStep, circuit: Circuit = build
   const inflow: (Partial<Record<Direction, number>> | undefined)[] = new Array(board.cells.length);
   const nodeAt = new Int32Array(board.cells.length * 4); // cell * 4 + dir -> node
   for (const p of circuit.ports) {
+    if (only && !only.has(p.cell)) continue; // its tile result is skipped, so nothing reads this
     const I = sol.currents[p.element]!;
     const flows = (inflow[p.cell] ??= {});
     flows[p.dir] = p.terminal === 'a' ? I : -I;
