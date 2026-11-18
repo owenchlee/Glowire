@@ -53,12 +53,16 @@ export function timeUntil(
 ): number | null {
   const circuit = buildCircuit(board);
   const only = watch && new Set(watch);
-  if (only) board.cells.forEach((t, cell) => t?.kind === 'capacitor' && only.add(cell));
+  const caps: number[] = [];
+  board.cells.forEach((t, cell) => t?.kind === 'capacitor' && caps.push(cell));
+  if (only) caps.forEach((cell) => only.add(cell));
   let now = charges;
   for (let t = dt; t <= limit + 1e-9; t += dt) {
-    const step = stepCircuit(board, now, dt, circuit, only);
-    if (done(step.result)) return t;
-    now = step.charges;
+    const result = simulate(board, { dt, charges: now }, circuit, only);
+    if (done(result)) return t;
+    const next: Charges = {};
+    for (const cell of caps) next[cell] = result.tiles[cell]?.voltage ?? 0; // as chargesOf, without the board scan
+    now = next;
   }
   return null;
 }
