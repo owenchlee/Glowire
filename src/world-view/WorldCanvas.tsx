@@ -1,7 +1,7 @@
 // Draws a world: the tile map, everyone standing in it, and the hero, lit for night.
 // Game state lives in refs owned by the screen; this only reads it every frame.
 
-import { type RefObject, useEffect, useMemo, useRef, useState } from 'react';
+import { type RefObject, memo, useEffect, useMemo, useRef, useState } from 'react';
 import { StyleSheet } from 'react-native';
 import type { RootState } from '@react-three/fiber';
 import { type BufferGeometry, CircleGeometry, Color, type Group, MeshBasicMaterial, type Mesh, type OrthographicCamera, type ShaderMaterial, type Texture } from 'three';
@@ -480,12 +480,12 @@ function useQuad(sheet: Sheet, sx: number, sy: number, sw: number, sh: number, w
 }
 
 /** A soft shadow under someone's feet. */
-function Shadow({ sheet, material }: { sheet: Sheet; material: ShaderMaterial }) {
+const Shadow = memo(function Shadow({ sheet, material }: { sheet: Sheet; material: ShaderMaterial }) {
   const g = useQuad(sheet, 0, 112 + 4, 16, 12, 1, 0.75);
   return <mesh geometry={g} material={material} position={[0, -0.3, -0.003]} />;
-}
+});
 
-function Person({
+const Person = memo(function Person({
   who,
   x,
   y,
@@ -539,7 +539,7 @@ function Person({
       <mesh ref={ref} geometry={g} material={material} />
     </group>
   );
-}
+});
 
 export interface Puff {
   x: number;
@@ -702,7 +702,7 @@ function GlowTrail({ path }: { path: { x: number; y: number }[] }) {
 }
 
 /** A tiny twinkle that comes and goes: something here is worth a closer look. */
-function Sparkle({ x, y, sheet, material }: { x: number; y: number; sheet: Sheet; material: ShaderMaterial }) {
+const Sparkle = memo(function Sparkle({ x, y, sheet, material }: { x: number; y: number; sheet: Sheet; material: ShaderMaterial }) {
   const g = useQuad(sheet, EXTRAS.indexOf('star') * T, 112, T, T, 0.5, 0.5);
   const ref = useRef<Mesh>(null);
   const phase = useMemo(() => (x * 3.7 + y * 1.3) % 6, [x, y]);
@@ -716,7 +716,7 @@ function Sparkle({ x, y, sheet, material }: { x: number; y: number; sheet: Sheet
     mesh.position.set(x + 0.5 - 0.25 * (0.4 + 0.6 * s), -y + 0.9, 3);
   });
   return <mesh ref={ref} geometry={g} material={material} />;
-}
+});
 
 const PUFF_PARTS = 5;
 const PUFF_LIFE = 0.6;
@@ -762,7 +762,7 @@ function Puffs({ queue, sheet, material }: { queue: RefObject<Puff[]>; sheet: Sh
   );
 }
 
-function Bubble({
+const Bubble = memo(function Bubble({
   x,
   y,
   kind,
@@ -782,4 +782,4 @@ function Bubble({
     if (ref.current) ref.current.position.set(x + 0.3, -y + 0.95 + bob, 3);
   });
   return <mesh ref={ref} geometry={g} material={material} />;
-}
+});
