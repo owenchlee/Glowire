@@ -7,7 +7,7 @@ import { SHEETS, ATLAS_COLS, SHORE_TILES, TERRAIN_TILES } from '../world/atlas.g
 import { FILLED_TILE, TILES, hash } from '../world/builder';
 import { type Solved, areaDone, litGroups } from '../world/logic';
 import type { WorldMap } from '../world/types';
-import { type Explored, isExplored } from './explored';
+import type { Explored } from './explored';
 
 export type Terrain = 'none' | 'grass' | 'sand' | 'road' | 'water' | 'cliff' | 'tree' | 'building' | 'lit' | 'prop' | 'gate';
 
@@ -122,7 +122,8 @@ export function paintMap(map: WorldMap, explored: Explored, solved: Solved, scal
   const data = new Uint8ClampedArray(W * H * 4);
   const at = (x: number, y: number): Terrain | null =>
     x < 0 || y < 0 || x >= map.width || y >= map.height ? null : terrain[y * map.width + x]!;
-  const seen = (x: number, y: number) => isExplored(explored, map, x, y);
+  // Callers only ask about in-bounds cells (the edge test checks the neighbour exists first).
+  const seenAt = (i: number) => ((explored[i >> 3]! >> (i & 7)) & 1) === 1;
   // One 32-bit store per pixel (typed arrays are little-endian on every phone): 0xAABBGGRR.
   const px32 = new Uint32Array(data.buffer);
   const pack = (c: readonly number[]) => (0xff000000 | (c[2]! << 16) | (c[1]! << 8) | c[0]!) >>> 0;
@@ -137,7 +138,8 @@ export function paintMap(map: WorldMap, explored: Explored, solved: Solved, scal
       const t = at(cx, cy)!;
       const x0 = cx * scale;
       const y0 = cy * scale;
-      if (!seen(cx, cy)) {
+      const ci = cy * map.width + cx;
+      if (!seenAt(ci)) {
         for (let py = 0; py < scale; py++) {
           const o = (y0 + py) * W + x0;
           px32.fill(FOG32, o, o + scale);
@@ -151,8 +153,8 @@ export function paintMap(map: WorldMap, explored: Explored, solved: Solved, scal
       const nU = at(cx, cy - 1);
       const nD = at(cx, cy + 1);
       const edge =
-        (nL !== null && !seen(cx - 1, cy)) || (nR !== null && !seen(cx + 1, cy)) ||
-        (nU !== null && !seen(cx, cy - 1)) || (nD !== null && !seen(cx, cy + 1));
+        (nL !== null && !seenAt(ci - 1)) || (nR !== null && !seenAt(ci + 1)) ||
+        (nU !== null && !seenAt(ci - map.width)) || (nD !== null && !seenAt(ci + map.width));
       let base: readonly number[] = map.underwater && SEABED[t] ? SEABED[t] : RGB[t];
       if (t === 'grass' && hash(cx, cy) < 0.2) base = shade(base, 0.92);
       if (t === 'water' && nL === 'water' && nR === 'water' && nU === 'water' && nD === 'water') base = shade(base, 0.85);
