@@ -25,7 +25,9 @@ const TRANSISTOR_ON = 1e-4;
  * The board's circuit, settled. With a time step, capacitors start from the given charges
  * and the result is the circuit `dt` seconds later (see transient.ts).
  */
-export function simulate(board: Board, step?: TimeStep, circuit: Circuit = buildCircuit(board)): SimulationResult {
+export function simulate(board: Board, step?: TimeStep, circuit: Circuit = buildCircuit(board),
+  only?: ReadonlySet<number>, // build tile results just for these cells (the rest are null)
+): SimulationResult {
   const sol = solveNetlist(circuit, step);
 
   // Port inflows and port nodes per tile. Arrays, not Maps: this runs on every board edit.
@@ -57,7 +59,7 @@ export function simulate(board: Board, step?: TimeStep, circuit: Circuit = build
   let batteryCurrent = 0;
   let shortCircuit = false;
   const tiles = board.cells.map((tile, cell): TileResult | null => {
-    if (!tile) return null;
+    if (!tile || (only && !only.has(cell))) return null;
     if (tile.kind === 'block') {
       return {
         cell,

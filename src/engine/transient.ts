@@ -30,8 +30,9 @@ export function stepCircuit(
   charges: Charges,
   dt: number,
   circuit?: Circuit, // prebuilt from this board: it doesn't depend on the charges
+  only?: ReadonlySet<number>, // cells whose results are built; must include every capacitor
 ): { result: SimulationResult; charges: Charges } {
-  const result = simulate(board, { dt, charges }, circuit);
+  const result = simulate(board, { dt, charges }, circuit, only);
   return { result, charges: chargesOf(board, result) };
 }
 
@@ -48,11 +49,14 @@ export function timeUntil(
   done: (result: SimulationResult) => boolean,
   limit: number,
   dt = TIME_STEP,
+  watch?: readonly number[], // the only cells `done` reads: the other tile results are skipped
 ): number | null {
   const circuit = buildCircuit(board);
+  const only = watch && new Set(watch);
+  if (only) board.cells.forEach((t, cell) => t?.kind === 'capacitor' && only.add(cell));
   let now = charges;
   for (let t = dt; t <= limit + 1e-9; t += dt) {
-    const step = stepCircuit(board, now, dt, circuit);
+    const step = stepCircuit(board, now, dt, circuit, only);
     if (done(step.result)) return t;
     now = step.charges;
   }

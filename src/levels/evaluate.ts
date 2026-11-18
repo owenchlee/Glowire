@@ -220,7 +220,7 @@ export function timeLamp(
   const cell = labels[goal.led] ?? -1;
   const lit = (r: SimulationResult) => isLit(r.tiles[cell]);
   const limit = (goal.max ?? goal.min) + 1;
-  const t = timeUntil(after, settled ? chargesOf(before, settled) : settledCharges(before), hold ? (r) => !lit(r) : lit, limit);
+  const t = timeUntil(after, settled ? chargesOf(before, settled) : settledCharges(before), hold ? (r) => !lit(r) : lit, limit, undefined, [cell]);
   return t ?? Infinity;
 }
 
