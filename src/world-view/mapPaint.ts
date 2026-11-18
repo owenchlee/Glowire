@@ -179,33 +179,39 @@ export function bmpBase64(img: MapImage, toBase64: (b: Uint8Array) => string): s
   const px32 = new Uint32Array(img.data.buffer, img.data.byteOffset, img.width * img.height);
   const index = new Map<number, number>();
   const colours: number[] = [];
-  const idx = new Uint8Array(px32.length);
+  // Indices go straight into the bottom-up, 4-byte padded rows of the 8-bit file.
+  const row8 = Math.ceil(img.width / 4) * 4;
+  const idx = new Uint8Array(54 + 1024 + row8 * img.height);
   let last = -1;
   let lastI = 0;
   let paletted = true;
-  for (let i = 0; i < px32.length; i++) {
-    const c = px32[i]!;
-    if (c !== last) {
-      let k = index.get(c);
-      if (k === undefined) {
-        if (colours.length === 256) {
-          paletted = false;
-          break;
+  scan: for (let y = 0; y < img.height; y++) {
+    let s = y * img.width;
+    let o = 54 + 1024 + (img.height - 1 - y) * row8;
+    for (const e = s + img.width; s < e; s++, o++) {
+      const c = px32[s]!;
+      if (c !== last) {
+        let k = index.get(c);
+        if (k === undefined) {
+          if (colours.length === 256) {
+            paletted = false;
+            break scan;
+          }
+          k = colours.length;
+          index.set(c, k);
+          colours.push(c);
         }
-        k = colours.length;
-        index.set(c, k);
-        colours.push(c);
+        last = c;
+        lastI = k;
       }
-      last = c;
-      lastI = k;
+      idx[o] = lastI;
     }
-    idx[i] = lastI;
   }
   const bits = paletted ? 8 : 24;
   const row = Math.ceil((img.width * (bits / 8)) / 4) * 4;
   const head = paletted ? 54 + 1024 : 54;
   const size = head + row * img.height;
-  const buf = new Uint8Array(size);
+  const buf = paletted ? idx : new Uint8Array(size);
   const dv = new DataView(buf.buffer);
   buf[0] = 0x42;
   buf[1] = 0x4d;
@@ -221,8 +227,6 @@ export function bmpBase64(img: MapImage, toBase64: (b: Uint8Array) => string): s
     dv.setUint32(46, colours.length, true);
     // BMP palette entries are B, G, R, 0; our pixels are 0xAABBGGRR.
     colours.forEach((c, i) => dv.setUint32(54 + i * 4, ((c & 0xff) << 16) | (c & 0xff00) | ((c >>> 16) & 0xff), true));
-    for (let y = 0; y < img.height; y++)
-      buf.set(idx.subarray(y * img.width, (y + 1) * img.width), head + (img.height - 1 - y) * row);
     return toBase64(buf);
   }
   const src = img.data;
