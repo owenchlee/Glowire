@@ -112,6 +112,11 @@ export interface TimeStep {
   dt: number;
   /** Each capacitor's voltage (+ end minus − end) at the last step, by board cell. */
   charges: Readonly<Record<number, number>>;
+  /**
+   * Optional warm start for a run of steps on one circuit: the diode voltages the last step
+   * ended on. Newton starts there instead of at 0 V and leaves its own end point here.
+   */
+  warm?: { vd?: Float64Array };
 }
 
 /** What a circuit's shape fixes, whatever the capacitor charges: pruning, grounds, matrix layout. */
@@ -308,8 +313,10 @@ export function solveNetlist(circuit: Circuit, step?: TimeStep): NetlistSolution
   const di0 = scratchF64(5, diodeEls.length);
   const dg0 = scratchF64(6, diodeEls.length);
   const vcrit = scratchF64(7, diodeEls.length);
+  const warm = step?.warm;
+  if (warm?.vd?.length === diodeEls.length) vd.set(warm.vd);
   for (let k = 0; k < diodeEls.length; k++) {
-    evalInto(0, diodeEls[k]!.model);
+    evalInto(vd[k]!, diodeEls[k]!.model);
     di0[k] = evalI;
     dg0[k] = evalG;
     vcrit[k] = criticalVoltage(diodeEls[k]!.model);
@@ -388,6 +395,8 @@ export function solveNetlist(circuit: Circuit, step?: TimeStep): NetlistSolution
       if (el.type === 'F') currents[f] = el.gain * currents[el.ctrl]!;
     }
   }
+
+  if (warm && converged) warm.vd = vd.slice(0, diodeEls.length);
 
   // Linear-element currents (resistors, capacitors, sources) only matter at the final
   // solution, still held in z.
