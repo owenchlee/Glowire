@@ -138,22 +138,23 @@ export function paintMap(map: WorldMap, explored: Explored, solved: Solved, scal
         continue;
       }
       // Cells at the edge of what you've seen fade into the fog.
-      const fogAt = (x: number, y: number) => at(x, y) !== null && !seen(x, y);
-      const edge = fogAt(cx - 1, cy) || fogAt(cx + 1, cy) || fogAt(cx, cy - 1) || fogAt(cx, cy + 1);
+      const nL = at(cx - 1, cy);
+      const nR = at(cx + 1, cy);
+      const nU = at(cx, cy - 1);
+      const nD = at(cx, cy + 1);
+      const edge =
+        (nL !== null && !seen(cx - 1, cy)) || (nR !== null && !seen(cx + 1, cy)) ||
+        (nU !== null && !seen(cx, cy - 1)) || (nD !== null && !seen(cx, cy + 1));
       let base: readonly number[] = map.underwater && SEABED[t] ? SEABED[t] : RGB[t];
       if (t === 'grass' && hash(cx, cy) < 0.2) base = shade(base, 0.92);
-      if (t === 'water' && ![-1, 1].some((d) => at(cx + d, cy) !== 'water' || at(cx, cy + d) !== 'water')) base = shade(base, 0.85);
+      if (t === 'water' && nL === 'water' && nR === 'water' && nU === 'water' && nD === 'water') base = shade(base, 0.85);
       if (edge) base = shade(base, 0.6);
       const base32 = pack(base);
       // Outlines: an edge line where a road, water, building or cliff meets something else.
-      const differs = (dx: number, dy: number) => {
-        const n = at(cx + dx, cy + dy);
-        return n !== null && n !== t;
-      };
-      const dL = differs(-1, 0);
-      const dR = differs(1, 0);
-      const dU = differs(0, -1);
-      const dD = differs(0, 1);
+      const dL = nL !== null && nL !== t;
+      const dR = nR !== null && nR !== t;
+      const dU = nU !== null && nU !== t;
+      const dD = nD !== null && nD !== t;
       let line32 = base32;
       if (t === 'road') line32 = pack(shade(base, 0.62));
       else if (t === 'water') line32 = pack(shade(base, 1.55));
