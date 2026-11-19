@@ -652,6 +652,8 @@ function puzzles(b: MapBuilder) {
   rockPlug(b, 107, 28, 'harbour-rock-plug', 25, 'The old sailors jammed a boulder in the doorway. Push it in, then walk round it. Pulling is cheating, and impossible.');
   ledgeTerrace(b, 46, 17, 'harbour-ledge-west', 20, 'Ledge on the south side of this terrace. Down is easy, up is impossible. Plan your exit before you enter.');
   ledgeTerrace(b, 85, 3, 'harbour-ledge-clifftop', 25, 'A cliff-top nook with a one-way drop. Sailors call it the shortcut with no return ticket.');
+  // A boulder can seal the hero into a pocket (or off the spawn side), so each narrow way gets a reset sign at both ends.
+  for (const [x, y] of [[96, 27], [95, 32], [97, 4], [97, 9], [104, 4], [104, 9], [113, 4], [113, 9], [69, 9], [69, 12], [73, 28], [73, 33], [57, 27], [57, 33], [143, 28], [148, 26], [133, 19], [133, 22], [36, 25], [23, 29], [20, 33], [25, 9], [23, 12], [5, 29], [7, 34]] as const) b.rockReset(x, y);
   b.fish('harbour-bay', 36, 27);
   b.fish('harbour-pier', 72, 30);
 }
