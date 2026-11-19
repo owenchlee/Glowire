@@ -2,7 +2,7 @@
 // that day. Score 1, 2 or 3 stars by points. Pure TypeScript.
 
 import { type GameId } from './games';
-import { hash } from './daily';
+import { hash } from './hash';
 
 /** The games the teaser draws from (all have a fixed number of rounds or a fair cap). */
 export const BRAIN_POOL: GameId[] = ['probe', 'pipes', 'panel', 'colours', 'needle', 'lantern'];

@@ -27,6 +27,7 @@ import {
 import { createLevelBoard, evaluateLevel } from '../levels/evaluate';
 import type { Goal, LevelDef } from '../levels/types';
 import { CAST } from './cast';
+import { hash } from './hash';
 
 /** mulberry32: small, fast, and the same everywhere. */
 function rng(seed: number): () => number {
@@ -40,11 +41,7 @@ function rng(seed: number): () => number {
   };
 }
 
-export function hash(text: string): number {
-  let h = 2166136261;
-  for (let i = 0; i < text.length; i++) h = Math.imul(h ^ text.charCodeAt(i), 16777619);
-  return h >>> 0;
-}
+export { hash };
 
 /** How hard each weekday is, Monday to Sunday. */
 interface Tier {

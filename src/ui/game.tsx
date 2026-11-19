@@ -23,13 +23,10 @@ import {
   recordJob,
 } from '../game/save';
 import { itemOf } from '../game/shop';
-import { LEVELS } from '../levels/levels';
 import { wearSkin as setSkin } from '../puzzle-view/skin';
 import { applySkin } from '../render/assets';
 import { loadSave, writeSave } from './storage';
 import { setMuted } from '../audio/audio';
-
-export const JOB_ORDER = LEVELS.map((l) => l.id);
 
 interface Game {
   save: SaveData;
