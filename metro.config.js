@@ -92,6 +92,10 @@ config.resolver.resolveRequest = (context, moduleName, platform) => {
   if (platform === 'web' && moduleName === '../../extras/PMREMGenerator.js' && /three[\/\\]src[\/\\]renderers[\/\\]webgl[\/\\]WebGLEnvironments\.js$/.test(context.originModulePath)) {
     return { type: 'sourceFile', filePath: require('path').join(__dirname, 'metro-shims', 'pmrem-generator.js') };
   }
+  // The game never starts a WebXR session, so the renderer gets an inert manager instead of the ~9 KB real one.
+  if (platform === 'web' && moduleName === './webxr/WebXRManager.js' && /three[\/\\]src[\/\\]renderers[\/\\]WebGLRenderer\.js$/.test(context.originModulePath)) {
+    return { type: 'sourceFile', filePath: require('path').join(__dirname, 'metro-shims', 'webxr-manager.js') };
+  }
   // Web only: a ~55-name subset of three (what the game and fiber use) instead of the whole library.
   if (platform === 'web' && moduleName === 'three') {
     return { type: 'sourceFile', filePath: require('path').join(__dirname, 'metro-shims', 'three.js') };
