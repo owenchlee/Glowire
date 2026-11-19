@@ -108,6 +108,10 @@ config.resolver.resolveRequest = (context, moduleName, platform) => {
   if (platform === 'web' && moduleName === './webgl/WebGLShadowMap.js' && /three[\/\\]src[\/\\]renderers[\/\\]WebGLRenderer\.js$/.test(context.originModulePath)) {
     return { type: 'sourceFile', filePath: require('path').join(__dirname, 'metro-shims', 'shadow-map.js') };
   }
+  // Only basic/standard/points/sprite/background shaders are used; the other stock mesh shaders are dropped.
+  if (platform === 'web' && /^\.{1,2}\/(shaders\/)?ShaderChunk\.js$/.test(moduleName) && /three[\/\\]src[\/\\]renderers[\/\\]/.test(context.originModulePath)) {
+    return { type: 'sourceFile', filePath: require('path').join(__dirname, 'metro-shims', 'shader-chunk.js') };
+  }
   // Web only: a ~55-name subset of three (what the game and fiber use) instead of the whole library.
   if (platform === 'web' && moduleName === 'three') {
     return { type: 'sourceFile', filePath: require('path').join(__dirname, 'metro-shims', 'three.js') };
