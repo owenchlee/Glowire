@@ -1,9 +1,7 @@
 // The worlds you travel between. Each one is its own map and its own set of jobs.
 
 import { buildGlowtown } from './glowtown';
-import { buildHarbour } from './harbour';
-import { buildDeep } from './deep';
-import { buildMossbell } from './mossbell';
+import { otherBuilder } from './otherWorlds';
 import type { WorldMap } from './types';
 
 export interface WorldInfo {
@@ -29,21 +27,21 @@ export const WORLDS: WorldInfo[] = [
     name: 'Driftwood Harbour',
     tagline: 'Fishing boats, a lighthouse, and the old clock on the hill where the Glowire begins.',
     chapters: [3, 4],
-    build: buildHarbour,
+    build: () => otherBuilder('harbour')!(),
   },
   {
     id: 'mossbell',
     name: 'Mossbell Hollow',
     tagline: 'An old mill village up the valley, where a lantern walks the lanes at night.',
     chapters: [5, 6],
-    build: buildMossbell,
+    build: () => otherBuilder('mossbell')!(),
   },
   {
     id: 'deep',
     name: 'Brightwater Deep',
     tagline: 'A sunken town at the bottom of the sea, where the first lights were kept in jars.',
     chapters: [7],
-    build: buildDeep,
+    build: () => otherBuilder('deep')!(),
   },
 ];
 
@@ -52,8 +50,8 @@ const cache = new Map<string, WorldMap>();
 /** Where a job happens: its world and the door (or signal, or tree) you knock on. */
 export function jobPlace(job: number): { world: WorldInfo; map: WorldMap; x: number; y: number } | null {
   for (const world of WORLDS) {
-    if (!world.build) continue;
-    const map = worldMap(world.id)!;
+    const map = worldMap(world.id);
+    if (!map) continue;
     const spot = map.spots.find((s) => s.kind === 'job' && s.job === job);
     if (spot) return { world, map, x: spot.x, y: spot.y };
   }
@@ -62,7 +60,7 @@ export function jobPlace(job: number): { world: WorldInfo; map: WorldMap; x: num
 
 export function worldMap(id: string): WorldMap | null {
   const info = WORLDS.find((w) => w.id === id);
-  if (!info?.build) return null;
+  if (!info?.build || (id !== 'glowtown' && !otherBuilder(id))) return null;
   let map = cache.get(id);
   if (!map) cache.set(id, (map = info.build()));
   return map;

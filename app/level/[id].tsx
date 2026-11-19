@@ -1,4 +1,5 @@
 import { Redirect, useLocalSearchParams } from 'expo-router';
+import { loadOtherWorlds } from '../../src/world/otherWorlds';
 import { lazy, Suspense } from 'react';
 
 import { getLevel } from '../../src/levels/levels';
@@ -7,7 +8,10 @@ import { getLevel } from '../../src/levels/levels';
 const BrainJobScreen = lazy(() =>
   import('../../src/ui/BrainJobScreen').then((m) => ({ default: m.BrainJobScreen })),
 );
-const LevelScreen = lazy(() => import('../../src/ui/LevelScreen').then((m) => ({ default: m.LevelScreen })));
+// The jobs map needs every world, which the web build loads on demand.
+const LevelScreen = lazy(() =>
+  Promise.all([import('../../src/ui/LevelScreen'), loadOtherWorlds()]).then(([m]) => ({ default: m.LevelScreen })),
+);
 
 export default function LevelRoute() {
   const { id } = useLocalSearchParams<{ id: string }>();
