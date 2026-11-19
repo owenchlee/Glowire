@@ -7,13 +7,13 @@ import { voiceKey } from './voiceKey';
 
 /** Every fixed line of dialog in the game's data, found by walking what each module exports. */
 async function collect(): Promise<Map<string, { who: string; text: string }>> {
-  // Only the data folders: they hold all the dialog and skip the three.js modules.
+  // Only the modules that hold dialog (grep for who/client/ask/sign); the rest add load time only.
   const mods = import.meta.glob<unknown>([
-    '../{game,levels,world,world-view}/**/*.ts',
-    '!../**/*.test.ts',
-    '!../**/*.d.ts',
-    '!../**/*.generated.ts',
-    '!../world-view/{pixels,quads,mapPaint}.ts',
+    '../game/{daily,lore,puzzles,story}.ts',
+    '../game/extras/*.ts',
+    '../levels/{chapter[1-8],types}.ts',
+    '../world/{builder,deep,glowtown,harbour,mossbell,puzzlekit,types}.ts',
+    '../world-view/{guide,targets}.ts',
   ]);
   const out = new Map<string, { who: string; text: string }>();
   const add = (who: unknown, text: unknown) => {
