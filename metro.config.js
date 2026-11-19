@@ -48,6 +48,10 @@ config.resolver.resolveRequest = (context, moduleName, platform) => {
   if (platform === 'web' && moduleName === './HeaderSearchBar' && /expo-router[\/\\]build[\/\\]react-navigation[\/\\]elements[\/\\]Header[\/\\]Header\.js$/.test(context.originModulePath)) {
     return { type: 'sourceFile', filePath: require('path').join(__dirname, 'metro-shims', 'header-search-bar.js') };
   }
+  // Headers are always hidden (headerShown: false), so the header and its back button never render.
+  if (platform === 'web' && (moduleName === './Header/Header' || moduleName === './Header/HeaderBackButton') && /expo-router[\/\\]build[\/\\]react-navigation[\/\\]elements[\/\\]index\.js$/.test(context.originModulePath)) {
+    return { type: 'sourceFile', filePath: require('path').join(__dirname, 'metro-shims', 'header.js') };
+  }
   // The game has no native tabs; skip the trigger helpers (and the tab icon code they pull in).
   if (platform === 'web' && moduleName === '../native-tabs/NativeTabTrigger' && /expo-router[\/\\]build[\/\\]layouts[\/\\]withLayoutContext\.js$/.test(context.originModulePath)) {
     return { type: 'sourceFile', filePath: require('path').join(__dirname, 'metro-shims', 'native-tab-trigger.js') };
