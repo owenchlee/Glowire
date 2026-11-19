@@ -10,7 +10,7 @@ import {
   useState,
 } from 'react';
 import { Animated, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
-import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import {
@@ -492,6 +492,7 @@ export function LevelScreen({ level, day }: { level: LevelDef; day?: string }) {
 
 
   return (
+    <GestureHandlerRootView style={{ flex: 1 }}>
     <SafeAreaView style={styles.screen} edges={['left', 'right']}>
       {/* Left: the job, Pip's advice, and what counts as done. */}
       <View style={styles.side}>
@@ -747,6 +748,7 @@ export function LevelScreen({ level, day }: { level: LevelDef; day?: string }) {
         </View>
       )}
     </SafeAreaView>
+    </GestureHandlerRootView>
   );
 }
 
