@@ -88,6 +88,10 @@ config.resolver.resolveRequest = (context, moduleName, platform) => {
   if (platform === 'web' && moduleName === './validate' && /react-native-web[\/\\]dist[\/\\]exports[\/\\]StyleSheet[\/\\]index\.js$/.test(context.originModulePath)) {
     return { type: 'sourceFile', filePath: require('path').join(__dirname, 'metro-shims', 'style-validate.js') };
   }
+  // Environment maps are never used, so the ~15 KB PMREM generator is dead weight in the renderer.
+  if (platform === 'web' && moduleName === '../../extras/PMREMGenerator.js' && /three[\/\\]src[\/\\]renderers[\/\\]webgl[\/\\]WebGLEnvironments\.js$/.test(context.originModulePath)) {
+    return { type: 'sourceFile', filePath: require('path').join(__dirname, 'metro-shims', 'pmrem-generator.js') };
+  }
   // Web only: a ~55-name subset of three (what the game and fiber use) instead of the whole library.
   if (platform === 'web' && moduleName === 'three') {
     return { type: 'sourceFile', filePath: require('path').join(__dirname, 'metro-shims', 'three.js') };
