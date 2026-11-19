@@ -24,6 +24,10 @@ config.resolver.resolveRequest = (context, moduleName, platform) => {
   if (platform === 'web' && moduleName === './LinkWithPreview' && /expo-router[\/\\]build[\/\\]link[\/\\]/.test(context.originModulePath)) {
     return { type: 'sourceFile', filePath: require('path').join(__dirname, 'metro-shims', 'link-with-preview.js') };
   }
+  // The dev sitemap screen is never shown.
+  if (platform === 'web' && moduleName === './views/Sitemap' && /expo-router[\/\\]build[\/\\][^\/\\]*$/.test(context.originModulePath)) {
+    return { type: 'sourceFile', filePath: require('path').join(__dirname, 'metro-shims', 'sitemap.js') };
+  }
   // Web-only: react-native-web's lists (~100 KB, unused) and the Animated wrappers that drag them in.
   const shim = platform === 'web' && /^react-native-web\/dist\/exports\/(Animated|FlatList|SectionList|VirtualizedList)$/.exec(moduleName);
   if (shim) {
