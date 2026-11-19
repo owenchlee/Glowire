@@ -13,8 +13,8 @@ import { type SaveData, dayKey, totalStars } from '../game/save';
 import { outfitSprite } from '../game/shop';
 import { GAMES } from '../game/games';
 import { buzz } from '../ui/haptics';
-import { PERSON_SECRETS, SECRETS, secretKey, secretsIn } from '../game/lore';
-import { NOTES, SCENES, type Scene } from '../game/story';
+import type { Scene } from '../game/story';
+import { WithLore, lore } from '../game/loreLazy';
 import { LEVELS } from '../levels/levels';
 import type { LevelDef } from '../levels/types';
 import { type Choice, Dialog, type DialogLine } from '../ui/Dialog';
@@ -108,10 +108,10 @@ function pendingScene(map: WorldMap, save: SaveData, here: number): Scene | null
   const solved = solvedIn(save);
   const seen = (id?: string) => !id || save.seen.includes(id);
   for (const a of map.areas)
-    if (areaDone(a, solved) && a.jobs.length && !seen(a.outro)) return SCENES[a.outro!] ?? null;
+    if (areaDone(a, solved) && a.jobs.length && !seen(a.outro)) return lore.SCENES[a.outro!] ?? null;
   const area = map.areas[here];
   if (area && here < openAreas(map, solved) && !seen(area.intro))
-    return SCENES[area.intro!] ?? null;
+    return lore.SCENES[area.intro!] ?? null;
   return null;
 }
 
@@ -122,7 +122,15 @@ interface Talk {
   seenId?: string;
 }
 
-export function WorldScreen({ map, worldId }: { map: WorldMap; worldId: string }) {
+export function WorldScreen(props: { map: WorldMap; worldId: string }) {
+  return (
+    <WithLore>
+      <WorldScreenBody {...props} />
+    </WithLore>
+  );
+}
+
+function WorldScreenBody({ map, worldId }: { map: WorldMap; worldId: string }) {
   const { save, markSeen, commitSave } = useGame();
   const solved = useMemo(() => solvedIn(save), [save]);
   const lit = useMemo(() => litGroups(map, solved), [map, solved]);
@@ -186,8 +194,8 @@ export function WorldScreen({ map, worldId }: { map: WorldMap; worldId: string }
   const dailyDone = (save.daily.stars[dayKey(new Date())] ?? 0) > 0;
   const notes = useMemo(() => map.spots.flatMap((s) => (s.kind === 'note' ? [s.note] : [])), [map]);
   const notesFound = notes.filter((n) => save.seen.includes(noteKey(n))).length;
-  const found = useCallback((id: string) => save.seen.includes(secretKey(id)), [save.seen]);
-  const worldSecrets = useMemo(() => secretsIn(map.id).filter((x) => !x.about), [map.id]);
+  const found = useCallback((id: string) => save.seen.includes(lore.secretKey(id)), [save.seen]);
+  const worldSecrets = useMemo(() => lore.secretsIn(map.id).filter((x) => !x.about), [map.id]);
   const secretsFound = worldSecrets.filter((x) => found(x.id)).length;
   const chests = useMemo(() => map.spots.flatMap((s) => (s.kind === 'chest' ? [s.id] : [])), [map]);
   const chestsFound = chests.filter((id) => save.seen.includes(chestKey(id))).length;
@@ -418,14 +426,14 @@ export function WorldScreen({ map, worldId }: { map: WorldMap; worldId: string }
   /** "Ask about…": a townsperson's secret, once you've helped them (see lore.ts). */
   const askChoice = useCallback(
     (who: string, helped: boolean): Choice[] => {
-      const ps = PERSON_SECRETS[who];
+      const ps = lore.PERSON_SECRETS[who];
       if (!ps || !helped || (ps.afterScene && !save.seen.includes(ps.afterScene))) return [];
-      const sec = SECRETS[ps.secret]!;
+      const sec = lore.SECRETS[ps.secret]!;
       return [
         {
           label: found(sec.id) ? 'Ask again…' : 'Ask about…',
           tone: 'teal',
-          onPress: () => setChat({ lines: sec.lines, seenId: secretKey(sec.id) }),
+          onPress: () => setChat({ lines: sec.lines, seenId: lore.secretKey(sec.id) }),
         },
       ];
     },
@@ -534,7 +542,7 @@ export function WorldScreen({ map, worldId }: { map: WorldMap; worldId: string }
       if (target.kind === 'resident') {
         const r = target.resident;
         if (r.who === 'pip') return talkToPip();
-        const lines = r.chat ? SCENES[r.chat]?.lines : undefined;
+        const lines = r.chat ? lore.SCENES[r.chat]?.lines : undefined;
         const ask = askChoice(r.who, true);
         setChat({
           lines: lines ?? [{ who: r.who, text: 'Thank you for the lights!' }],
@@ -548,7 +556,7 @@ export function WorldScreen({ map, worldId }: { map: WorldMap; worldId: string }
       if (s.kind === 'shop') go('/shop');
       else if (s.kind === 'daily') talkToPip();
       else if (s.kind === 'note') {
-        const n = NOTES[s.note];
+        const n = lore.NOTES[s.note];
         if (!n) return;
         const first = !save.seen.includes(noteKey(n.id));
         setChat({
@@ -639,8 +647,8 @@ export function WorldScreen({ map, worldId }: { map: WorldMap; worldId: string }
           });
         }
       } else if (s.kind === 'secret') {
-        const sec = SECRETS[s.secret];
-        if (sec) setChat({ lines: sec.lines, seenId: secretKey(sec.id) });
+        const sec = lore.SECRETS[s.secret];
+        if (sec) setChat({ lines: sec.lines, seenId: lore.secretKey(sec.id) });
       }
     },
     [map, save, solved, tutorial, startJob, close, talkToPip, go, askChoice, rockState, rockChests, openChest],
@@ -723,8 +731,8 @@ export function WorldScreen({ map, worldId }: { map: WorldMap; worldId: string }
       if (!talking.current)
         for (const g of ghostsNow.current)
           if (Math.hypot(g.x - w.x, g.y - w.y) < 3.5) {
-            const sec = SECRETS[g.id];
-            if (sec) setChat({ lines: sec.lines, seenId: secretKey(sec.id) });
+            const sec = lore.SECRETS[g.id];
+            if (sec) setChat({ lines: sec.lines, seenId: lore.secretKey(sec.id) });
             break;
           }
       const c = walkerCell(w);

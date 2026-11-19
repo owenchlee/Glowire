@@ -31,7 +31,7 @@ import {
   rng,
 } from '../game/games';
 import { BRAIN_STARS, brainDaily, brainStars } from '../game/dailyBrain';
-import { SECRETS, earnedPuzzleSecrets, secretKey } from '../game/lore';
+import { WithLore, lore as story } from '../game/loreLazy';
 import { payNote, recordBrainDaily, recordGame } from '../game/save';
 import { speakerName } from './Dialog';
 import { SignalLamp } from './SignalLamp';
@@ -48,7 +48,15 @@ const BAND_HEX = ['#242118', '#7b4930', '#d14b34', '#e67c44', '#ffe166', '#74a33
 type Done = { score: number; earned: number; best: number; runStars: number; note: string; stars?: number; bonus?: number; news: string[] };
 
 /** With `day`, this is the Daily Brain Teaser: today's seed, scored in stars. */
-export function MiniGame({ id, day }: { id: GameId; day?: string }) {
+export function MiniGame(props: { id: GameId; day?: string }) {
+  return (
+    <WithLore>
+      <MiniGameBody {...props} />
+    </WithLore>
+  );
+}
+
+function MiniGameBody({ id, day }: { id: GameId; day?: string }) {
   const info = GAMES[id];
   const { save, commitSave, markSeen } = useGame();
   const teaser = useMemo(() => (day ? brainDaily(day) : null), [day]);
@@ -75,8 +83,8 @@ export function MiniGame({ id, day }: { id: GameId; day?: string }) {
         next = daily.save;
         bonus = daily.earned;
       }
-      const lore = earnedPuzzleSecrets(next.games, next.seen, id);
-      if (lore.length) next = { ...next, seen: [...next.seen, ...lore.map((l) => secretKey(l.id))] };
+      const lore = story.earnedPuzzleSecrets(next.games, next.seen, id);
+      if (lore.length) next = { ...next, seen: [...next.seen, ...lore.map((l) => story.secretKey(l.id))] };
       if (next !== save) commitSave(next);
       if (payout.earned > 0 || (bonus ?? 0) > 0) buzz.win();
       setDone({
@@ -154,8 +162,8 @@ export function MiniGame({ id, day }: { id: GameId; day?: string }) {
             onSay={setSay}
             onEnd={finish}
             onSeaAnswer={() => {
-              setSay(SECRETS['sea-answer']!.lines.map((l) => l.text).join(' '));
-              markSeen(secretKey('sea-answer'));
+              setSay(story.SECRETS['sea-answer']!.lines.map((l) => l.text).join(' '));
+              markSeen(story.secretKey('sea-answer'));
             }}
           />
         )}
