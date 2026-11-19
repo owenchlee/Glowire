@@ -48,6 +48,10 @@ config.resolver.resolveRequest = (context, moduleName, platform) => {
   if (platform === 'web' && moduleName === './HeaderSearchBar' && /expo-router[\/\\]build[\/\\]react-navigation[\/\\]elements[\/\\]Header[\/\\]Header\.js$/.test(context.originModulePath)) {
     return { type: 'sourceFile', filePath: require('path').join(__dirname, 'metro-shims', 'header-search-bar.js') };
   }
+  // The game has no native tabs; skip the trigger helpers (and the tab icon code they pull in).
+  if (platform === 'web' && moduleName === '../native-tabs/NativeTabTrigger' && /expo-router[\/\\]build[\/\\]layouts[\/\\]withLayoutContext\.js$/.test(context.originModulePath)) {
+    return { type: 'sourceFile', filePath: require('path').join(__dirname, 'metro-shims', 'native-tab-trigger.js') };
+  }
   // The Tabs / ExperimentalStack layouts are never used (game uses Stack and Slot).
   if (platform === 'web' && (moduleName === './layouts/Tabs' || moduleName === './layouts/experimental-stack') && /expo-router[\/\\]build[\/\\]exports\.js$/.test(context.originModulePath)) {
     return { type: 'sourceFile', filePath: require('path').join(__dirname, 'metro-shims', 'unused-layouts.js') };
