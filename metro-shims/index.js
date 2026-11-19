@@ -8,7 +8,6 @@ export { default as NativeModules } from 'react-native-web/dist/exports/NativeMo
 
 // APIs
 export { default as AccessibilityInfo } from 'react-native-web/dist/exports/AccessibilityInfo';
-export { default as Alert } from 'react-native-web/dist/exports/Alert';
 export { default as Animated } from './animated';
 export { default as Appearance } from 'react-native-web/dist/exports/Appearance';
 export { default as AppRegistry } from 'react-native-web/dist/exports/AppRegistry';
@@ -35,11 +34,8 @@ export { default as ScrollView } from 'react-native-web/dist/exports/ScrollView'
 export { default as SectionList } from './unused-list';
 export { default as StatusBar } from 'react-native-web/dist/exports/StatusBar';
 export { default as Text } from 'react-native-web/dist/exports/Text';
-export { default as TouchableOpacity } from 'react-native-web/dist/exports/TouchableOpacity';
-export { default as TouchableWithoutFeedback } from 'react-native-web/dist/exports/TouchableWithoutFeedback';
 export { default as View } from 'react-native-web/dist/exports/View';
 export { default as VirtualizedList } from './unused-list';
-export { default as LogBox } from 'react-native-web/dist/exports/LogBox';
 
 // plugins
 export { default as DeviceEventEmitter } from 'react-native-web/dist/exports/DeviceEventEmitter';
