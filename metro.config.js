@@ -96,6 +96,10 @@ config.resolver.resolveRequest = (context, moduleName, platform) => {
   if (platform === 'web' && moduleName === './webxr/WebXRManager.js' && /three[\/\\]src[\/\\]renderers[\/\\]WebGLRenderer\.js$/.test(context.originModulePath)) {
     return { type: 'sourceFile', filePath: require('path').join(__dirname, 'metro-shims', 'webxr-manager.js') };
   }
+  // No light casts shadows, so the renderer gets an inert shadow map.
+  if (platform === 'web' && moduleName === './webgl/WebGLShadowMap.js' && /three[\/\\]src[\/\\]renderers[\/\\]WebGLRenderer\.js$/.test(context.originModulePath)) {
+    return { type: 'sourceFile', filePath: require('path').join(__dirname, 'metro-shims', 'shadow-map.js') };
+  }
   // Web only: a ~55-name subset of three (what the game and fiber use) instead of the whole library.
   if (platform === 'web' && moduleName === 'three') {
     return { type: 'sourceFile', filePath: require('path').join(__dirname, 'metro-shims', 'three.js') };
