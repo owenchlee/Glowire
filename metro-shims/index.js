@@ -15,22 +15,16 @@ export { default as AppRegistry } from 'react-native-web/dist/exports/AppRegistr
 export { default as AppState } from 'react-native-web/dist/exports/AppState';
 export { default as AssetRegistry } from 'react-native-web/dist/exports/AssetRegistry';
 export { default as BackHandler } from 'react-native-web/dist/exports/BackHandler';
-export { default as Clipboard } from 'react-native-web/dist/exports/Clipboard';
 export { default as Dimensions } from 'react-native-web/dist/exports/Dimensions';
 export { default as Easing } from 'react-native-web/dist/exports/Easing';
 export { default as I18nManager } from 'react-native-web/dist/exports/I18nManager';
 export { default as Keyboard } from 'react-native-web/dist/exports/Keyboard';
 export { default as InteractionManager } from 'react-native-web/dist/exports/InteractionManager';
-export { default as LayoutAnimation } from 'react-native-web/dist/exports/LayoutAnimation';
 export { default as Linking } from 'react-native-web/dist/exports/Linking';
-export { default as NativeEventEmitter } from 'react-native-web/dist/exports/NativeEventEmitter';
-export { default as PanResponder } from 'react-native-web/dist/exports/PanResponder';
 export { default as PixelRatio } from 'react-native-web/dist/exports/PixelRatio';
 export { default as Platform } from 'react-native-web/dist/exports/Platform';
-export { default as Share } from 'react-native-web/dist/exports/Share';
 export { default as StyleSheet } from 'react-native-web/dist/exports/StyleSheet';
 export { default as UIManager } from 'react-native-web/dist/exports/UIManager';
-export { default as Vibration } from 'react-native-web/dist/exports/Vibration';
 
 // components
 export { default as ActivityIndicator } from 'react-native-web/dist/exports/ActivityIndicator';
@@ -44,14 +38,12 @@ export { default as SectionList } from './unused-list';
 export { default as StatusBar } from 'react-native-web/dist/exports/StatusBar';
 export { default as Text } from 'react-native-web/dist/exports/Text';
 export { default as TextInput } from 'react-native-web/dist/exports/TextInput';
-export { default as Touchable } from 'react-native-web/dist/exports/Touchable';
 export { default as TouchableHighlight } from 'react-native-web/dist/exports/TouchableHighlight';
 export { default as TouchableNativeFeedback } from 'react-native-web/dist/exports/TouchableNativeFeedback';
 export { default as TouchableOpacity } from 'react-native-web/dist/exports/TouchableOpacity';
 export { default as TouchableWithoutFeedback } from 'react-native-web/dist/exports/TouchableWithoutFeedback';
 export { default as View } from 'react-native-web/dist/exports/View';
 export { default as VirtualizedList } from './unused-list';
-export { default as YellowBox } from 'react-native-web/dist/exports/YellowBox';
 export { default as LogBox } from 'react-native-web/dist/exports/LogBox';
 
 // plugins
