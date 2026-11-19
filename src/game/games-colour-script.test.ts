@@ -33,4 +33,10 @@ describe('colour code, scripted rolls', () => {
     expect(q.choices).toEqual([100, 10]);
     expect(s.calls()).toBe(103);
   });
+
+  it('fallback wrong answers stay within one zero either side of the right one', () => {
+    const q = colourQuestion(4, script(0, 0, 0.09, 0).random);
+    expect(q.ohms).toBe(10);
+    expect([...q.choices].sort((x, y) => x - y)).toEqual([10, 12, 100]);
+  });
 });
