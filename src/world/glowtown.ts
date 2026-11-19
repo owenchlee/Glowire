@@ -570,7 +570,7 @@ function marketExtras(b: MapBuilder) {
 
   // The hedge along the south of the square, with a gap on the fountain’s line.
   b.fence(115, 31, 11, 'hedge');
-  b.fence(128, 31, 11, 'hedge');
+  b.fence(130, 31, 9, 'hedge'); // gap at 128-129 too: the market ledge drops into the pond, which needs a way back to the square
   // The market pond: a boardwalk all the way round, and stones to a chest in the middle.
   b.rect('pond', 120, 34, 15, 4);
   b.path('dirt', [{ x: 127, y: 31 }, { x: 127, y: 33 }], 2);
