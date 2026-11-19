@@ -89,10 +89,6 @@ import dithering_fragment from 'three/src/renderers/shaders/ShaderChunk/ditherin
 import dithering_pars_fragment from 'three/src/renderers/shaders/ShaderChunk/dithering_pars_fragment.glsl.js';
 import roughnessmap_fragment from 'three/src/renderers/shaders/ShaderChunk/roughnessmap_fragment.glsl.js';
 import roughnessmap_pars_fragment from 'three/src/renderers/shaders/ShaderChunk/roughnessmap_pars_fragment.glsl.js';
-import shadowmap_pars_fragment from 'three/src/renderers/shaders/ShaderChunk/shadowmap_pars_fragment.glsl.js';
-import shadowmap_pars_vertex from 'three/src/renderers/shaders/ShaderChunk/shadowmap_pars_vertex.glsl.js';
-import shadowmap_vertex from 'three/src/renderers/shaders/ShaderChunk/shadowmap_vertex.glsl.js';
-import shadowmask_pars_fragment from 'three/src/renderers/shaders/ShaderChunk/shadowmask_pars_fragment.glsl.js';
 import skinbase_vertex from 'three/src/renderers/shaders/ShaderChunk/skinbase_vertex.glsl.js';
 import skinning_pars_vertex from 'three/src/renderers/shaders/ShaderChunk/skinning_pars_vertex.glsl.js';
 import skinning_vertex from 'three/src/renderers/shaders/ShaderChunk/skinning_vertex.glsl.js';
@@ -101,8 +97,6 @@ import specularmap_fragment from 'three/src/renderers/shaders/ShaderChunk/specul
 import specularmap_pars_fragment from 'three/src/renderers/shaders/ShaderChunk/specularmap_pars_fragment.glsl.js';
 import tonemapping_fragment from 'three/src/renderers/shaders/ShaderChunk/tonemapping_fragment.glsl.js';
 import tonemapping_pars_fragment from 'three/src/renderers/shaders/ShaderChunk/tonemapping_pars_fragment.glsl.js';
-import transmission_fragment from 'three/src/renderers/shaders/ShaderChunk/transmission_fragment.glsl.js';
-import transmission_pars_fragment from 'three/src/renderers/shaders/ShaderChunk/transmission_pars_fragment.glsl.js';
 import uv_pars_fragment from 'three/src/renderers/shaders/ShaderChunk/uv_pars_fragment.glsl.js';
 import uv_pars_vertex from 'three/src/renderers/shaders/ShaderChunk/uv_pars_vertex.glsl.js';
 import uv_vertex from 'three/src/renderers/shaders/ShaderChunk/uv_vertex.glsl.js';
@@ -217,10 +211,10 @@ export const ShaderChunk = {
 	dithering_pars_fragment: dithering_pars_fragment,
 	roughnessmap_fragment: roughnessmap_fragment,
 	roughnessmap_pars_fragment: roughnessmap_pars_fragment,
-	shadowmap_pars_fragment: shadowmap_pars_fragment,
-	shadowmap_pars_vertex: shadowmap_pars_vertex,
-	shadowmap_vertex: shadowmap_vertex,
-	shadowmask_pars_fragment: shadowmask_pars_fragment,
+	shadowmap_pars_fragment: '',
+	shadowmap_pars_vertex: '',
+	shadowmap_vertex: '',
+	shadowmask_pars_fragment: '',
 	skinbase_vertex: skinbase_vertex,
 	skinning_pars_vertex: skinning_pars_vertex,
 	skinning_vertex: skinning_vertex,
@@ -229,8 +223,8 @@ export const ShaderChunk = {
 	specularmap_pars_fragment: specularmap_pars_fragment,
 	tonemapping_fragment: tonemapping_fragment,
 	tonemapping_pars_fragment: tonemapping_pars_fragment,
-	transmission_fragment: transmission_fragment,
-	transmission_pars_fragment: transmission_pars_fragment,
+	transmission_fragment: '',
+	transmission_pars_fragment: '',
 	uv_pars_fragment: uv_pars_fragment,
 	uv_pars_vertex: uv_pars_vertex,
 	uv_vertex: uv_vertex,
