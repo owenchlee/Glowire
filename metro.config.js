@@ -36,6 +36,14 @@ config.resolver.resolveRequest = (context, moduleName, platform) => {
   if (platform === 'web' && moduleName === './views/Sitemap' && /expo-router[\/\\]build[\/\\][^\/\\]*$/.test(context.originModulePath)) {
     return { type: 'sourceFile', filePath: require('path').join(__dirname, 'metro-shims', 'sitemap.js') };
   }
+  // Static-config helpers are never called by file-based routing.
+  if (platform === 'web' && moduleName === './StaticNavigation' && /expo-router[\/\\]build[\/\\]react-navigation[\/\\]core[\/\\]index\.js$/.test(context.originModulePath)) {
+    return { type: 'sourceFile', filePath: require('path').join(__dirname, 'metro-shims', 'static-navigation.js') };
+  }
+  // The header search bar is never shown (headers are hidden).
+  if (platform === 'web' && moduleName === './HeaderSearchBar' && /expo-router[\/\\]build[\/\\]react-navigation[\/\\]elements[\/\\]Header[\/\\]Header\.js$/.test(context.originModulePath)) {
+    return { type: 'sourceFile', filePath: require('path').join(__dirname, 'metro-shims', 'header-search-bar.js') };
+  }
   // Web-only: react-native-web's lists (~100 KB, unused) and the Animated wrappers that drag them in.
   const shim = platform === 'web' && /^react-native-web\/dist\/exports\/(Animated|FlatList|SectionList|VirtualizedList)$/.exec(moduleName);
   if (shim) {
