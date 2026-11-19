@@ -27,19 +27,14 @@ export { default as StyleSheet } from 'react-native-web/dist/exports/StyleSheet'
 export { default as UIManager } from 'react-native-web/dist/exports/UIManager';
 
 // components
-export { default as ActivityIndicator } from 'react-native-web/dist/exports/ActivityIndicator';
 export { default as FlatList } from './unused-list';
 export { default as Image } from 'react-native-web/dist/exports/Image';
-export { default as Modal } from 'react-native-web/dist/exports/Modal';
 export { default as Pressable } from 'react-native-web/dist/exports/Pressable';
 export { default as SafeAreaView } from 'react-native-web/dist/exports/SafeAreaView';
 export { default as ScrollView } from 'react-native-web/dist/exports/ScrollView';
 export { default as SectionList } from './unused-list';
 export { default as StatusBar } from 'react-native-web/dist/exports/StatusBar';
 export { default as Text } from 'react-native-web/dist/exports/Text';
-export { default as TextInput } from 'react-native-web/dist/exports/TextInput';
-export { default as TouchableHighlight } from 'react-native-web/dist/exports/TouchableHighlight';
-export { default as TouchableNativeFeedback } from 'react-native-web/dist/exports/TouchableNativeFeedback';
 export { default as TouchableOpacity } from 'react-native-web/dist/exports/TouchableOpacity';
 export { default as TouchableWithoutFeedback } from 'react-native-web/dist/exports/TouchableWithoutFeedback';
 export { default as View } from 'react-native-web/dist/exports/View';
