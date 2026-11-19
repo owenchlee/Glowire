@@ -1,14 +1,26 @@
 import { Redirect, useLocalSearchParams } from 'expo-router';
+import { lazy, Suspense } from 'react';
 
 import { getLevel } from '../../src/levels/levels';
-import { BrainJobScreen } from '../../src/ui/BrainJobScreen';
-import { LevelScreen } from '../../src/ui/LevelScreen';
+
+// Lazy so the web title screen does not download the puzzle screens up front.
+const BrainJobScreen = lazy(() =>
+  import('../../src/ui/BrainJobScreen').then((m) => ({ default: m.BrainJobScreen })),
+);
+const LevelScreen = lazy(() => import('../../src/ui/LevelScreen').then((m) => ({ default: m.LevelScreen })));
 
 export default function LevelRoute() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const level = getLevel(Number(id));
   if (!level) return <Redirect href="/" />;
-  if (level.brain) return <BrainJobScreen key={level.id} level={level} brain={level.brain} />;
-  // Keyed by id so moving to the next level starts with fresh state.
-  return <LevelScreen key={level.id} level={level} />;
+  return (
+    <Suspense fallback={null}>
+      {level.brain ? (
+        <BrainJobScreen key={level.id} level={level} brain={level.brain} />
+      ) : (
+        // Keyed by id so moving to the next level starts with fresh state.
+        <LevelScreen key={level.id} level={level} />
+      )}
+    </Suspense>
+  );
 }
