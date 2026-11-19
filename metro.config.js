@@ -96,6 +96,10 @@ config.resolver.resolveRequest = (context, moduleName, platform) => {
   if (platform === 'web' && moduleName === './webxr/WebXRManager.js' && /three[\/\\]src[\/\\]renderers[\/\\]WebGLRenderer\.js$/.test(context.originModulePath)) {
     return { type: 'sourceFile', filePath: require('path').join(__dirname, 'metro-shims', 'webxr-manager.js') };
   }
+  // The HDR output/effects pass is only built for non-default output buffer types, which the game never sets.
+  if (platform === 'web' && moduleName === './webgl/WebGLOutput.js' && /three[\/\\]src[\/\\]renderers[\/\\]WebGLRenderer\.js$/.test(context.originModulePath)) {
+    return { type: 'sourceFile', filePath: require('path').join(__dirname, 'metro-shims', 'webgl-output.js') };
+  }
   // No light casts shadows, so the renderer gets an inert shadow map.
   if (platform === 'web' && moduleName === './webgl/WebGLShadowMap.js' && /three[\/\\]src[\/\\]renderers[\/\\]WebGLRenderer\.js$/.test(context.originModulePath)) {
     return { type: 'sourceFile', filePath: require('path').join(__dirname, 'metro-shims', 'shadow-map.js') };
