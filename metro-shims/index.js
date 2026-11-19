@@ -3,16 +3,13 @@ export { default as unstable_createElement } from 'react-native-web/dist/exports
 export { default as findNodeHandle } from 'react-native-web/dist/exports/findNodeHandle';
 export { default as processColor } from 'react-native-web/dist/exports/processColor';
 export { default as render } from 'react-native-web/dist/exports/render';
-export { default as unmountComponentAtNode } from 'react-native-web/dist/exports/unmountComponentAtNode';
 export { default as NativeModules } from 'react-native-web/dist/exports/NativeModules';
 
 // APIs
-export { default as AccessibilityInfo } from 'react-native-web/dist/exports/AccessibilityInfo';
 export { default as Animated } from './animated';
 export { default as Appearance } from 'react-native-web/dist/exports/Appearance';
 export { default as AppRegistry } from 'react-native-web/dist/exports/AppRegistry';
 export { default as AppState } from 'react-native-web/dist/exports/AppState';
-export { default as AssetRegistry } from 'react-native-web/dist/exports/AssetRegistry';
 export { default as BackHandler } from 'react-native-web/dist/exports/BackHandler';
 export { default as Dimensions } from 'react-native-web/dist/exports/Dimensions';
 export { default as Easing } from 'react-native-web/dist/exports/Easing';
@@ -42,5 +39,4 @@ export { default as DeviceEventEmitter } from 'react-native-web/dist/exports/Dev
 
 // hooks
 export { default as useColorScheme } from 'react-native-web/dist/exports/useColorScheme';
-export { default as useLocaleContext } from 'react-native-web/dist/exports/useLocaleContext';
 export { default as useWindowDimensions } from 'react-native-web/dist/exports/useWindowDimensions';
