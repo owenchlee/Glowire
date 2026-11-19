@@ -80,6 +80,10 @@ config.resolver.resolveRequest = (context, moduleName, platform) => {
   if (platform === 'web' && moduleName === './toolbar' && /expo-router[\/\\]build[\/\\]layouts[\/\\]stack-utils[\/\\](index|StackScreen)\.js$/.test(context.originModulePath)) {
     return { type: 'sourceFile', filePath: require('path').join(__dirname, 'metro-shims', 'stack-toolbar.js') };
   }
+  // StyleSheet validation is dev-only; skip it (and postcss-value-parser) in the web bundle.
+  if (platform === 'web' && moduleName === './validate' && /react-native-web[\/\\]dist[\/\\]exports[\/\\]StyleSheet[\/\\]index\.js$/.test(context.originModulePath)) {
+    return { type: 'sourceFile', filePath: require('path').join(__dirname, 'metro-shims', 'style-validate.js') };
+  }
   // Web-only: react-native-web's lists (~100 KB, unused) and the Animated wrappers that drag them in.
   const shim = platform === 'web' && /^react-native-web\/dist\/exports\/(Animated|FlatList|SectionList|VirtualizedList)$/.exec(moduleName);
   if (shim) {
