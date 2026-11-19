@@ -64,6 +64,10 @@ config.resolver.resolveRequest = (context, moduleName, platform) => {
   if (platform === 'web' && moduleName === '../react-navigation/bottom-tabs' && /expo-router[\/\\]build[\/\\]views[\/\\]ErrorBoundary\.js$/.test(context.originModulePath)) {
     return { type: 'sourceFile', filePath: require('path').join(__dirname, 'metro-shims', 'bottom-tabs.js') };
   }
+  // The primitives and standard-navigation exports are never used by the game.
+  if (platform === 'web' && (moduleName === './primitives' || moduleName === './standard-navigation') && /expo-router[\/\\]build[\/\\]exports\.js$/.test(context.originModulePath)) {
+    return { type: 'sourceFile', filePath: require('path').join(__dirname, 'metro-shims', 'unused-navigation.js') };
+  }
   // Web-only: react-native-web's lists (~100 KB, unused) and the Animated wrappers that drag them in.
   const shim = platform === 'web' && /^react-native-web\/dist\/exports\/(Animated|FlatList|SectionList|VirtualizedList)$/.exec(moduleName);
   if (shim) {
