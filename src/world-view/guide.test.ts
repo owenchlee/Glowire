@@ -33,3 +33,20 @@ describe('Pip the guide', () => {
     expect(guideTip(town, all, null)).toMatch(/Every light/);
   });
 });
+
+describe('Pip never promises what the screen does not draw', () => {
+  it('only talks about gold dots in Glowtown', () => {
+    const harbour = worldMap('harbour')!;
+    const goal = { job: 1, x: 0, y: 0, client: 'pip' };
+    expect(guideTip(harbour, none, goal)).not.toMatch(/gold dots/);
+  });
+
+  it('prefers the job that is closer on foot when given the blocked grid', () => {
+    const first = firstJob(town)!;
+    const solved = (j: number) => j === first;
+    const residents = presentResidents(town, solved);
+    const blocked = blockedCells(town, residents, solved);
+    const goal = nextGoal(town, solved, residents, town.spawn, blocked)!;
+    expect(findPath(town, blocked, town.spawn, goal)).not.toBeNull();
+  });
+});
