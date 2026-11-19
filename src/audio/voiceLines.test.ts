@@ -7,7 +7,14 @@ import { voiceKey } from './voiceKey';
 
 /** Every fixed line of dialog in the game's data, found by walking what each module exports. */
 async function collect(): Promise<Map<string, { who: string; text: string }>> {
-  const mods = import.meta.glob<unknown>(['../**/*.ts', '!../**/*.test.ts', '!../**/*.d.ts']);
+  // Only the data folders: they hold all the dialog and skip the three.js modules.
+  const mods = import.meta.glob<unknown>([
+    '../{game,levels,world,world-view}/**/*.ts',
+    '!../**/*.test.ts',
+    '!../**/*.d.ts',
+    '!../**/*.generated.ts',
+    '!../world-view/{pixels,quads,mapPaint}.ts',
+  ]);
   const out = new Map<string, { who: string; text: string }>();
   const add = (who: unknown, text: unknown) => {
     if (typeof who !== 'string' || typeof text !== 'string' || who === 'hero' || !text.trim()) return;
