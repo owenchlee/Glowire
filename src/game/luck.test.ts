@@ -96,3 +96,26 @@ describe('payday surges', () => {
     expect(migrate(old).luck.spins).toBe(0);
   });
 });
+
+describe('luck boundaries', () => {
+  it('lets you spin or flip with exactly enough sparks', () => {
+    expect(spin(rich(10), 10, fixed(0))!.save.sparks).toBe(40);
+    expect(gamble(rich(40), 40, fixed(0.1))!.save.sparks).toBe(80);
+    expect(gamble(rich(40), 40, fixed(0.9))!.save.sparks).toBe(0);
+  });
+  it('refuses an empty stake', () => {
+    expect(gamble(rich(40), 0, fixed(0.1))).toBeNull();
+  });
+  it('treats exactly 0.5 as a lost flip', () => {
+    expect(gamble(rich(100), 40, fixed(0.5))!.won).toBe(false);
+  });
+  it('keeps the biggest win when a smaller one lands', () => {
+    const save = { ...rich(100), luck: { ...rich(0).luck, biggest: 500 } };
+    expect(gamble(save, 40, fixed(0.1))!.save.luck.biggest).toBe(500);
+    expect(spin(save, 10, fixed(0))!.save.luck.biggest).toBe(500);
+  });
+  it('surge rolls at the exact thresholds', () => {
+    expect(rollSurge(0, fixed(MEGA_SURGE))).toBe(2);
+    expect(rollSurge(0, fixed(MEGA_SURGE + surgeChance(0)))).toBe(1);
+  });
+});
