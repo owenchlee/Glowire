@@ -96,4 +96,10 @@ config.resolver.resolveRequest = (context, moduleName, platform) => {
   return (upstream ?? context.resolveRequest)(context, moduleName, platform);
 };
 
+// Second terser pass shrinks the shipped bundles a little (output stays equivalent).
+config.transformer.minifierConfig = {
+  ...config.transformer.minifierConfig,
+  compress: { ...config.transformer.minifierConfig.compress, passes: 2 },
+};
+
 module.exports = config;
