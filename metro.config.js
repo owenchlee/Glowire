@@ -72,6 +72,10 @@ config.resolver.resolveRequest = (context, moduleName, platform) => {
   if (platform === 'web' && /^\.{1,2}\/(.*\/)?(useRoutePath|useScrollToTop|useSitemap)$/.test(moduleName) && /expo-router[\/\\]build[\/\\]/.test(context.originModulePath)) {
     return { type: 'sourceFile', filePath: require('path').join(__dirname, 'metro-shims', 'unused-hooks.js') };
   }
+  // Stack.Toolbar is native header chrome, never used by the game.
+  if (platform === 'web' && moduleName === './toolbar' && /expo-router[\/\\]build[\/\\]layouts[\/\\]stack-utils[\/\\](index|StackScreen)\.js$/.test(context.originModulePath)) {
+    return { type: 'sourceFile', filePath: require('path').join(__dirname, 'metro-shims', 'stack-toolbar.js') };
+  }
   // Web-only: react-native-web's lists (~100 KB, unused) and the Animated wrappers that drag them in.
   const shim = platform === 'web' && /^react-native-web\/dist\/exports\/(Animated|FlatList|SectionList|VirtualizedList)$/.exec(moduleName);
   if (shim) {
