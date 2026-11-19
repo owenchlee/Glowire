@@ -9,7 +9,7 @@ import { voiceKey } from './voiceKey';
 async function collect(): Promise<Map<string, { who: string; text: string }>> {
   // Only the modules that hold dialog (grep for who/client/ask/sign); the rest add load time only.
   const mods = import.meta.glob<unknown>([
-    '../game/{daily,lore,puzzles,story}.ts',
+    '../game/{lore,puzzles,story}.ts',
     '../game/extras/*.ts',
     '../levels/{chapter[1-8],types}.ts',
     '../world/{builder,deep,glowtown,harbour,mossbell,puzzlekit,types}.ts',
