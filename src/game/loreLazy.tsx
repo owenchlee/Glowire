@@ -11,8 +11,8 @@ export const lore = {} as typeof Lore & typeof Story;
 let loading: Promise<void> | undefined;
 let ready = false;
 const load = () =>
-  (loading ??= Promise.all([import('./lore'), import('./story')]).then(([a, b]) => {
-    Object.assign(lore, a, b);
+  (loading ??= import('./loreBundle').then((a) => {
+    Object.assign(lore, a);
     ready = true;
   }));
 
