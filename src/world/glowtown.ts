@@ -853,7 +853,7 @@ function puzzles(b: MapBuilder) {
   ledgeTerrace(b, 22, 20, 'glowtown-ledge-lane', 20, 'A hedge terrace with a drop on its south side. Hop down, and you’re out. There’s no way back up that way. A bit like regret.');
   ledgeTerrace(b, 122, 26, 'glowtown-ledge-market', 25, 'You can step off a ledge downward, but you can’t climb up it. Slip in through the gap at the top, and leave the quick way.');
   // A boulder can seal the hero into a pocket (or off the spawn side), so each pocket has its own reset sign.
-  for (const [x, y] of [[10, 26], [1, 36], [106, 4], [120, 28], [124, 32], [137, 4], [156, 37], [175, 39], [40, 38], [40, 10], [58, 33], [80, 4], [123, 19]] as const) b.rockReset(x, y);
+  for (const [x, y] of [[43, 8], [40, 2], [44, 3], [10, 26], [1, 36], [106, 4], [120, 28], [124, 32], [137, 4], [156, 37], [175, 39], [40, 38], [40, 10], [58, 33], [80, 4], [123, 19]] as const) b.rockReset(x, y);
   b.fish('glowtown-pond', 42, 36);
   b.fish('glowtown-brook', 50, 30);
 }

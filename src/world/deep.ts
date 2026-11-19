@@ -500,5 +500,5 @@ function puzzles(b: MapBuilder) {
   rockPlug(b, 114, 20, 'deep-rock-vault', 30, 'Something glints behind that boulder. Lean on it twice, and go round. You can push, but you can never pull.', true);
   ledgeTerrace(b, 77, 19, 'deep-ledge-shelf', 25, 'A shelf of rock with a one-way drop on its south side. In through the gap, out over the edge.', true);
   // A boulder can seal the hero into a pocket, so each narrow way gets a reset sign at both ends.
-  for (const [x, y] of [[125, 5], [122, 5], [103, 24], [103, 33], [107, 30], [95, 14], [95, 19], [92, 31], [92, 36], [76, 25], [77, 30], [1, 31], [1, 35]] as const) b.rockReset(x, y);
+  for (const [x, y] of [[106, 37], [125, 5], [122, 5], [103, 24], [103, 33], [107, 30], [95, 14], [95, 19], [92, 31], [92, 36], [76, 25], [77, 30], [1, 31], [1, 35]] as const) b.rockReset(x, y);
 }
