@@ -20,6 +20,10 @@ config.resolver.resolveRequest = (context, moduleName, platform) => {
   if (platform === 'web' && moduleName === './ExpoHead' && /expo-router[\/\\]build[\/\\]head[\/\\]/.test(context.originModulePath)) {
     return { type: 'sourceFile', filePath: require('path').join(__dirname, 'metro-shims', 'expo-head.js') };
   }
+  // The iOS-only link preview is never rendered on web.
+  if (platform === 'web' && moduleName === './LinkWithPreview' && /expo-router[\/\\]build[\/\\]link[\/\\]/.test(context.originModulePath)) {
+    return { type: 'sourceFile', filePath: require('path').join(__dirname, 'metro-shims', 'link-with-preview.js') };
+  }
   // Web-only: react-native-web's lists (~100 KB, unused) and the Animated wrappers that drag them in.
   const shim = platform === 'web' && /^react-native-web\/dist\/exports\/(Animated|FlatList|SectionList|VirtualizedList)$/.exec(moduleName);
   if (shim) {
