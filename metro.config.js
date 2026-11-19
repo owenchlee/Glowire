@@ -28,6 +28,10 @@ config.resolver.resolveRequest = (context, moduleName, platform) => {
   if (platform === 'web' && moduleName === './preview/HrefPreview' && /expo-router[\/\\]build[\/\\]link[\/\\]elements\.js$/.test(context.originModulePath)) {
     return { type: 'sourceFile', filePath: require('path').join(__dirname, 'metro-shims', 'href-preview.js') };
   }
+  // The dev/empty-route toast is never shown.
+  if (platform === 'web' && moduleName === './Toast' && /expo-router[\/\\]build[\/\\]views[\/\\]/.test(context.originModulePath)) {
+    return { type: 'sourceFile', filePath: require('path').join(__dirname, 'metro-shims', 'toast.js') };
+  }
   // The dev sitemap screen is never shown.
   if (platform === 'web' && moduleName === './views/Sitemap' && /expo-router[\/\\]build[\/\\][^\/\\]*$/.test(context.originModulePath)) {
     return { type: 'sourceFile', filePath: require('path').join(__dirname, 'metro-shims', 'sitemap.js') };
