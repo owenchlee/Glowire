@@ -37,13 +37,10 @@ async function collect(): Promise<Map<string, { who: string; text: string }>> {
     }
     for (const x of Array.isArray(v) ? v : Object.values(o)) walk(x, depth + 1);
   };
-  for (const load of Object.values(mods)) {
-    try {
-      walk(await load(), 0);
-    } catch {
-      // Modules that need React Native can't load in Node; dialog data never lives in them.
-    }
-  }
+  // Load together so vite transforms the modules in parallel; walk in glob order so the list order is unchanged.
+  const loaded = await Promise.allSettled(Object.values(mods).map((load) => load()));
+  // Modules that need React Native can't load in Node; dialog data never lives in them.
+  for (const r of loaded) if (r.status === 'fulfilled') walk(r.value, 0);
   return out;
 }
 
