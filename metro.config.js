@@ -84,6 +84,10 @@ config.resolver.resolveRequest = (context, moduleName, platform) => {
   if (platform === 'web' && moduleName === './validate' && /react-native-web[\/\\]dist[\/\\]exports[\/\\]StyleSheet[\/\\]index\.js$/.test(context.originModulePath)) {
     return { type: 'sourceFile', filePath: require('path').join(__dirname, 'metro-shims', 'style-validate.js') };
   }
+  // Only mergeGeometries is used from BufferGeometryUtils; the trimmed copy drops ~10 KB of unused helpers.
+  if (platform === 'web' && moduleName === 'three/examples/jsm/utils/BufferGeometryUtils.js') {
+    return { type: 'sourceFile', filePath: require('path').join(__dirname, 'metro-shims', 'buffer-geometry-utils.js') };
+  }
   // Web-only: react-native-web's lists (~100 KB, unused) and the Animated wrappers that drag them in.
   const shim = platform === 'web' && /^react-native-web\/dist\/exports\/(Animated|FlatList|SectionList|VirtualizedList)$/.exec(moduleName);
   if (shim) {
