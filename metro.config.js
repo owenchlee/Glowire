@@ -52,6 +52,10 @@ config.resolver.resolveRequest = (context, moduleName, platform) => {
   if (platform === 'web' && (moduleName === './layouts/Tabs' || moduleName === './layouts/experimental-stack') && /expo-router[\/\\]build[\/\\]exports\.js$/.test(context.originModulePath)) {
     return { type: 'sourceFile', filePath: require('path').join(__dirname, 'metro-shims', 'unused-layouts.js') };
   }
+  // The Tab/Drawer routers are never used (game uses Stack and Slot); the routers index re-exports them lazily.
+  if (platform === 'web' && (moduleName === './TabRouter' || moduleName === './DrawerRouter') && /expo-router[\/\\]build[\/\\]react-navigation[\/\\]routers[\/\\]index\.js$/.test(context.originModulePath)) {
+    return { type: 'sourceFile', filePath: require('path').join(__dirname, 'metro-shims', 'unused-layouts.js') };
+  }
   // Web-only: react-native-web's lists (~100 KB, unused) and the Animated wrappers that drag them in.
   const shim = platform === 'web' && /^react-native-web\/dist\/exports\/(Animated|FlatList|SectionList|VirtualizedList)$/.exec(moduleName);
   if (shim) {
