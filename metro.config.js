@@ -56,6 +56,10 @@ config.resolver.resolveRequest = (context, moduleName, platform) => {
   if (platform === 'web' && (moduleName === './TabRouter' || moduleName === './DrawerRouter') && /expo-router[\/\\]build[\/\\]react-navigation[\/\\]routers[\/\\]index\.js$/.test(context.originModulePath)) {
     return { type: 'sourceFile', filePath: require('path').join(__dirname, 'metro-shims', 'unused-layouts.js') };
   }
+  // ErrorBoundary pulls the whole bottom-tabs package just for one context; the game has no tabs.
+  if (platform === 'web' && moduleName === '../react-navigation/bottom-tabs' && /expo-router[\/\\]build[\/\\]views[\/\\]ErrorBoundary\.js$/.test(context.originModulePath)) {
+    return { type: 'sourceFile', filePath: require('path').join(__dirname, 'metro-shims', 'bottom-tabs.js') };
+  }
   // Web-only: react-native-web's lists (~100 KB, unused) and the Animated wrappers that drag them in.
   const shim = platform === 'web' && /^react-native-web\/dist\/exports\/(Animated|FlatList|SectionList|VirtualizedList)$/.exec(moduleName);
   if (shim) {
