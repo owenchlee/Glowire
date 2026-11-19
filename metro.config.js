@@ -72,6 +72,10 @@ config.resolver.resolveRequest = (context, moduleName, platform) => {
   if (platform === 'web' && (moduleName === './primitives' || moduleName === './standard-navigation') && /expo-router[\/\\]build[\/\\]exports\.js$/.test(context.originModulePath)) {
     return { type: 'sourceFile', filePath: require('path').join(__dirname, 'metro-shims', 'unused-navigation.js') };
   }
+  // expo-router's Color helpers are never used by the game.
+  if (platform === 'web' && moduleName === './color' && /expo-router[\/\\]build[\/\\]index\.js$/.test(context.originModulePath)) {
+    return { type: 'sourceFile', filePath: require('path').join(__dirname, 'metro-shims', 'unused-color.js') };
+  }
   // Hooks the game never calls; swap them for stubs (the index files re-export them eagerly).
   if (platform === 'web' && /^\.{1,2}\/(.*\/)?(useRoutePath|useScrollToTop|useSitemap)$/.test(moduleName) && /expo-router[\/\\]build[\/\\]/.test(context.originModulePath)) {
     return { type: 'sourceFile', filePath: require('path').join(__dirname, 'metro-shims', 'unused-hooks.js') };
