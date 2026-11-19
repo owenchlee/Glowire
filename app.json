@@ -29,7 +29,7 @@
     },
     "scheme": "glowire",
     "plugins": [
-      "expo-router",
+      ["expo-router", { "asyncRoutes": { "web": "production" } }],
       "expo-asset",
       "expo-font"
     ]
