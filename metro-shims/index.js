@@ -1,4 +1,4 @@
-// react-native-web/dist/index.js with the list components stubbed out (see metro.config.js). Web only.
+// react-native-web/dist/index.js with the list components stubbed out (see metro.config.js). Web only. Unused components dropped.
 export { default as unstable_createElement } from 'react-native-web/dist/exports/createElement';
 export { default as findNodeHandle } from 'react-native-web/dist/exports/findNodeHandle';
 export { default as processColor } from 'react-native-web/dist/exports/processColor';
@@ -34,23 +34,14 @@ export { default as Vibration } from 'react-native-web/dist/exports/Vibration';
 
 // components
 export { default as ActivityIndicator } from 'react-native-web/dist/exports/ActivityIndicator';
-export { default as Button } from 'react-native-web/dist/exports/Button';
-export { default as CheckBox } from 'react-native-web/dist/exports/CheckBox';
 export { default as FlatList } from './unused-list';
 export { default as Image } from 'react-native-web/dist/exports/Image';
-export { default as ImageBackground } from 'react-native-web/dist/exports/ImageBackground';
-export { default as InputAccessoryView } from 'react-native-web/dist/exports/InputAccessoryView';
-export { default as KeyboardAvoidingView } from 'react-native-web/dist/exports/KeyboardAvoidingView';
 export { default as Modal } from 'react-native-web/dist/exports/Modal';
-export { default as Picker } from 'react-native-web/dist/exports/Picker';
 export { default as Pressable } from 'react-native-web/dist/exports/Pressable';
-export { default as ProgressBar } from 'react-native-web/dist/exports/ProgressBar';
-export { default as RefreshControl } from 'react-native-web/dist/exports/RefreshControl';
 export { default as SafeAreaView } from 'react-native-web/dist/exports/SafeAreaView';
 export { default as ScrollView } from 'react-native-web/dist/exports/ScrollView';
 export { default as SectionList } from './unused-list';
 export { default as StatusBar } from 'react-native-web/dist/exports/StatusBar';
-export { default as Switch } from 'react-native-web/dist/exports/Switch';
 export { default as Text } from 'react-native-web/dist/exports/Text';
 export { default as TextInput } from 'react-native-web/dist/exports/TextInput';
 export { default as Touchable } from 'react-native-web/dist/exports/Touchable';
