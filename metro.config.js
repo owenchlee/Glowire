@@ -100,6 +100,10 @@ config.resolver.resolveRequest = (context, moduleName, platform) => {
   if (platform === 'web' && moduleName === './webgl/WebGLOutput.js' && /three[\/\\]src[\/\\]renderers[\/\\]WebGLRenderer\.js$/.test(context.originModulePath)) {
     return { type: 'sourceFile', filePath: require('path').join(__dirname, 'metro-shims', 'webgl-output.js') };
   }
+  // No mesh has morph targets, so the renderer gets an inert updater.
+  if (platform === 'web' && moduleName === './webgl/WebGLMorphtargets.js' && /three[\/\\]src[\/\\]renderers[\/\\]WebGLRenderer\.js$/.test(context.originModulePath)) {
+    return { type: 'sourceFile', filePath: require('path').join(__dirname, 'metro-shims', 'morphtargets.js') };
+  }
   // No light casts shadows, so the renderer gets an inert shadow map.
   if (platform === 'web' && moduleName === './webgl/WebGLShadowMap.js' && /three[\/\\]src[\/\\]renderers[\/\\]WebGLRenderer\.js$/.test(context.originModulePath)) {
     return { type: 'sourceFile', filePath: require('path').join(__dirname, 'metro-shims', 'shadow-map.js') };
