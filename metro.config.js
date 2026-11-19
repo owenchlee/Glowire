@@ -68,6 +68,10 @@ config.resolver.resolveRequest = (context, moduleName, platform) => {
   if (platform === 'web' && (moduleName === './primitives' || moduleName === './standard-navigation') && /expo-router[\/\\]build[\/\\]exports\.js$/.test(context.originModulePath)) {
     return { type: 'sourceFile', filePath: require('path').join(__dirname, 'metro-shims', 'unused-navigation.js') };
   }
+  // Hooks the game never calls; swap them for stubs (the index files re-export them eagerly).
+  if (platform === 'web' && /^\.{1,2}\/(.*\/)?(useRoutePath|useScrollToTop|useSitemap)$/.test(moduleName) && /expo-router[\/\\]build[\/\\]/.test(context.originModulePath)) {
+    return { type: 'sourceFile', filePath: require('path').join(__dirname, 'metro-shims', 'unused-hooks.js') };
+  }
   // Web-only: react-native-web's lists (~100 KB, unused) and the Animated wrappers that drag them in.
   const shim = platform === 'web' && /^react-native-web\/dist\/exports\/(Animated|FlatList|SectionList|VirtualizedList)$/.exec(moduleName);
   if (shim) {
