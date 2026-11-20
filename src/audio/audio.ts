@@ -2,7 +2,7 @@
 // Sounds are made by scripts/audio-art.mjs, levels baked in (so nothing sets volume, which
 // iOS Safari ignores anyway).
 
-import { type AudioPlayer, createAudioPlayer, setAudioModeAsync } from 'expo-audio';
+import type { AudioPlayer } from 'expo-audio';
 import { Platform } from 'react-native';
 
 import type { Surface } from './surface';
@@ -65,9 +65,19 @@ let lastStep = 0;
 let lastVariant = -1;
 const players = new Map<number, AudioPlayer>();
 
+// expo-audio is only needed once something plays, which on web is after the first tap: load it then
+// so the title screen doesn't pay for it. Native bundles it up front.
+let audio: typeof import('expo-audio') | null = Platform.OS === 'web' ? null : require('expo-audio');
+let loading: Promise<unknown> | undefined;
+function whenReady(fn: () => void): void {
+  if (audio) return fn();
+  loading ??= import('expo-audio').then((m) => (audio = m), () => {});
+  void loading.then(() => audio && fn());
+}
+
 // Respect the iOS silent switch, and let the player's own music keep playing underneath.
-if (Platform.OS !== 'web')
-  setAudioModeAsync({ playsInSilentMode: false, interruptionMode: 'mixWithOthers' }).catch(
+if (audio)
+  audio.setAudioModeAsync({ playsInSilentMode: false, interruptionMode: 'mixWithOthers' }).catch(
     () => {},
   );
 
@@ -75,7 +85,7 @@ if (Platform.OS !== 'web')
 function player(source: number): AudioPlayer | null {
   try {
     let p = players.get(source);
-    if (!p) players.set(source, (p = createAudioPlayer(source)));
+    if (!p) players.set(source, (p = audio!.createAudioPlayer(source)));
     return p;
   } catch {
     return null;
@@ -96,23 +106,28 @@ function unlocked(): boolean {
 /** Play from the start, cutting off the sound if it's still going. */
 function fire(source: number) {
   if (muted || !unlocked()) return;
-  const p = player(source);
-  if (!p) return;
-  try {
-    p.seekTo(0)
-      .then(() => p.play())
-      .catch(() => {});
-  } catch {}
+  whenReady(() => {
+    const p = player(source);
+    if (!p) return;
+    try {
+      p.seekTo(0)
+        .then(() => p.play())
+        .catch(() => {});
+    } catch {}
+  });
 }
 
 function playMusicNow() {
   if (!wantMusic || muted) return;
-  const p = player(MUSIC[track]);
-  if (!p) return;
-  try {
-    p.loop = true;
-    p.play();
-  } catch {}
+  whenReady(() => {
+    if (!wantMusic || muted) return;
+    const p = player(MUSIC[track]);
+    if (!p) return;
+    try {
+      p.loop = true;
+      p.play();
+    } catch {}
+  });
 }
 
 let waiting = false;
@@ -192,12 +207,15 @@ let voice: AudioPlayer | null = null;
 export function playVoice(source: number): void {
   stopVoice();
   if (muted || !unlocked()) return;
-  try {
-    voice = createAudioPlayer(source);
-    voice.play();
-  } catch {
-    voice = null;
-  }
+  whenReady(() => {
+    stopVoice();
+    try {
+      voice = audio!.createAudioPlayer(source);
+      voice.play();
+    } catch {
+      voice = null;
+    }
+  });
 }
 
 /** Stop the line being spoken (and free its player: there are hundreds of lines). */

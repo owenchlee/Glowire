@@ -12,7 +12,7 @@ import { useGame } from './game';
 import { TitleBackdrop } from './TitleBackdrop';
 import { SoundToggle } from './SoundToggle';
 import { startMusic } from '../audio/audio';
-import { BrainDailyCard, DailyCard, GlowLogo, Rise } from './WorldSelect';
+import { BrainDailyCard, DailyCard, GlowLogo, Rise } from './TitleParts';
 
 interface Item {
   label: string;

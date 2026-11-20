@@ -1,0 +1,42 @@
+// react-native-web/dist/index.js with the list components stubbed out (see metro.config.js). Web only. Unused components dropped.
+export { default as unstable_createElement } from 'react-native-web/dist/exports/createElement';
+export { default as findNodeHandle } from 'react-native-web/dist/exports/findNodeHandle';
+export { default as processColor } from 'react-native-web/dist/exports/processColor';
+export { default as render } from 'react-native-web/dist/exports/render';
+export { default as NativeModules } from 'react-native-web/dist/exports/NativeModules';
+
+// APIs
+export { default as Animated } from './animated';
+export { default as Appearance } from 'react-native-web/dist/exports/Appearance';
+export { default as AppRegistry } from 'react-native-web/dist/exports/AppRegistry';
+export { default as AppState } from 'react-native-web/dist/exports/AppState';
+export { default as BackHandler } from 'react-native-web/dist/exports/BackHandler';
+export { default as Dimensions } from 'react-native-web/dist/exports/Dimensions';
+export { default as Easing } from 'react-native-web/dist/exports/Easing';
+export { default as I18nManager } from 'react-native-web/dist/exports/I18nManager';
+export { default as Keyboard } from 'react-native-web/dist/exports/Keyboard';
+export { default as InteractionManager } from 'react-native-web/dist/exports/InteractionManager';
+export { default as Linking } from 'react-native-web/dist/exports/Linking';
+export { default as PixelRatio } from 'react-native-web/dist/exports/PixelRatio';
+export { default as Platform } from 'react-native-web/dist/exports/Platform';
+export { default as StyleSheet } from 'react-native-web/dist/exports/StyleSheet';
+export { default as UIManager } from 'react-native-web/dist/exports/UIManager';
+
+// components
+export { default as FlatList } from './unused-list';
+export { default as Image } from 'react-native-web/dist/exports/Image';
+export { default as Pressable } from 'react-native-web/dist/exports/Pressable';
+export { default as SafeAreaView } from 'react-native-web/dist/exports/SafeAreaView';
+export { default as ScrollView } from 'react-native-web/dist/exports/ScrollView';
+export { default as SectionList } from './unused-list';
+export { default as StatusBar } from 'react-native-web/dist/exports/StatusBar';
+export { default as Text } from 'react-native-web/dist/exports/Text';
+export { default as View } from 'react-native-web/dist/exports/View';
+export { default as VirtualizedList } from './unused-list';
+
+// plugins
+export { default as DeviceEventEmitter } from 'react-native-web/dist/exports/DeviceEventEmitter';
+
+// hooks
+export { default as useColorScheme } from 'react-native-web/dist/exports/useColorScheme';
+export { default as useWindowDimensions } from 'react-native-web/dist/exports/useWindowDimensions';

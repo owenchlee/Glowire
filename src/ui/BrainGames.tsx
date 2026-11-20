@@ -50,28 +50,8 @@ import { BASE_HEIGHT, TOP } from '../render/layout';
 import { Arm } from '../render/TileModel';
 import type { Direction } from '../engine';
 import { buzz } from './haptics';
+import { type BrainProps, type HintRef, useHint } from './hint';
 import { CREAM, GOLD, GREEN, INK, PixelButton, PixelText, RED } from './pixel';
-
-/** Where a game leaves Pip a way to read its board: returns one concrete tip, or null. */
-export type HintRef = { current: (() => string | null) | null };
-
-export interface BrainProps {
-  seed: number;
-  onSay: (s: string) => void;
-  onEnd: (score: number) => void;
-  hint?: HintRef;
-}
-
-/** Keep Pip's view of the board current (and gone once the game closes). */
-export function useHint(hint: HintRef | undefined, read: () => string | null) {
-  useEffect(() => {
-    if (!hint) return;
-    hint.current = read;
-    return () => {
-      hint.current = null;
-    };
-  });
-}
 
 const place = (i: number, w: number) => `row ${Math.floor(i / w) + 1}, column ${(i % w) + 1}`;
 

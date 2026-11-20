@@ -9,8 +9,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { CAST } from '../game/cast';
 import { GAMES, type GameId } from '../game/games';
-import { PERSON_SECRETS, SECRETS, type Secret, secretKey } from '../game/lore';
-import { NOTES, type Line } from '../game/story';
+import type { Secret } from '../game/lore';
+import { WithLore, lore } from '../game/loreLazy';
+import type { Line } from '../game/story';
 import { speakerName } from './Dialog';
 import { useGame } from './game';
 import {
@@ -34,9 +35,17 @@ type Tab = 'notebook' | 'secrets' | 'people';
 const WORLD_NAMES = { glowtown: 'Glowtown', harbour: 'Driftwood Harbour', mossbell: 'Mossbell Hollow', deep: 'Brightwater Deep' } as const;
 
 /** People with a page in the journal: anyone with a secret to tell. */
-const PEOPLE = Object.keys(PERSON_SECRETS);
-
 export function Journal() {
+  return (
+    <WithLore>
+      <JournalBody />
+    </WithLore>
+  );
+}
+
+function JournalBody() {
+  const { PERSON_SECRETS, SECRETS, NOTES, secretKey } = lore;
+  const PEOPLE = Object.keys(PERSON_SECRETS);
   const { save } = useGame();
   const [tab, setTab] = useState<Tab>('notebook');
   const [open, setOpen] = useState<{ title: string; lines: Line[] } | null>(null);
