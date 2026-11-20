@@ -345,7 +345,7 @@ export function WorldScreen({ map, worldId }: { map: WorldMap; worldId: string }
   // Pip's guide: the next job, and the Glowire glowing along the road to it.
   const [heroCell, setHeroCell] = useState(() => walkerCell(start));
   const tutorial = inTutorial(map, solved);
-  const goal = useMemo(() => nextGoal(map, solved, residents, heroCell), [map, solved, residents, heroCell]);
+  const goal = useMemo(() => nextGoal(map, solved, residents, heroCell, blocked), [map, solved, residents, heroCell, blocked]);
   const trail = useMemo(
     // Only the first world lays the glowing road; later worlds are for exploring.
     () => (goal && map.id === 'glowtown' ? (findPath(map, blocked, heroCell, goal) ?? []) : []),

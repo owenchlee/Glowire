@@ -5,7 +5,7 @@ import type { Line } from '../game/story';
 import { person } from '../game/cast';
 import { bandText } from '../levels/evaluate';
 import { LEVELS } from '../levels/levels';
-import { type Solved, areaOfJob, jobOpen } from '../world/logic';
+import { type Solved, areaOfJob, findPath, jobOpen } from '../world/logic';
 import type { Point, Resident, WorldMap } from '../world/types';
 
 const levelById = (id: number) => LEVELS.find((l) => l.id === id)!;
@@ -28,7 +28,7 @@ export const inTutorial = (map: WorldMap, solved: Solved) => {
 };
 
 /** The nearest job you can do right now (open, not done yet), or null when there's none. */
-export function nextGoal(map: WorldMap, solved: Solved, residents: Resident[], from: Point): Goal | null {
+export function nextGoal(map: WorldMap, solved: Solved, residents: Resident[], from: Point, blocked?: Uint8Array): Goal | null {
   const spots: Goal[] = [];
   const add = (job: number, x: number, y: number) => {
     if (solved(job) || !jobOpen(map, job, solved)) return;
@@ -41,8 +41,18 @@ export function nextGoal(map: WorldMap, solved: Solved, residents: Resident[], f
   const first = firstJob(map);
   const tutorial = inTutorial(map, solved) && spots.find((g) => g.job === first);
   if (tutorial) return tutorial;
-  const dist = (g: Goal) => Math.abs(g.x - from.x) + Math.abs(g.y - from.y);
-  return spots.reduce((a, b) => (dist(b) < dist(a) ? b : a));
+  if (!blocked) {
+    const dist = (g: Goal) => Math.abs(g.x - from.x) + Math.abs(g.y - from.y);
+    return spots.reduce((a, b) => (dist(b) < dist(a) ? b : a));
+  }
+  // Nearest on foot (the grid findPath walks); jobs you can't walk to are left out.
+  let best: Goal | null = null;
+  let bestLen = Infinity;
+  for (const g of spots) {
+    const len = findPath(map, blocked, from, g)?.length;
+    if (len !== undefined && len < bestLen) [best, bestLen] = [g, len];
+  }
+  return best;
 }
 
 const nameOf = (id: string) => {
@@ -60,7 +70,9 @@ export function guideTip(map: WorldMap, solved: Solved, goal: Goal | null): stri
   if (inTutorial(map, solved))
     return `Follow the glowing gold dots to ${who}’s house. Face the “!” and press E (or tap Knock).`;
   const area = map.areas[areaOfJob(map, goal.job)]?.name ?? 'town';
-  return `${who} in ${area} still needs light. Follow the gold dots and knock.`;
+  // Only Glowtown draws the gold-dot trail.
+  const how = map.id === 'glowtown' ? 'Follow the gold dots and knock.' : 'Go find them and knock.';
+  return `${who} in ${area} still needs light. ${how}`;
 }
 
 /** What Pip says when you press "Need help?" out in the world. */
