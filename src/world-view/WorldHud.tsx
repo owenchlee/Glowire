@@ -1,11 +1,12 @@
-import { useEffect, useState } from 'react';
+import { memo, useEffect, useState } from 'react';
 import { Animated, Easing, StyleSheet, View } from 'react-native';
 
 import { Counter, GOLD, PixelText } from '../ui/pixel';
 import { clockText, currentPhase, daylight } from './daylight';
 
 /** The name of the place you've just walked into, fading in over the picture and away again. */
-export function AreaBanner({ name, world }: { name: string; world: string }) {
+export const AreaBanner = memo(AreaBannerView);
+function AreaBannerView({ name, world }: { name: string; world: string }) {
   const [t] = useState(() => new Animated.Value(0));
   useEffect(() => {
     Animated.sequence([

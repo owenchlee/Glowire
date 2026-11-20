@@ -1,7 +1,7 @@
 // Draws a world: the tile map, everyone standing in it, and the hero, lit for night.
 // Game state lives in refs owned by the screen; this only reads it every frame.
 
-import { type RefObject, useEffect, useMemo, useRef, useState } from 'react';
+import { type ReactNode, type RefObject, memo, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { StyleSheet } from 'react-native';
 import type { RootState } from '@react-three/fiber';
 import { type BufferGeometry, CircleGeometry, Color, type Group, MeshBasicMaterial, type Mesh, type OrthographicCamera, type ShaderMaterial, type Texture } from 'three';
@@ -73,7 +73,36 @@ interface Props {
   cellsTall?: number;
 }
 
-export function WorldCanvas(props: Props) {
+const CAMERA = { position: [0, 0, 100] as [number, number, number], zoom: 48, near: 0.1, far: 1000 };
+
+/** The Canvas shell, memoized so a new prop from the screen doesn't re-render r3f's context bridge (about 40 providers). */
+const CanvasShell = memo(function CanvasShell({ paused, children }: { paused: boolean; children: ReactNode }) {
+  return (
+    <Canvas style={StyleSheet.absoluteFill} frameloop={paused ? 'never' : 'always'} orthographic camera={CAMERA}>
+      <color attach="background" args={['#0d0f1e']} />
+      {children}
+    </Canvas>
+  );
+});
+
+interface PropStore {
+  props: Props;
+  subs: Set<() => void>;
+}
+
+/** Reads the latest props from the store, so only the scene re-renders when they change. */
+function SceneHost({ store, sheets }: { store: RefObject<PropStore>; sheets: { city: Texture; people: Texture } }) {
+  const props = useSyncExternalStore(
+    (cb) => {
+      store.current.subs.add(cb);
+      return () => void store.current.subs.delete(cb);
+    },
+    () => store.current.props,
+  );
+  return <Scene {...props} sheets={sheets} />;
+}
+
+export const WorldCanvas = memo(function WorldCanvas(props: Props) {
   const [sheets, setSheets] = useState<{ city: Texture; people: Texture } | null>(null);
   useEffect(() => {
     let alive = true;
@@ -85,18 +114,16 @@ export function WorldCanvas(props: Props) {
     };
   }, []);
 
-  return (
-    <Canvas
-      style={StyleSheet.absoluteFill}
-      frameloop={props.paused ? 'never' : 'always'}
-      orthographic
-      camera={{ position: [0, 0, 100], zoom: 48, near: 0.1, far: 1000 }}
-    >
-      <color attach="background" args={['#0d0f1e']} />
-      {sheets && <Scene {...props} sheets={sheets} />}
-    </Canvas>
-  );
-}
+  const store = useRef<PropStore>({ props, subs: new Set() });
+  useEffect(() => {
+    if (store.current.props === props) return;
+    store.current.props = props;
+    store.current.subs.forEach((cb) => cb());
+  });
+  const scene = useMemo(() => sheets && <SceneHost store={store} sheets={sheets} />, [sheets]);
+
+  return <CanvasShell paused={!!props.paused}>{scene}</CanvasShell>;
+});
 
 function sheetOf(t: Texture): Sheet {
   const img = t.image as { width: number; height: number };
@@ -255,7 +282,7 @@ function Scene({
 }
 
 /** Bubbles drifting up from the seabed all round the camera, wobbling as they go. */
-function SeaBubbles({ sheet, material }: { sheet: Sheet; material: ShaderMaterial }) {
+function SeaBubblesBase({ sheet, material }: { sheet: Sheet; material: ShaderMaterial }) {
   const g = useQuad(sheet, EXTRAS.indexOf('bubble') * T, 112, T, T, 0.5, 0.5);
   const group = useRef<Group>(null);
   const seeds = useMemo(() => Array.from({ length: 28 }, (_, i) => ({ x: (i * 7.31) % 1, y: (i * 3.77) % 1, speed: 0.6 + ((i * 0.37) % 1) * 0.9, size: 0.5 + ((i * 0.53) % 1) * 0.7 })), []);
@@ -290,7 +317,7 @@ function SeaBubbles({ sheet, material }: { sheet: Sheet; material: ShaderMateria
  * When the hero's lantern runs low, eyes open in the dark around them, blinking, a little
  * closer the lower it gets. They're gone the moment the light comes back.
  */
-function DarkEyes({
+function DarkEyesBase({
   walker,
   lantern,
   sheet,
@@ -480,12 +507,12 @@ function useQuad(sheet: Sheet, sx: number, sy: number, sw: number, sh: number, w
 }
 
 /** A soft shadow under someone's feet. */
-function Shadow({ sheet, material }: { sheet: Sheet; material: ShaderMaterial }) {
+const Shadow = memo(function Shadow({ sheet, material }: { sheet: Sheet; material: ShaderMaterial }) {
   const g = useQuad(sheet, 0, 112 + 4, 16, 12, 1, 0.75);
   return <mesh geometry={g} material={material} position={[0, -0.3, -0.003]} />;
-}
+});
 
-function Person({
+const Person = memo(function Person({
   who,
   x,
   y,
@@ -539,14 +566,14 @@ function Person({
       <mesh ref={ref} geometry={g} material={material} />
     </group>
   );
-}
+});
 
 export interface Puff {
   x: number;
   y: number;
 }
 
-function Hero({
+function HeroBase({
   who,
   walker,
   ledges,
@@ -606,7 +633,7 @@ function Hero({
  * A pet follows the hero's footsteps about one cell behind, hopping between its two frames
  * while it moves and facing the way it's going.
  */
-function Pet({ id, walker, sheet, material }: { id: string; walker: RefObject<Walker>; sheet: Sheet; material: ShaderMaterial }) {
+function PetBase({ id, walker, sheet, material }: { id: string; walker: RefObject<Walker>; sheet: Sheet; material: ShaderMaterial }) {
   const column = Math.max(0, PEOPLE.indexOf(id as (typeof PEOPLE)[number]));
   const g = useQuad(sheet, column * 64, 0, T, T);
   const ref = useRef<Mesh>(null);
@@ -651,7 +678,7 @@ function Pet({ id, walker, sheet, material }: { id: string; walker: RefObject<Wa
 }
 
 /** Someone who isn't quite there: they bob, and flicker in and out like a candle. */
-function Ghost({ who, x, y, sheet, material }: { who: string; x: number; y: number; sheet: Sheet; material: ShaderMaterial }) {
+function GhostBase({ who, x, y, sheet, material }: { who: string; x: number; y: number; sheet: Sheet; material: ShaderMaterial }) {
   const column = Math.max(0, PEOPLE.indexOf(who as (typeof PEOPLE)[number]));
   const g = useQuad(sheet, column * 64, 0, T, T);
   const ref = useRef<Mesh>(null);
@@ -677,7 +704,7 @@ const HALO_GOLD = new MeshBasicMaterial({ color: '#ffb52e', transparent: true, o
  * pulse of current running along them toward it. Drawn above the ground and below
  * everything standing on it, unlit, so it glows in the dark.
  */
-function GlowTrail({ path }: { path: { x: number; y: number }[] }) {
+function GlowTrailBase({ path }: { path: { x: number; y: number }[] }) {
   const dots = path.slice(0, TRAIL_MAX);
   const group = useRef<Group>(null);
   useFrame(({ clock }) => {
@@ -702,7 +729,7 @@ function GlowTrail({ path }: { path: { x: number; y: number }[] }) {
 }
 
 /** A tiny twinkle that comes and goes: something here is worth a closer look. */
-function Sparkle({ x, y, sheet, material }: { x: number; y: number; sheet: Sheet; material: ShaderMaterial }) {
+const Sparkle = memo(function Sparkle({ x, y, sheet, material }: { x: number; y: number; sheet: Sheet; material: ShaderMaterial }) {
   const g = useQuad(sheet, EXTRAS.indexOf('star') * T, 112, T, T, 0.5, 0.5);
   const ref = useRef<Mesh>(null);
   const phase = useMemo(() => (x * 3.7 + y * 1.3) % 6, [x, y]);
@@ -716,14 +743,14 @@ function Sparkle({ x, y, sheet, material }: { x: number; y: number; sheet: Sheet
     mesh.position.set(x + 0.5 - 0.25 * (0.4 + 0.6 * s), -y + 0.9, 3);
   });
   return <mesh ref={ref} geometry={g} material={material} />;
-}
+});
 
 const PUFF_PARTS = 5;
 const PUFF_LIFE = 0.6;
 const PUFF_POOL = 8;
 
 /** Little dust clouds: each puff throws a few soft round specks outward that grow and fade. */
-function Puffs({ queue, sheet, material }: { queue: RefObject<Puff[]>; sheet: Sheet; material: ShaderMaterial }) {
+function PuffsBase({ queue, sheet, material }: { queue: RefObject<Puff[]>; sheet: Sheet; material: ShaderMaterial }) {
   const g = useQuad(sheet, EXTRAS.indexOf('bubble') * T, 112, T, T, 0.5, 0.5);
   const group = useRef<Group>(null);
   const live = useRef<{ x: number; y: number; age: number }[]>([]);
@@ -762,7 +789,7 @@ function Puffs({ queue, sheet, material }: { queue: RefObject<Puff[]>; sheet: Sh
   );
 }
 
-function Bubble({
+const Bubble = memo(function Bubble({
   x,
   y,
   kind,
@@ -782,4 +809,18 @@ function Bubble({
     if (ref.current) ref.current.position.set(x + 0.3, -y + 0.95 + bob, 3);
   });
   return <mesh ref={ref} geometry={g} material={material} />;
-}
+});
+
+const SeaBubbles = memo(SeaBubblesBase);
+
+const DarkEyes = memo(DarkEyesBase);
+
+const Hero = memo(HeroBase);
+
+const Pet = memo(PetBase);
+
+const Ghost = memo(GhostBase);
+
+const GlowTrail = memo(GlowTrailBase);
+
+const Puffs = memo(PuffsBase);

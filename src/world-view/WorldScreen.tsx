@@ -6,7 +6,7 @@
 // ahead stays dark (and gated) until every job in the area you're in is done.
 
 import { router, useFocusEffect } from 'expo-router';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
 import { type SaveData, dayKey, totalStars } from '../game/save';
@@ -104,6 +104,100 @@ const startingPlace = (worldId: string, map: WorldMap) => lastPlace.get(worldId)
  * The story scene to play now, if any: an area's ending once its last job is done, else
  * the scene for the area you've just walked into.
  */
+interface HudProps {
+  areaName: string;
+  status: string;
+  lantern: number | null;
+  onTravel: () => void;
+  lit: string;
+  sparks: number;
+  stars: number;
+  notes: string | null;
+  fish: string | null;
+  chests: string | null;
+  secrets: string | null;
+  onMap: () => void;
+  onJournal: () => void;
+  onWorlds: () => void;
+}
+
+interface GuideProps {
+  tip: string;
+  raised: boolean;
+  onHelp: () => void;
+}
+
+/** Pip's tip panel. Memoized so it skips the per-step commits. */
+const Guide = memo(function Guide({ tip, raised, onHelp }: GuideProps) {
+  return (
+    <View style={[styles.guide, raised ? styles.guideRaised : null]} pointerEvents="box-none">
+      <Panel style={styles.guidePanel}>
+        <View style={styles.guideRow}>
+          <Portrait who="pip" size={34} />
+          <PixelText size={12} style={styles.flex}>
+            {tip}
+          </PixelText>
+        </View>
+        <PixelButton label="Need help?" tone="teal" size={11} onPress={onHelp} />
+      </Panel>
+    </View>
+  );
+});
+
+/** The full-screen "walk here" tap area. Memoized so it skips the per-step commits. */
+const TapLayer = memo(function TapLayer({ onTap }: { onTap: (x: number, y: number) => void }) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel="Walk here"
+      style={StyleSheet.absoluteFill}
+      onPress={(e) => onTap(e.nativeEvent.locationX, e.nativeEvent.locationY)}
+    />
+  );
+});
+
+/** The top bar. Memoized: it only changes when a number or label in it does, not on every step. */
+const Hud = memo(function Hud(h: HudProps) {
+  return (
+    <View style={styles.hud} pointerEvents="box-none">
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={`${h.areaName}. Open the travel map`}
+        style={styles.title}
+        onPress={h.onTravel}
+      >
+        <PixelText size={18} color={GOLD} shadow>
+          {h.areaName} ▾
+        </PixelText>
+        <PixelText size={12} color="#c9c3e6" shadow>
+          {h.status}
+        </PixelText>
+        {h.lantern !== null && <LanternGauge value={h.lantern} />}
+      </Pressable>
+      <View style={styles.right} pointerEvents="box-none">
+        <View style={styles.line} pointerEvents="box-none">
+          <Counter icon="✦" value={h.lit} color="#ffe58a" />
+          <Counter icon="⚡" value={h.sparks} />
+          <Counter icon="★" value={h.stars} />
+          <SoundToggle />
+        </View>
+        {/* Collections only appear once you've found the first of each, labelled in words. */}
+        <View style={styles.line} pointerEvents="box-none">
+          {h.notes && <Counter icon="✎" value={h.notes} color="#c9e7ff" />}
+          {h.fish && <Counter icon="≈" value={h.fish} color="#8fd0e8" />}
+          {h.chests && <Counter icon="◆" value={h.chests} color="#f2b36b" />}
+          {h.secrets && <Counter icon="◉" value={h.secrets} color="#ffd27a" />}
+        </View>
+        <View style={styles.line} pointerEvents="box-none">
+          <PixelButton label="Map (M)" tone="gold" size={12} onPress={h.onMap} />
+          <PixelButton label="Journal" tone="cream" size={12} onPress={h.onJournal} />
+          <PixelButton label="Worlds" tone="teal" size={12} onPress={h.onWorlds} />
+        </View>
+      </View>
+    </View>
+  );
+});
+
 function pendingScene(map: WorldMap, save: SaveData, here: number): Scene | null {
   const solved = solvedIn(save);
   const seen = (id?: string) => !id || save.seen.includes(id);
@@ -654,6 +748,13 @@ export function WorldScreen({ map, worldId }: { map: WorldMap; worldId: string }
     return null;
   }, [residents, map, solved]);
 
+  const needHelp = useCallback(
+    () => setChat({ lines: guideHelp(map, solved, goalNow.current, Platform.OS === 'web') }),
+    [map, solved],
+  );
+  const openTravel = useCallback(() => setTravelling(true), []);
+  const goJournal = useCallback(() => go('/journal'), [go]);
+  const goStory = useCallback(() => go('/story'), [go]);
   const act = useCallback(() => {
     if (talking.current) return;
     const t = facingTarget();
@@ -840,6 +941,12 @@ export function WorldScreen({ map, worldId }: { map: WorldMap; worldId: string }
     }
   };
 
+  const onTapRef = useRef(onTap);
+  useEffect(() => {
+    onTapRef.current = onTap;
+  });
+  const tapNow = useCallback((px: number, py: number) => onTapRef.current(px, py), []);
+
   const bubbles = useMemo(() => {
     const out: { who: string; x: number; y: number; kind: 'job' | 'chat' | 'heart' }[] = [];
     for (const r of residents) {
@@ -882,55 +989,28 @@ export function WorldScreen({ map, worldId }: { map: WorldMap; worldId: string }
         onTick={onTick}
         onView={onView}
       />
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel="Walk here"
-        style={StyleSheet.absoluteFill}
-        onPress={(e) => onTap(e.nativeEvent.locationX, e.nativeEvent.locationY)}
-      />
+      <TapLayer onTap={tapNow} />
       {!talk && !travelling && <Joystick onInput={steer} />}
       {!talk && !travelling && (
         <AreaBanner key={`${map.id}:${here}`} name={area.name} world={map.name} />
       )}
 
-      <View style={styles.hud} pointerEvents="box-none">
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={`${area.name}. Open the travel map`}
-          style={styles.title}
-          onPress={() => setTravelling(true)}
-        >
-          <PixelText size={18} color={GOLD} shadow>
-            {area.name} ▾
-          </PixelText>
-          <PixelText size={12} color="#c9c3e6" shadow>
-            {status}
-          </PixelText>
-          {map.underwater && <LanternGauge value={lanternShown} />}
-        </Pressable>
-        <View style={styles.right} pointerEvents="box-none">
-          <View style={styles.line} pointerEvents="box-none">
-            <Counter icon="✦" value={`${litCount}/${worldJobs.length} lit`} color="#ffe58a" />
-            <Counter icon="⚡" value={save.sparks} />
-            <Counter icon="★" value={totalStars(save)} />
-            <SoundToggle />
-          </View>
-          {/* Collections only appear once you've found the first of each, labelled in words. */}
-          <View style={styles.line} pointerEvents="box-none">
-            {notesFound > 0 && <Counter icon="✎" value={`Notes ${notesFound}/${notes.length}`} color="#c9e7ff" />}
-            {fishCaught > 0 && <Counter icon="≈" value={`Fish ${fishCaught}`} color="#8fd0e8" />}
-            {chestsFound > 0 && <Counter icon="◆" value={`Chests ${chestsFound}/${chests.length}`} color="#f2b36b" />}
-            {secretsFound > 0 && (
-              <Counter icon="◉" value={`Secrets ${secretsFound}/${worldSecrets.length}`} color="#ffd27a" />
-            )}
-          </View>
-          <View style={styles.line} pointerEvents="box-none">
-            <PixelButton label="Map (M)" tone="gold" size={12} onPress={openMap} />
-            <PixelButton label="Journal" tone="cream" size={12} onPress={() => go('/journal')} />
-            <PixelButton label="Worlds" tone="teal" size={12} onPress={() => go('/story')} />
-          </View>
-        </View>
-      </View>
+      <Hud
+        areaName={area.name}
+        status={status}
+        lantern={map.underwater ? lanternShown : null}
+        onTravel={openTravel}
+        lit={`${litCount}/${worldJobs.length} lit`}
+        sparks={save.sparks}
+        stars={totalStars(save)}
+        notes={notesFound > 0 ? `Notes ${notesFound}/${notes.length}` : null}
+        fish={fishCaught > 0 ? `Fish ${fishCaught}` : null}
+        chests={chestsFound > 0 ? `Chests ${chestsFound}/${chests.length}` : null}
+        secrets={secretsFound > 0 ? `Secrets ${secretsFound}/${worldSecrets.length}` : null}
+        onMap={openMap}
+        onJournal={goJournal}
+        onWorlds={goStory}
+      />
 
       {facingLabel && !talk && !travelling && (
         <View style={styles.action}>
@@ -944,22 +1024,7 @@ export function WorldScreen({ map, worldId }: { map: WorldMap; worldId: string }
       )}
 
       {!talk && !travelling && !mapOpen && !chestGame && !fishing && (
-        <View style={[styles.guide, facingLabel ? styles.guideRaised : null]} pointerEvents="box-none">
-          <Panel style={styles.guidePanel}>
-            <View style={styles.guideRow}>
-              <Portrait who="pip" size={34} />
-              <PixelText size={12} style={styles.flex}>
-                {guideTip(map, solved, goal)}
-              </PixelText>
-            </View>
-            <PixelButton
-              label="Need help?"
-              tone="teal"
-              size={11}
-              onPress={() => setChat({ lines: guideHelp(map, solved, goal, Platform.OS === 'web') })}
-            />
-          </Panel>
-        </View>
+        <Guide tip={guideTip(map, solved, goal)} raised={!!facingLabel} onHelp={needHelp} />
       )}
 
       {travelling && !talk && (
