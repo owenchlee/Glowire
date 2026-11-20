@@ -8,6 +8,7 @@
 // assets/voice are skipped unless --redo. Writes src/audio/voices.generated.ts.
 
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { levelFile } from './voice-level.mjs';
 
 const KEY = process.env.ELEVENLABS_API_KEY;
 if (!KEY) throw new Error('Set ELEVENLABS_API_KEY');
@@ -97,6 +98,7 @@ async function worker() {
       true,
     );
     writeFileSync(`${OUT}/${l.key}.mp3`, mp3);
+    levelFile(`${OUT}/${l.key}.mp3`);
     if (++done % 25 === 0) console.log(`${done} recorded`);
   }
 }
