@@ -214,7 +214,7 @@ function mapleExtras(b: MapBuilder) {
   b.path('dirt', [{ x: 39, y: 26 }, { x: 39, y: 30 }], 2);
   b.stones([[39, 31], [39, 32], [39, 33], [39, 34]]);
   b.chest('maple-pond', 39, 34, 20);
-  for (const [x, y] of [[35, 33], [44, 31], [45, 36]] as const) b.prop(x, y, 'reeds');
+  for (const [x, y] of [[35, 33], [44, 31], [40, 38]] as const) b.prop(x, y, 'reeds');
   b.prop(37, 30, 'lily');
 
   // A nook in the south-west woods: a path that just stops, and a big pink tree with a chest beside it.
@@ -570,7 +570,7 @@ function marketExtras(b: MapBuilder) {
 
   // The hedge along the south of the square, with a gap on the fountain’s line.
   b.fence(115, 31, 11, 'hedge');
-  b.fence(128, 31, 11, 'hedge');
+  b.fence(130, 31, 9, 'hedge'); // gap at 128-129 too: the market ledge drops into the pond, which needs a way back to the square
   // The market pond: a boardwalk all the way round, and stones to a chest in the middle.
   b.rect('pond', 120, 34, 15, 4);
   b.path('dirt', [{ x: 127, y: 31 }, { x: 127, y: 33 }], 2);
@@ -852,6 +852,8 @@ function puzzles(b: MapBuilder) {
   rockPlug(b, 106, 31, 'glowtown-rock-woods', 25, 'Something shiny behind that boulder. Lean on it: push it down and in, then squeeze round. (The little sign inside puts all boulders back.)');
   ledgeTerrace(b, 22, 20, 'glowtown-ledge-lane', 20, 'A hedge terrace with a drop on its south side. Hop down, and you’re out. There’s no way back up that way. A bit like regret.');
   ledgeTerrace(b, 122, 26, 'glowtown-ledge-market', 25, 'You can step off a ledge downward, but you can’t climb up it. Slip in through the gap at the top, and leave the quick way.');
+  // A boulder can seal the hero into a pocket (or off the spawn side), so each pocket has its own reset sign.
+  for (const [x, y] of [[43, 8], [40, 2], [44, 3], [10, 26], [1, 36], [106, 4], [120, 28], [124, 32], [137, 4], [156, 37], [175, 39], [40, 38], [40, 10], [58, 33], [80, 4], [123, 19]] as const) b.rockReset(x, y);
   b.fish('glowtown-pond', 42, 36);
   b.fish('glowtown-brook', 50, 30);
 }

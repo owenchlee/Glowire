@@ -540,6 +540,8 @@ function puzzles(b: MapBuilder) {
   rockPlug(b, 116, 22, 'mossbell-rock-plug', 30, 'A boulder plugs the gap. Nobody remembers who put it there. Push it in, and walk round it.');
   ledgeTerrace(b, 28, 22, 'mossbell-ledge-mill', 20, 'The miller built this terrace with a drop on its south side. In by the gap, out by the ledge. Never the other way.');
   ledgeTerrace(b, 94, 5, 'mossbell-ledge-bell', 25, 'Step off a ledge going down, and there’s no climbing back. Remember that on the way in.');
+  // A boulder can seal the hero into a pocket, so each narrow way gets a reset sign at both ends.
+  for (const [x, y] of [[131, 6], [132, 11], [66, 4], [66, 9], [40, 32], [40, 38], [30, 32], [30, 37], [34, 38], [28, 39], [4, 13], [11, 14]] as const) b.rockReset(x, y);
   b.fish('mossbell-mere', 36, 27);
   b.fish('mossbell-bog', 12, 33);
 }
