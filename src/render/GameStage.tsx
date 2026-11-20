@@ -61,7 +61,15 @@ export function GameStage({ cols, rows, cell, onPress, highlight, margin = 0, ac
           accessibilityRole="button"
           accessibilityLabel={accessibilityLabel}
           onPress={(e) => {
-            const i = picker.current?.(e.nativeEvent.locationX, e.nativeEvent.locationY);
+            let { locationX: x, locationY: y } = e.nativeEvent;
+            if (x === undefined || y === undefined) {
+              // web: react-native-web clicks carry no locationX/Y, so measure from the click
+              const n = e.nativeEvent as unknown as { clientX: number; clientY: number };
+              const r = (e.currentTarget as unknown as Element).getBoundingClientRect();
+              x = n.clientX - r.left;
+              y = n.clientY - r.top;
+            }
+            const i = picker.current?.(x, y);
             if (i !== null && i !== undefined) onPress(i);
           }}
         />
