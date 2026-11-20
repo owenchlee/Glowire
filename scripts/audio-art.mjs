@@ -2,10 +2,14 @@
 // UI/world one-shots, all synthesised here and written as mono 16-bit 22050 Hz WAVs into
 // assets/audio/. Deterministic (seeded noise), so re-running gives the same files.
 //
+// music-town, music-boss, success, chest-open, fail, rock-push, click, talk-blip, step-water-1..3, step-stone-1..3 and click (96 kbps), step-sand-1..3, step-dirt-1..3 and step-wood-1..3 and step-grass-1..3 (resampled to 44100 Hz, 192 kbps, needed for 24 dB SNR) are then re-encoded to mp3 (VBR -q:a 9 town, 48 kbps boss, 64 kbps sfx, 128 kbps water steps (noisy, need it for 24 dB SNR)) with ffmpeg (on PATH) and its WAV removed,
+// to keep the app download small; no padding is added, so the loop stays seamless.
+//
 //   node scripts/audio-art.mjs
 
 import { Buffer } from 'node:buffer';
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { execFileSync } from 'node:child_process';
+import { mkdirSync, unlinkSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -101,6 +105,11 @@ function writeWav(name, x) {
   h.write('data', 36);
   h.writeUInt32LE(data.length, 40);
   writeFileSync(join(OUT, `${name}.wav`), Buffer.concat([h, data]));
+  if (['music-town', 'music-boss', 'success', 'chest-open', 'fail', 'rock-push', 'click', 'talk-blip'].includes(name) || name.startsWith('step-water-') || name.startsWith('step-sand-') || name.startsWith('step-stone-') || name.startsWith('step-dirt-') || name.startsWith('step-wood-') || name.startsWith('step-grass-')) {
+    const wav = join(OUT, `${name}.wav`);
+    execFileSync('ffmpeg', ['-y', '-loglevel', 'error', '-i', wav, '-c:a', 'libmp3lame', ...(name.startsWith('step-grass-') ? ['-ar', '44100', '-b:a', '192k'] : name === 'music-town' ? ['-q:a', '9'] : ['-b:a', name.startsWith('music') ? '48k' : name.startsWith('step-') ? (/dirt|wood/.test(name) ? '160k' : name.includes('stone') ? '96k' : '128k') : name === 'click' ? '96k' : '64k']), join(OUT, `${name}.mp3`)]);
+    unlinkSync(wav);
+  }
   console.log(
     `${name}.wav  ${(x.length / RATE).toFixed(2)}s  ${((44 + data.length) / 1024).toFixed(0)} KB`,
   );

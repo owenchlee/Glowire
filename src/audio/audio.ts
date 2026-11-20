@@ -11,49 +11,49 @@ export type { Surface } from './surface';
 export type SfxName = 'chest-open' | 'click' | 'success' | 'fail' | 'talk-blip' | 'rock-push';
 
 const MUSIC = {
-  town: require('../../assets/audio/music-town.wav'),
-  boss: require('../../assets/audio/music-boss.wav'),
+  town: require('../../assets/audio/music-town.mp3'),
+  boss: require('../../assets/audio/music-boss.mp3'),
 };
 export type Track = keyof typeof MUSIC;
 let track: Track = 'town';
 const SFX: Record<SfxName, number> = {
-  'chest-open': require('../../assets/audio/chest-open.wav'),
-  click: require('../../assets/audio/click.wav'),
-  success: require('../../assets/audio/success.wav'),
-  fail: require('../../assets/audio/fail.wav'),
-  'talk-blip': require('../../assets/audio/talk-blip.wav'),
-  'rock-push': require('../../assets/audio/rock-push.wav'),
+  'chest-open': require('../../assets/audio/chest-open.mp3'),
+  click: require('../../assets/audio/click.mp3'),
+  success: require('../../assets/audio/success.mp3'),
+  fail: require('../../assets/audio/fail.mp3'),
+  'talk-blip': require('../../assets/audio/talk-blip.mp3'),
+  'rock-push': require('../../assets/audio/rock-push.mp3'),
 };
 const STEPS: Record<Surface, number[]> = {
   grass: [
-    require('../../assets/audio/step-grass-1.wav'),
-    require('../../assets/audio/step-grass-2.wav'),
-    require('../../assets/audio/step-grass-3.wav'),
+    require('../../assets/audio/step-grass-1.mp3'),
+    require('../../assets/audio/step-grass-2.mp3'),
+    require('../../assets/audio/step-grass-3.mp3'),
   ],
   dirt: [
-    require('../../assets/audio/step-dirt-1.wav'),
-    require('../../assets/audio/step-dirt-2.wav'),
-    require('../../assets/audio/step-dirt-3.wav'),
+    require('../../assets/audio/step-dirt-1.mp3'),
+    require('../../assets/audio/step-dirt-2.mp3'),
+    require('../../assets/audio/step-dirt-3.mp3'),
   ],
   stone: [
-    require('../../assets/audio/step-stone-1.wav'),
-    require('../../assets/audio/step-stone-2.wav'),
-    require('../../assets/audio/step-stone-3.wav'),
+    require('../../assets/audio/step-stone-1.mp3'),
+    require('../../assets/audio/step-stone-2.mp3'),
+    require('../../assets/audio/step-stone-3.mp3'),
   ],
   wood: [
-    require('../../assets/audio/step-wood-1.wav'),
-    require('../../assets/audio/step-wood-2.wav'),
-    require('../../assets/audio/step-wood-3.wav'),
+    require('../../assets/audio/step-wood-1.mp3'),
+    require('../../assets/audio/step-wood-2.mp3'),
+    require('../../assets/audio/step-wood-3.mp3'),
   ],
   sand: [
-    require('../../assets/audio/step-sand-1.wav'),
-    require('../../assets/audio/step-sand-2.wav'),
-    require('../../assets/audio/step-sand-3.wav'),
+    require('../../assets/audio/step-sand-1.mp3'),
+    require('../../assets/audio/step-sand-2.mp3'),
+    require('../../assets/audio/step-sand-3.mp3'),
   ],
   water: [
-    require('../../assets/audio/step-water-1.wav'),
-    require('../../assets/audio/step-water-2.wav'),
-    require('../../assets/audio/step-water-3.wav'),
+    require('../../assets/audio/step-water-1.mp3'),
+    require('../../assets/audio/step-water-2.mp3'),
+    require('../../assets/audio/step-water-3.mp3'),
   ],
 };
 /** Shortest time between footsteps: calling playStep every frame gives about 3.5 steps a second. */
