@@ -40,7 +40,7 @@ export function GameStage({ cols, rows, cell, onPress, highlight, margin = 0, ac
   const picker = useRef<CellAt | null>(null);
   return (
     <View style={styles.fill}>
-      <Canvas style={StyleSheet.absoluteFill} orthographic camera={{ position: [0, 10, 5], zoom: 60, near: 0.1, far: 100 }}>
+      <Canvas frameloop="demand" style={StyleSheet.absoluteFill} orthographic camera={{ position: [0, 10, 5], zoom: 60, near: 0.1, far: 100 }}>
         <hemisphereLight args={['#fff7ee', '#cbbbe6', 1.1]} />
         <directionalLight position={[4, 9, 3]} intensity={1.7} />
         <ambientLight intensity={0.25} />
@@ -74,6 +74,7 @@ export function GameStage({ cols, rows, cell, onPress, highlight, margin = 0, ac
 function Rig({ cols, rows, margin, picker }: { cols: number; rows: number; margin: number; picker: { current: CellAt | null } }) {
   const camera = useThree((s) => s.camera) as OrthographicCamera;
   const size = useThree((s) => s.size);
+  const invalidate = useThree((s) => s.invalidate);
   useLayoutEffect(() => {
     camera.left = -size.width / 2;
     camera.right = size.width / 2;
@@ -84,6 +85,7 @@ function Rig({ cols, rows, margin, picker }: { cols: number; rows: number; margi
     camera.lookAt(0, 0, 0);
     camera.zoom = Math.min(size.width / (cols + 0.9 + margin * 2), size.height / ((rows + margin * 2) * Math.cos(tilt) + 1.4));
     camera.updateProjectionMatrix();
+    invalidate(); // demand loop: redraw after a refit
     const ray = new Raycaster();
     const plane = new Plane(new Vector3(0, 1, 0), -TOP);
     const hit = new Vector3();
@@ -91,7 +93,7 @@ function Rig({ cols, rows, margin, picker }: { cols: number; rows: number; margi
       ray.setFromCamera(new Vector2((x / size.width) * 2 - 1, -(y / size.height) * 2 + 1), camera);
       return ray.ray.intersectPlane(plane, hit) ? worldToCell(hit.x, hit.z, cols, rows) : null;
     };
-  }, [camera, size.width, size.height, cols, rows, margin, picker]);
+  }, [camera, invalidate, size.width, size.height, cols, rows, margin, picker]);
   return null;
 }
 
