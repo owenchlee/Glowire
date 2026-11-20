@@ -38,15 +38,35 @@ export function revealAround(explored: Explored, map: WorldMap, x: number, y: nu
 
 const B64 = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
 
+// Two base64 chars per 12 bits: one lookup instead of two.
+const PAIRS: string[] = [];
+for (let i = 0; i < 4096; i++) PAIRS.push(B64[i >> 6]! + B64[i & 63]!);
+
 export function toBase64(bytes: Uint8Array): string {
-  let out = '';
-  for (let i = 0; i < bytes.length; i += 3) {
-    const n = (bytes[i]! << 16) | ((bytes[i + 1] ?? 0) << 8) | (bytes[i + 2] ?? 0);
-    out += B64[n >> 18]! + B64[(n >> 12) & 63]!;
-    out += i + 1 < bytes.length ? B64[(n >> 6) & 63]! : '=';
-    out += i + 2 < bytes.length ? B64[n & 63]! : '=';
+  const parts: string[] = [];
+  const full = bytes.length - (bytes.length % 3);
+  // Twelve bytes per push (4 groups) so the engine builds a quarter as many strings.
+  let i = 0;
+  for (; i + 12 <= full; i += 12) {
+    const a = (bytes[i]! << 16) | (bytes[i + 1]! << 8) | bytes[i + 2]!;
+    const b = (bytes[i + 3]! << 16) | (bytes[i + 4]! << 8) | bytes[i + 5]!;
+    const c = (bytes[i + 6]! << 16) | (bytes[i + 7]! << 8) | bytes[i + 8]!;
+    const d = (bytes[i + 9]! << 16) | (bytes[i + 10]! << 8) | bytes[i + 11]!;
+    parts.push(
+      PAIRS[a >> 12]! + PAIRS[a & 4095]! + PAIRS[b >> 12]! + PAIRS[b & 4095]! +
+        PAIRS[c >> 12]! + PAIRS[c & 4095]! + PAIRS[d >> 12]! + PAIRS[d & 4095]!,
+    );
   }
-  return out;
+  for (; i < full; i += 3) {
+    const n = (bytes[i]! << 16) | (bytes[i + 1]! << 8) | bytes[i + 2]!;
+    parts.push(PAIRS[n >> 12]! + PAIRS[n & 4095]!);
+  }
+  const rest = bytes.length - full;
+  if (rest) {
+    const n = (bytes[full]! << 16) | ((bytes[full + 1] ?? 0) << 8);
+    parts.push(PAIRS[n >> 12]! + (rest === 2 ? B64[(n >> 6) & 63]! + '=' : '=='));
+  }
+  return parts.join('');
 }
 
 /** Null on anything that isn't base64 (a corrupt save). */

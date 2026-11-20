@@ -7,7 +7,7 @@ import { SHEETS, ATLAS_COLS, SHORE_TILES, TERRAIN_TILES } from '../world/atlas.g
 import { FILLED_TILE, TILES, hash } from '../world/builder';
 import { type Solved, areaDone, litGroups } from '../world/logic';
 import type { WorldMap } from '../world/types';
-import { type Explored, isExplored } from './explored';
+import type { Explored } from './explored';
 
 export type Terrain = 'none' | 'grass' | 'sand' | 'road' | 'water' | 'cliff' | 'tree' | 'building' | 'lit' | 'prop' | 'gate';
 
@@ -44,7 +44,15 @@ function sheetOf(tile: number): string {
   return best;
 }
 
+// A tile's terrain never changes, so work it out once per tile id (sheetOf scans the sheets).
+const groundCache = new Map<number, Terrain>();
 function groundTerrain(tile: number): Terrain {
+  let t = groundCache.get(tile);
+  if (t === undefined) groundCache.set(tile, (t = groundTerrainUncached(tile)));
+  return t;
+}
+
+function groundTerrainUncached(tile: number): Terrain {
   if (tile < 0) return 'none';
   if (WATER.has(tile)) return 'water';
   if (ROAD.has(tile)) return 'road';
@@ -114,75 +122,132 @@ export function paintMap(map: WorldMap, explored: Explored, solved: Solved, scal
   const data = new Uint8ClampedArray(W * H * 4);
   const at = (x: number, y: number): Terrain | null =>
     x < 0 || y < 0 || x >= map.width || y >= map.height ? null : terrain[y * map.width + x]!;
-  const seen = (x: number, y: number) => isExplored(explored, map, x, y);
-  const put = (px: number, py: number, c: readonly number[]) => {
-    const o = (py * W + px) * 4;
-    data[o] = c[0]!;
-    data[o + 1] = c[1]!;
-    data[o + 2] = c[2]!;
-    data[o + 3] = 255;
-  };
+  // Callers only ask about in-bounds cells (the edge test checks the neighbour exists first).
+  const seenAt = (i: number) => ((explored[i >> 3]! >> (i & 7)) & 1) === 1;
+  // One 32-bit store per pixel (typed arrays are little-endian on every phone): 0xAABBGGRR.
+  const px32 = new Uint32Array(data.buffer);
+  const pack = (c: readonly number[]) => (0xff000000 | (c[2]! << 16) | (c[1]! << 8) | c[0]!) >>> 0;
   const shade = (c: readonly number[], k: number) => c.map((v) => Math.max(0, Math.min(255, Math.round(v * k))));
+  const FOG32 = pack(FOG);
+  const STAR32 = pack(STAR);
+  const INK32 = pack(INK);
+  const WINDOW32 = pack([255, 214, 120]);
 
   for (let cy = 0; cy < map.height; cy++)
     for (let cx = 0; cx < map.width; cx++) {
       const t = at(cx, cy)!;
-      if (!seen(cx, cy)) {
-        for (let py = 0; py < scale; py++) for (let px = 0; px < scale; px++) put(cx * scale + px, cy * scale + py, FOG);
-        if (hash(cx, cy) < 0.04) put(cx * scale + Math.floor(hash(cy, cx) * scale), cy * scale + Math.floor(hash(cx + 7, cy) * scale), STAR);
+      const x0 = cx * scale;
+      const y0 = cy * scale;
+      const ci = cy * map.width + cx;
+      if (!seenAt(ci)) {
+        for (let py = 0; py < scale; py++) {
+          const o = (y0 + py) * W + x0;
+          px32.fill(FOG32, o, o + scale);
+        }
+        if (hash(cx, cy) < 0.04) px32[(y0 + Math.floor(hash(cx + 7, cy) * scale)) * W + x0 + Math.floor(hash(cy, cx) * scale)] = STAR32;
         continue;
       }
       // Cells at the edge of what you've seen fade into the fog.
-      const fogAt = (x: number, y: number) => at(x, y) !== null && !seen(x, y);
-      const edge = fogAt(cx - 1, cy) || fogAt(cx + 1, cy) || fogAt(cx, cy - 1) || fogAt(cx, cy + 1);
+      const nL = at(cx - 1, cy);
+      const nR = at(cx + 1, cy);
+      const nU = at(cx, cy - 1);
+      const nD = at(cx, cy + 1);
+      const edge =
+        (nL !== null && !seenAt(ci - 1)) || (nR !== null && !seenAt(ci + 1)) ||
+        (nU !== null && !seenAt(ci - map.width)) || (nD !== null && !seenAt(ci + map.width));
       let base: readonly number[] = map.underwater && SEABED[t] ? SEABED[t] : RGB[t];
       if (t === 'grass' && hash(cx, cy) < 0.2) base = shade(base, 0.92);
-      if (t === 'water' && ![-1, 1].some((d) => at(cx + d, cy) !== 'water' || at(cx, cy + d) !== 'water')) base = shade(base, 0.85);
+      if (t === 'water' && nL === 'water' && nR === 'water' && nU === 'water' && nD === 'water') base = shade(base, 0.85);
       if (edge) base = shade(base, 0.6);
-      for (let py = 0; py < scale; py++)
-        for (let px = 0; px < scale; px++) {
-          let c = base;
-          // Outlines: an edge line where a road, water, building or cliff meets something else.
-          const nx = px === 0 ? -1 : px === scale - 1 ? 1 : 0;
-          const ny = py === 0 ? -1 : py === scale - 1 ? 1 : 0;
-          const differs = (dx: number, dy: number) => (dx || dy) && at(cx + dx, cy + dy) !== null && at(cx + dx, cy + dy) !== t;
-          const border = differs(nx, 0) || differs(0, ny);
-          if (border) {
-            if (t === 'road') c = shade(base, 0.62);
-            else if (t === 'water') c = shade(base, 1.55);
-            else if (t === 'building' || t === 'lit' || t === 'cliff' || t === 'gate') c = INK;
-            else if (t === 'tree') c = shade(base, 0.7);
-          } else if (t === 'lit' && (px + py) % 3 === 0) c = [255, 214, 120];
-          else if (t === 'tree' && px === 1 && py === 1) c = shade(base, 1.5);
-          put(cx * scale + px, cy * scale + py, c);
+      const base32 = pack(base);
+      // Outlines: an edge line where a road, water, building or cliff meets something else.
+      const dL = nL !== null && nL !== t;
+      const dR = nR !== null && nR !== t;
+      const dU = nU !== null && nU !== t;
+      const dD = nD !== null && nD !== t;
+      let line32 = base32;
+      if (t === 'road') line32 = pack(shade(base, 0.62));
+      else if (t === 'water') line32 = pack(shade(base, 1.55));
+      else if (t === 'building' || t === 'lit' || t === 'cliff' || t === 'gate') line32 = INK32;
+      else if (t === 'tree') line32 = pack(shade(base, 0.7));
+      const glint32 = t === 'tree' ? pack(shade(base, 1.5)) : base32;
+      const lit = t === 'lit';
+      for (let py = 0; py < scale; py++) {
+        const ny = py === 0 ? dU : py === scale - 1 && dD;
+        let o = (y0 + py) * W + x0;
+        for (let px = 0; px < scale; px++, o++) {
+          const border = ny || (px === 0 ? dL : px === scale - 1 && dR);
+          px32[o] = border ? line32 : lit && (px + py) % 3 === 0 ? WINDOW32 : t === 'tree' && px === 1 && py === 1 ? glint32 : base32;
         }
+      }
     }
   return { width: W, height: H, data };
 }
 
-/** A 24-bit BMP of the image, as base64: <Image> shows it everywhere without a canvas. */
+/** A BMP of the image, as base64: <Image> shows it everywhere without a canvas. 8-bit palette when the map has <= 256 colours (3x fewer bytes), else 24-bit. */
 export function bmpBase64(img: MapImage, toBase64: (b: Uint8Array) => string): string {
-  const row = Math.ceil((img.width * 3) / 4) * 4;
-  const size = 54 + row * img.height;
-  const buf = new Uint8Array(size);
+  const px32 = new Uint32Array(img.data.buffer, img.data.byteOffset, img.width * img.height);
+  const index = new Map<number, number>();
+  const colours: number[] = [];
+  // Indices go straight into the bottom-up, 4-byte padded rows of the 8-bit file.
+  const row8 = Math.ceil(img.width / 4) * 4;
+  const idx = new Uint8Array(54 + 1024 + row8 * img.height);
+  let last = -1;
+  let lastI = 0;
+  let paletted = true;
+  scan: for (let y = 0; y < img.height; y++) {
+    let s = y * img.width;
+    let o = 54 + 1024 + (img.height - 1 - y) * row8;
+    for (const e = s + img.width; s < e; s++, o++) {
+      const c = px32[s]!;
+      if (c !== last) {
+        let k = index.get(c);
+        if (k === undefined) {
+          if (colours.length === 256) {
+            paletted = false;
+            break scan;
+          }
+          k = colours.length;
+          index.set(c, k);
+          colours.push(c);
+        }
+        last = c;
+        lastI = k;
+      }
+      idx[o] = lastI;
+    }
+  }
+  const bits = paletted ? 8 : 24;
+  const row = Math.ceil((img.width * (bits / 8)) / 4) * 4;
+  const head = paletted ? 54 + 1024 : 54;
+  const size = head + row * img.height;
+  const buf = paletted ? idx : new Uint8Array(size);
   const dv = new DataView(buf.buffer);
   buf[0] = 0x42;
   buf[1] = 0x4d;
   dv.setUint32(2, size, true);
-  dv.setUint32(10, 54, true);
+  dv.setUint32(10, head, true);
   dv.setUint32(14, 40, true);
   dv.setInt32(18, img.width, true);
   dv.setInt32(22, img.height, true); // bottom-up rows: every decoder reads these
   dv.setUint16(26, 1, true);
-  dv.setUint16(28, 24, true);
+  dv.setUint16(28, bits, true);
   dv.setUint32(34, row * img.height, true);
-  for (let y = 0; y < img.height; y++)
-    for (let x = 0; x < img.width; x++) {
-      const s = (y * img.width + x) * 4;
-      const o = 54 + (img.height - 1 - y) * row + x * 3;
-      buf[o] = img.data[s + 2]!;
-      buf[o + 1] = img.data[s + 1]!;
-      buf[o + 2] = img.data[s]!;
+  if (paletted) {
+    dv.setUint32(46, colours.length, true);
+    // BMP palette entries are B, G, R, 0; our pixels are 0xAABBGGRR.
+    colours.forEach((c, i) => dv.setUint32(54 + i * 4, ((c & 0xff) << 16) | (c & 0xff00) | ((c >>> 16) & 0xff), true));
+    return toBase64(buf);
+  }
+  const src = img.data;
+  for (let y = 0; y < img.height; y++) {
+    let s = y * img.width * 4;
+    let o = head + (img.height - 1 - y) * row;
+    for (let x = 0; x < img.width; x++, s += 4) {
+      buf[o++] = src[s + 2]!;
+      buf[o++] = src[s + 1]!;
+      buf[o++] = src[s]!;
     }
+  }
   return toBase64(buf);
 }
