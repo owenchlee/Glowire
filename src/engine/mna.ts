@@ -112,16 +112,32 @@ export interface TimeStep {
   dt: number;
   /** Each capacitor's voltage (+ end minus − end) at the last step, by board cell. */
   charges: Readonly<Record<number, number>>;
+  /**
+   * Optional warm start for a run of steps on one circuit: the diode voltages the last step
+   * ended on. Newton starts there instead of at 0 V and leaves its own end point here.
+   */
+  warm?: { vd?: Float64Array };
 }
 
-export function solveNetlist(circuit: Circuit, step?: TimeStep): NetlistSolution {
+/** What a circuit's shape fixes, whatever the capacitor charges: pruning, grounds, matrix layout. */
+interface Structure {
+  active: Int32Array;
+  index: Int32Array;
+  powered: Uint8Array;
+  prunedElement: number[];
+  prunedLeaf: number[];
+  sources: number[];
+  diodes: number[];
+  controlled: number[];
+  diodeSlot: Map<number, number>;
+  n: number;
+  size: number;
+}
+// Stepped solves only: timeUntil solves the same circuit hundreds of times.
+const structures = new WeakMap<Circuit, Structure>();
+
+function buildStructure(circuit: Circuit, stepping: boolean): Structure {
   const { nodeCount, elements } = circuit;
-  // A capacitor over one time step (backward Euler): a conductance C/dt, plus a current
-  // source that keeps pushing with the charge it already holds.
-  const capG = (el: { farads: number }) => (step ? el.farads / step.dt : 1 / OPEN_SWITCH_RESISTANCE);
-  const charge = (el: { cell: number }) => (step ? (step.charges[el.cell] ?? 0) : 0);
-  const voltages = new Float64Array(nodeCount);
-  const currents = new Float64Array(elements.length);
   const powered = new Uint8Array(nodeCount);
 
   // 1. Prune dangling elements. A node touched by only one element terminal can't
@@ -186,7 +202,7 @@ export function solveNetlist(circuit: Circuit, step?: TimeStep): NetlistSolution
     const el = elements[i]!;
     if (active[i] && el.type === 'V' && groundOf[find(el.a)] === -1) groundOf[find(el.a)] = el.b;
   }
-  if (step)
+  if (stepping)
     for (let i = 0; i < elementCount; i++) {
       const el = elements[i]!;
       if (active[i] && el.type === 'C' && groundOf[find(el.a)] === -1) groundOf[find(el.a)] = el.b;
@@ -213,6 +229,35 @@ export function solveNetlist(circuit: Circuit, step?: TimeStep): NetlistSolution
   /** Which diode (index into `diodes`) each element is, for the sources they control. */
   const diodeSlot = new Map(diodes.map((d, k) => [d, k]));
   const size = n + sources.length;
+  return {
+    active: active.slice(0, elementCount),
+    index: index.slice(0, nodeCount),
+    powered,
+    prunedElement,
+    prunedLeaf,
+    sources,
+    diodes,
+    controlled,
+    diodeSlot,
+    n,
+    size,
+  };
+}
+
+export function solveNetlist(circuit: Circuit, step?: TimeStep): NetlistSolution {
+  const { nodeCount, elements } = circuit;
+  // A capacitor over one time step (backward Euler): a conductance C/dt, plus a current
+  // source that keeps pushing with the charge it already holds.
+  const capG = (el: { farads: number }) => (step ? el.farads / step.dt : 1 / OPEN_SWITCH_RESISTANCE);
+  const charge = (el: { cell: number }) => (step ? (step.charges[el.cell] ?? 0) : 0);
+  const voltages = new Float64Array(nodeCount);
+  const currents = new Float64Array(elements.length);
+  let st = step ? structures.get(circuit) : undefined;
+  if (!st) {
+    st = buildStructure(circuit, !!step);
+    if (step) structures.set(circuit, st);
+  }
+  const { active, index, powered, prunedElement, prunedLeaf, sources, diodes, controlled, diodeSlot, n, size } = st;
 
   // 3. Newton–Raphson. With no diodes the system is linear and one pass is exact.
   //    Resistors, capacitors and sources don't change between iterations, so they are stamped
@@ -268,8 +313,10 @@ export function solveNetlist(circuit: Circuit, step?: TimeStep): NetlistSolution
   const di0 = scratchF64(5, diodeEls.length);
   const dg0 = scratchF64(6, diodeEls.length);
   const vcrit = scratchF64(7, diodeEls.length);
+  const warm = step?.warm;
+  if (warm?.vd?.length === diodeEls.length) vd.set(warm.vd);
   for (let k = 0; k < diodeEls.length; k++) {
-    evalInto(0, diodeEls[k]!.model);
+    evalInto(vd[k]!, diodeEls[k]!.model);
     di0[k] = evalI;
     dg0[k] = evalG;
     vcrit[k] = criticalVoltage(diodeEls[k]!.model);
@@ -348,6 +395,8 @@ export function solveNetlist(circuit: Circuit, step?: TimeStep): NetlistSolution
       if (el.type === 'F') currents[f] = el.gain * currents[el.ctrl]!;
     }
   }
+
+  if (warm && converged) warm.vd = vd.slice(0, diodeEls.length);
 
   // Linear-element currents (resistors, capacitors, sources) only matter at the final
   // solution, still held in z.

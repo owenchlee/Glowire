@@ -1,6 +1,6 @@
 // Board in, per-tile physics results out.
 
-import { buildCircuit } from './circuit';
+import { type Circuit, buildCircuit } from './circuit';
 import {
   CAPACITOR_CHARGED,
   CURRENT_EPSILON,
@@ -25,14 +25,16 @@ const TRANSISTOR_ON = 1e-4;
  * The board's circuit, settled. With a time step, capacitors start from the given charges
  * and the result is the circuit `dt` seconds later (see transient.ts).
  */
-export function simulate(board: Board, step?: TimeStep): SimulationResult {
-  const circuit = buildCircuit(board);
+export function simulate(board: Board, step?: TimeStep, circuit: Circuit = buildCircuit(board),
+  only?: ReadonlySet<number>, // build tile results just for these cells (the rest are null)
+): SimulationResult {
   const sol = solveNetlist(circuit, step);
 
   // Port inflows and port nodes per tile. Arrays, not Maps: this runs on every board edit.
   const inflow: (Partial<Record<Direction, number>> | undefined)[] = new Array(board.cells.length);
   const nodeAt = new Int32Array(board.cells.length * 4); // cell * 4 + dir -> node
   for (const p of circuit.ports) {
+    if (only && !only.has(p.cell)) continue; // its tile result is skipped, so nothing reads this
     const I = sol.currents[p.element]!;
     const flows = (inflow[p.cell] ??= {});
     flows[p.dir] = p.terminal === 'a' ? I : -I;
@@ -58,7 +60,7 @@ export function simulate(board: Board, step?: TimeStep): SimulationResult {
   let batteryCurrent = 0;
   let shortCircuit = false;
   const tiles = board.cells.map((tile, cell): TileResult | null => {
-    if (!tile) return null;
+    if (!tile || (only && !only.has(cell))) return null;
     if (tile.kind === 'block') {
       return {
         cell,

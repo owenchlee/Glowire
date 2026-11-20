@@ -1,4 +1,5 @@
-let nzCols = new Int32Array(64); // reused scratch: nonzero columns of the current pivot row
+let nzCols = new Int32Array(64 * 64); // reused scratch: pivot row `col`'s nonzero columns right of the diagonal, at [col * n ..]
+let nzCount = new Int32Array(64);
 
 /**
  * Solve A·x = b in place by Gaussian elimination with partial pivoting.
@@ -7,7 +8,8 @@ let nzCols = new Int32Array(64); // reused scratch: nonzero columns of the curre
  * plenty fast and much simpler than a sparse LU.
  */
 export function solveLinear(a: Float64Array, b: Float64Array, n: number): void {
-  if (nzCols.length < n) nzCols = new Int32Array(Math.max(n, 2 * nzCols.length));
+  if (nzCols.length < n * n) nzCols = new Int32Array(Math.max(n * n, 2 * nzCols.length));
+  if (nzCount.length < n) nzCount = new Int32Array(Math.max(n, 2 * nzCount.length));
   for (let col = 0; col < n; col++) {
     // Pivot: largest magnitude in this column, for numerical stability.
     const co = col * n;
@@ -35,12 +37,13 @@ export function solveLinear(a: Float64Array, b: Float64Array, n: number): void {
     // Circuit matrices are sparse: only the pivot row's nonzero columns change other rows
     // (x - f * 0 is x). Entries left of the diagonal are never read again, so skip them.
     let nz = 0;
-    for (let c = col + 1; c < n; c++) if (a[co + c] !== 0) nzCols[nz++] = c;
+    for (let c = col + 1; c < n; c++) if (a[co + c] !== 0) nzCols[co + nz++] = c;
+    nzCount[col] = nz;
     for (let r = col + 1, ro = co + n; r < n; r++, ro += n) {
       const f = a[ro + col]! / pivot;
       if (f === 0) continue;
       for (let k = 0; k < nz; k++) {
-        const c = nzCols[k]!;
+        const c = nzCols[co + k]!;
         a[ro + c]! -= f * a[co + c]!;
       }
       b[r]! -= f * b[col]!;
@@ -48,7 +51,11 @@ export function solveLinear(a: Float64Array, b: Float64Array, n: number): void {
   }
   for (let r = n - 1; r >= 0; r--) {
     let s = b[r]!;
-    for (let c = r + 1; c < n; c++) s -= a[r * n + c]! * b[c]!;
+    // A pivot row is final once chosen, and zero entries subtract nothing: visit only its recorded nonzeros.
+    for (let k = 0, ro = r * n; k < nzCount[r]!; k++) {
+      const c = nzCols[ro + k]!;
+      s -= a[ro + c]! * b[c]!;
+    }
     b[r] = s / a[r * n + r]!;
   }
 }

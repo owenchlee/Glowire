@@ -9,6 +9,7 @@ import {
   type TileResult,
   getPorts,
   parseBoard,
+  chargesOf,
   rotateTile,
   settledCharges,
   simulate,
@@ -207,14 +208,19 @@ export const bandText = (brightness: keyof typeof BRIGHTNESS) => {
  * happen within a second past the longest time that would do. A lamp that's dark straight
  * after the flip holds for (next to) no time at all.
  */
-export function timeLamp(goal: TimedGoal, state: BoardState, labels: Record<string, number>): number {
+export function timeLamp(
+  goal: TimedGoal,
+  state: BoardState,
+  labels: Record<string, number>,
+  settled?: SimulationResult, // the 'before' board's solve, if the caller already has it
+): number {
   const hold = goal.kind === 'hold';
   const before = toEngineBoard(withSwitches(state, labels, { ...goal.when, [goal.switch]: hold }));
   const after = toEngineBoard(withSwitches(state, labels, { ...goal.when, [goal.switch]: !hold }));
   const cell = labels[goal.led] ?? -1;
   const lit = (r: SimulationResult) => isLit(r.tiles[cell]);
   const limit = (goal.max ?? goal.min) + 1;
-  const t = timeUntil(after, settledCharges(before), hold ? (r) => !lit(r) : lit, limit);
+  const t = timeUntil(after, settled ? chargesOf(before, settled) : settledCharges(before), hold ? (r) => !lit(r) : lit, limit, undefined, [cell]);
   return t ?? Infinity;
 }
 
@@ -236,9 +242,9 @@ export function evaluateLevel(level: LevelDef, state: BoardState): Evaluation {
   const goals = level.goals.map((goal): GoalStatus => {
     if (goal.kind === 'hold' || goal.kind === 'delay') {
       // Both switch positions count for shorts and burnouts too.
-      solve({ ...goal.when, [goal.switch]: true });
-      solve({ ...goal.when, [goal.switch]: false });
-      const seconds = timeLamp(goal, state, labels);
+      const on = solve({ ...goal.when, [goal.switch]: true });
+      const off = solve({ ...goal.when, [goal.switch]: false });
+      const seconds = timeLamp(goal, state, labels, goal.kind === 'hold' ? on : off);
       return { goal, met: seconds >= goal.min && seconds <= (goal.max ?? Infinity), seconds };
     }
     const tiles = solve(goal.when).tiles;
