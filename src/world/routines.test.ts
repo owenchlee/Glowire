@@ -48,13 +48,15 @@ describe('routines data', () => {
       });
 
       it('never puts anyone on a blocked cell, at any moment, day or night', () => {
+        const bad: string[] = [];
         for (let t = 0; t < 500; t += 0.5)
           for (const [night, nightFor] of [[false, Infinity], [true, Infinity], [true, 0], [true, t % 40]] as const)
             for (const p of placeResidents(map.residents, routines, t, night, { x: 0, y: 0 }, nightFor)) {
               const i = p.y * map.width + p.x;
-              expect(open(i, p.key), `${p.key} at ${p.x},${p.y} t=${t}`).toBe(true);
-              expect(gateCells.has(i)).toBe(false);
+              if (!open(i, p.key)) bad.push(`${p.key} at ${p.x},${p.y} t=${t} is blocked`);
+              if (gateCells.has(i)) bad.push(`${p.key} at ${p.x},${p.y} t=${t} is on a gate`);
             }
+        expect(bad).toEqual([]);
       });
 
       it('keeps residents with jobs outdoors at night', () => {
