@@ -5,6 +5,7 @@ import { Pressable, StyleSheet, View } from 'react-native';
 
 import { SEA_ANSWERS_AT, SIGNAL_COLOURS, type SignalColour, flashMs, rng, signalPattern } from '../game/games';
 import { buzz } from './haptics';
+import { useLater } from './useLater';
 import { CREAM, GOLD, INK, PixelText } from './pixel';
 
 const LAMP_HEX: Record<SignalColour, string> = { red: '#e0394c', green: '#74a334', blue: '#3da6bd', gold: '#ffe166' };
@@ -25,6 +26,7 @@ export function SignalLamp({
   const [showing, setShowing] = useState(true);
   const [lit, setLit] = useState<SignalColour | null>(null);
   const [typed, setTyped] = useState(0);
+  const later = useLater();
   const answered = useRef(false);
   const [over, setOver] = useState(false);
 
@@ -44,12 +46,12 @@ export function SignalLamp({
   const press = (c: SignalColour) => {
     if (showing || over) return;
     setLit(c);
-    setTimeout(() => setLit((l) => (l === c ? null : l)), 180);
+    later(() => setLit((l) => (l === c ? null : l)), 180);
     if (c !== pattern[typed]) {
       buzz.oops();
       onSay(`Ah, it was ${pattern[typed]}. You flashed back ${length - 1} in a row. Not bad for a landlubber.`);
       setOver(true);
-      setTimeout(() => onEnd(length - 1), 1200);
+      later(() => onEnd(length - 1), 1200);
       return;
     }
     buzz.tap();

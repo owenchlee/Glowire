@@ -5,6 +5,7 @@
 //   Clock Panel (Mossbell)      Lantern Budget (Deep)
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useLater } from './useLater';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { rng } from '../game/games';
@@ -84,6 +85,7 @@ const PROBE_ROUNDS = 6;
 const FUSES = 3;
 
 export function DeadLampHunt({ seed, onSay, onEnd, hint }: BrainProps) {
+  const later = useLater();
   const random = useMemo(() => rng(seed), [seed]);
   const [round, setRound] = useState(0);
   const [r, setR] = useState<ProbeRound>(() => probeRound(0, random));
@@ -122,7 +124,7 @@ export function DeadLampHunt({ seed, onSay, onEnd, hint }: BrainProps) {
     setScore(total);
     setFuses(left);
     setRevealed(true);
-    setTimeout(() => {
+    later(() => {
       if (left <= 0 || round + 1 >= PROBE_ROUNDS) return onEnd(total);
       const next = probeRound(round + 1, random);
       setRound(round + 1);
@@ -237,6 +239,7 @@ const CELL = 46;
 const ARM = 10;
 
 export function DockyardWiring({ seed, onSay, onEnd, hint }: BrainProps) {
+  const later = useLater();
   const random = useMemo(() => rng(seed), [seed]);
   const [round, setRound] = useState(0);
   const [board, setBoard] = useState<PipeBoard>(() => pipeBoard(0, random));
@@ -272,7 +275,7 @@ export function DockyardWiring({ seed, onSay, onEnd, hint }: BrainProps) {
           ? `All lamps lit in ${t} turns. Par is ${next.par}. Excellent wiring.`
           : `All lamps lit, ${t} turns (par ${next.par}). Power flows. Good.`,
       );
-      setTimeout(() => {
+      later(() => {
         if (round + 1 >= PIPE_ROUNDS) return onEnd(total);
         setBoard(pipeBoard(round + 1, random));
         setRound(round + 1);
@@ -308,6 +311,7 @@ export function DockyardWiring({ seed, onSay, onEnd, hint }: BrainProps) {
 const PANEL_ROUNDS = 3;
 
 export function ClockPanel({ seed, onSay, onEnd, hint }: BrainProps) {
+  const later = useLater();
   const random = useMemo(() => rng(seed), [seed]);
   const [round, setRound] = useState(0);
   const [panel, setPanel] = useState<PanelBoard>(() => panelBoard(0, random));
@@ -338,7 +342,7 @@ export function ClockPanel({ seed, onSay, onEnd, hint }: BrainProps) {
           ? `Tick, tick, tick! Every clock running, in ${count} presses. That's par or better.`
           : `Every clock is ticking again (${count} presses, par ${panel.par}). Time moves on.`,
       );
-      setTimeout(() => {
+      later(() => {
         if (round + 1 >= PANEL_ROUNDS) return onEnd(total);
         const fresh = panelBoard(round + 1, random);
         setPanel(fresh);
@@ -431,6 +435,7 @@ function RigPicture({ rig, scale, onSize }: { rig: Rig; scale: number; onSize: (
 }
 
 export function LanternBudget({ seed, onSay, onEnd, hint }: BrainProps) {
+  const later = useLater();
   const random = useMemo(() => rng(seed), [seed]);
   const [round, setRound] = useState(0);
   const [q, setQ] = useState<LanternRound>(() => lanternRound(0, random));
@@ -485,7 +490,7 @@ export function LanternBudget({ seed, onSay, onEnd, hint }: BrainProps) {
         ? `Yes: ${Math.round(ma[q.best]!)} mA, the most of the three. The lantern flares.`
         : `The brightest was ${Math.round(ma[q.best]!)} mA, yours only ${Math.round(ma[i]!)} mA. The Hush takes a bite.`,
     );
-    setTimeout(() => {
+    later(() => {
       if (next <= 0 || round + 1 >= LANTERN_MAX_ROUNDS) return end(total);
       setRound(round + 1);
       setQ(lanternRound(round + 1, random));

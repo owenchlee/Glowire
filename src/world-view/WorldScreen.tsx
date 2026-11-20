@@ -765,6 +765,7 @@ export function WorldScreen({ map, worldId }: { map: WorldMap; worldId: string }
   useEffect(() => {
     if (Platform.OS !== 'web') return;
     const held: Facing[] = [];
+    const grace: ReturnType<typeof setTimeout>[] = [];
     const sync = () => {
       const on = (f: Facing) => (held.includes(f) ? 1 : 0);
       walker.current.input = { x: on('right') - on('left'), y: on('down') - on('up') };
@@ -791,7 +792,7 @@ export function WorldScreen({ map, worldId }: { map: WorldMap; worldId: string }
       const i = held.indexOf(dir);
       if (i >= 0) held.splice(i, 1);
       // Two keys never lift on the same frame: a short grace stops a diagonal ending in a sideways jerk.
-      if (held.length) setTimeout(sync, 70);
+      if (held.length) grace.push(setTimeout(sync, 70));
       else sync();
     };
     const blur = () => {
@@ -805,6 +806,7 @@ export function WorldScreen({ map, worldId }: { map: WorldMap; worldId: string }
       window.removeEventListener('keydown', down);
       window.removeEventListener('keyup', up);
       window.removeEventListener('blur', blur);
+      grace.forEach(clearTimeout);
     };
   }, [act]);
 
